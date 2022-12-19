@@ -16,4 +16,12 @@ export class TokenService {
       expiresIn: this.configService.get('expire_jwt'),
     });
   }
+
+  async generateJwtRefreshToken(user) {
+    const payload = { user };
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.get('secret_refresh_jwt'),
+      expiresIn: this.configService.get('expire_refresh_jwt'),
+    });
+  }
 }
