@@ -1,36 +1,48 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
 import { CreateUserDto } from './dto/user.dto';
-import * as bcrypt from 'bcrypt';
+
 @Injectable()
-export class UserService {
-  constructor(
-    @InjectModel(User.name) private userDocumentModel: Model<UserDocument>,
-  ) {}
+export class UsersService {
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async hashPassword(password: string) {
-    return bcrypt.hash(password, 10);
+  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
+    const createdUser = new this.userModel(createUserDto);
+    return createdUser.save();
   }
 
-  async findUserByEmail(email: string) {
-    return this.userDocumentModel.findOne({ email });
+  async findAll(): Promise<UserDocument[]> {
+    return this.userModel.find(
+      {},
+      { password: false, refreshToken: false, _id: false },
+    );
   }
 
-  async update(id: string, updateUserDto: any): Promise<UserDocument> {
-    return this.userDocumentModel
+  async findById(id: string): Promise<UserDocument> {
+    return this.userModel.findById(id);
+  }
+
+  async findByUsername(username: string): Promise<UserDocument> {
+    return this.userModel.findOne({ username }).exec();
+  }
+
+  async findByEmail(email: string): Promise<UserDocument> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserDocument> {
+    return this.userModel
       .findByIdAndUpdate(id, updateUserDto, { new: true })
       .exec();
   }
 
-  async createUser(dto: CreateUserDto): Promise<CreateUserDto> {
-    dto.password = await this.hashPassword(dto.password);
-    await this.userDocumentModel.create({ ...dto });
-    return dto;
-  }
-
-  async publicUser(email: string) {
-    return this.userDocumentModel.findOne({ email }).select('-password').lean();
+  async remove(id: string): Promise<UserDocument> {
+    return this.userModel.findByIdAndDelete(id).exec();
   }
 }
