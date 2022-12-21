@@ -3,5 +3,5 @@ export default () => ({
   access_secret: process.env.SECRET,
   access_expire: process.env.EXPIRE_JWT,
   refresh_expire: process.env.EXPIRE_REFRESH_JWT,
-  secret_refresh: process.env.REFRESH_SECRET,
+  refresh_secret: process.env.REFRESH_SECRET,
 });

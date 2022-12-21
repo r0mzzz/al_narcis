@@ -27,5 +27,5 @@ export class CreateUserDto {
 
   user_id;
 
-  refreshToken;
+  refresh_token;
 }

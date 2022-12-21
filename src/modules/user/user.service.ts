@@ -17,7 +17,7 @@ export class UsersService {
   async findAll(): Promise<UserDocument[]> {
     return this.userModel.find(
       {},
-      { password: false, refreshToken: false, _id: false },
+      { password: false, refresh_token: false, _id: false },
     );
   }
 

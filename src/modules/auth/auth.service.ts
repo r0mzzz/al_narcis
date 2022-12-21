@@ -16,7 +16,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
   ) {}
   async signUp(createUserDto: CreateUserDto): Promise<any> {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
@@ -50,7 +50,7 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    return this.usersService.update(userId, { refreshToken: null });
+    return this.usersService.update(userId, { refresh_token: null });
   }
 
   hashData(data: string) {
@@ -59,11 +59,11 @@ export class AuthService {
 
   async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.usersService.findById(userId);
-    if (!user || !user.refreshToken)
+    if (!user || !user.refresh_token)
       throw new ForbiddenException(AppError.ACCESS_DENIED);
     const refreshTokenMatches = await bcrypt.compare(
       refreshToken,
-      user.refreshToken,
+      user.refresh_token,
     );
     if (!refreshTokenMatches)
       throw new ForbiddenException(AppError.ACCESS_DENIED);
@@ -75,7 +75,7 @@ export class AuthService {
   async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await this.hashData(refreshToken);
     await this.usersService.update(userId, {
-      refreshToken: hashedRefreshToken,
+      refresh_token: hashedRefreshToken,
     });
   }
 
@@ -87,7 +87,7 @@ export class AuthService {
           email,
         },
         {
-          secret: this.configService.get<string>('access_secret'),
+          secret: this.configService.get('access_secret'),
           expiresIn: this.configService.get('access_expire'),
         },
       ),
@@ -97,7 +97,7 @@ export class AuthService {
           email,
         },
         {
-          secret: this.configService.get<string>('refresh_secret'),
+          secret: this.configService.get('refresh_secret'),
           expiresIn: this.configService.get('refresh_expire'),
         },
       ),
