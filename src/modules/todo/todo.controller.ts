@@ -10,13 +10,13 @@ import {
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
-import { JwtAuthGuard } from '../../guards/jwt-guard';
+import { AccessTokenGuard } from '../../guards/jwt-guard';
 
 @Controller('/api/todos/')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @Get('/list')
   getTodos() {
     return this.todoService.getTodos();

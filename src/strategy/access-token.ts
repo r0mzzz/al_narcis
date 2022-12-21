@@ -13,7 +13,7 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
-    return { ...payload.user };
+  validate(payload: any) {
+    return payload;
   }
 }
