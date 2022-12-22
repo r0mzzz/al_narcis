@@ -34,7 +34,11 @@ export class UsersService {
   }
 
   async getUserProfileData(id: string): Promise<UserDocument> {
-    return this.userModel.findById(id, { password: false, refresh_token: false });
+    return this.userModel.findById(id, {
+      password: false,
+      refresh_token: false,
+      _id: false,
+    });
   }
 
   async update(
