@@ -1,12 +1,27 @@
-import { IsNotEmpty, MinLength } from 'class-validator';
+import {
+  IsDate,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  MinDate,
+  MinLength,
+  Validate,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateTodoDto {
-  @IsNotEmpty()
   @MinLength(5)
   readonly name;
 
   @MinLength(5)
   readonly description;
+
+  @IsOptional()
+  @Transform(({ value }) => value && new Date(value))
+  @IsDate()
+  @MinDate(new Date())
+  readonly start_date: Date;
 
   readonly todo_id;
 }
