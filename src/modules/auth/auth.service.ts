@@ -34,7 +34,7 @@ export class AuthService {
       ...createUserDto,
       password: hash,
     });
-    const tokens = await this.getTokens(newUser._id, newUser.email);
+    const tokens = await this.getTokens(newUser._id);
     await this.updateRefreshToken(newUser._id, tokens.refresh_token);
     return tokens;
   }
@@ -44,7 +44,7 @@ export class AuthService {
     if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
     const passwordMatches = await bcrypt.compare(data.password, user.password);
     if (!passwordMatches) throw new BadRequestException(AppError.WRONG_DATA);
-    const tokens = await this.getTokens(user._id, user.email);
+    const tokens = await this.getTokens(user._id);
     await this.updateRefreshToken(user._id, tokens.refresh_token);
     return tokens;
   }
@@ -67,7 +67,7 @@ export class AuthService {
     );
     if (!refreshTokenMatches)
       throw new ForbiddenException(AppError.ACCESS_DENIED);
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id);
     await this.updateRefreshToken(user.id, tokens.refresh_token);
     return tokens;
   }
@@ -79,7 +79,7 @@ export class AuthService {
     });
   }
 
-  async getTokens(userId: string, email: string) {
+  async getTokens(userId: string) {
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(
         {
