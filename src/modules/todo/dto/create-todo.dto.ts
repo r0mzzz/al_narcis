@@ -21,7 +21,7 @@ export class CreateTodoDto {
   @Transform(({ value }) => value && new Date(value))
   @IsDate()
   @MinDate(new Date())
-  readonly start_date: Date;
+  readonly start_date: Date | null = null;
 
   readonly todo_id;
 }
