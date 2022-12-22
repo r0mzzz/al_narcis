@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { CreateUserDto } from './dto/user.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { Request } from 'express';
 
 @Controller('api/users')
 export class UsersController {
@@ -22,9 +24,17 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get()
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('profile')
+  getUserByToken(@Req() req: Request) {
+    const id = req.user['sub'];
+    return this.usersService.getUserProfileData(id);
   }
 
   @Get(':id')

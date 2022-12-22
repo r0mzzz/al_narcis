@@ -8,24 +8,24 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
-  readonly first_name;
+  readonly first_name?;
 
   @IsNotEmpty()
   @IsString()
-  readonly last_name;
+  readonly last_name?;
 
   @IsNotEmpty()
   @IsEmail()
-  readonly email;
+  readonly email?;
 
   @IsNotEmpty()
   @IsString()
-  password;
+  password?;
 
   @IsNotEmpty()
-  username;
+  username?;
 
-  user_id;
+  user_id?;
 
-  refresh_token;
+  refresh_token?;
 }
