@@ -33,6 +33,10 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  async getUserProfileData(id: string): Promise<UserDocument> {
+    return this.userModel.findById(id, { password: false, refresh_token: false });
+  }
+
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
