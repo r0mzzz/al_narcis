@@ -36,8 +36,6 @@ export class UsersService {
   }
 
   async getUserProfileData(id: string): Promise<UserDocument> {
-    // if (!(await this.userExists(id)))
-    //   throw new BadRequestException(AppError.USER_NOT_EXISTS);
     return this.userModel.findById(id, {
       password: false,
       refresh_token: false,
