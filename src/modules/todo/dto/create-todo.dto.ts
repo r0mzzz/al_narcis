@@ -1,13 +1,4 @@
-import {
-  IsDate,
-  IsDateString,
-  IsNotEmpty,
-  IsOptional,
-  MaxLength,
-  MinDate,
-  MinLength,
-  Validate,
-} from 'class-validator';
+import { IsDate, IsOptional, MinDate, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateTodoDto {
@@ -24,4 +15,6 @@ export class CreateTodoDto {
   readonly start_date: Date | null = null;
 
   readonly todo_id;
+
+  readonly completed: boolean = false;
 }

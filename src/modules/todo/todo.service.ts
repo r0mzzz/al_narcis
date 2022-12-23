@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Todo, TodoDocument } from './schema/todo.schema';
-import { CreateTodoDto } from './dto/create-todo.dto';
-import * as uuid from 'uuid';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { Todo, TodoDocument } from "./schema/todo.schema";
+import { CreateTodoDto } from "./dto/create-todo.dto";
+import * as uuid from "uuid";
 
 @Injectable()
 export class TodoService {
@@ -17,11 +17,10 @@ export class TodoService {
   }
 
   async createTodo(dto: CreateTodoDto): Promise<Todo> {
-    const todo = await this.todoDocumentModel.create({
+    return await this.todoDocumentModel.create({
       ...dto,
       todo_id: uuid.v4(),
     });
-    return todo;
   }
 
   async updateTodo(id: any, dto: CreateTodoDto): Promise<Todo> {
