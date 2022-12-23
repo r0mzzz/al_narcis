@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
 import { CreateUserDto } from './dto/user.dto';
+import { Messages } from '../../common/messages';
+import { AppError } from '../../common/errors';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +36,8 @@ export class UsersService {
   }
 
   async getUserProfileData(id: string): Promise<UserDocument> {
+    // if (!(await this.userExists(id)))
+    //   throw new BadRequestException(AppError.USER_NOT_EXISTS);
     return this.userModel.findById(id, {
       password: false,
       refresh_token: false,
@@ -45,12 +49,30 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserDocument> {
-    return this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+    return await this.userModel
+      .findOneAndUpdate(
+        { user_id: id },
+        {
+          first_name: updateUserDto.first_name,
+          last_name: updateUserDto.last_name,
+        },
+        {
+          new: true,
+          projection: { password: false, _id: false, refresh_token: false },
+        },
+      )
       .exec();
   }
 
-  async remove(id: string): Promise<UserDocument> {
-    return this.userModel.findByIdAndDelete(id).exec();
+  async userExists(id: string) {
+    return await this.userModel.findOne({ user_id: id }).exec();
+  }
+
+  async deleteUser(id: string): Promise<any> {
+    if (!(await this.userExists(id)))
+      throw new BadRequestException(AppError.ID_DOESNT_EXISTS);
+    const user = await this.userModel.findOne({ user_id: id });
+    await this.userModel.findOneAndDelete({ user_id: id }, {}).exec();
+    return { message: Messages.DELETED(user.email) };
   }
 }
