@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { IsISO8601 } from 'class-validator';
 
 export type TodoDocument = Todo & Document;
 
@@ -16,6 +15,9 @@ export class Todo {
 
   @Prop({ type: Date })
   start_date;
+
+  @Prop({ type: Boolean })
+  completed;
 }
 
 export const TodoSchema = SchemaFactory.createForClass(Todo);
