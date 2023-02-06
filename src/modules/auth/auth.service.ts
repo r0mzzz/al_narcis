@@ -11,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
 import { AppError } from '../../common/errors';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import * as nodemailer from 'nodemailer';
+import { Templates } from '../../common/templates';
 
 @Injectable()
 export class AuthService {
@@ -54,9 +56,36 @@ export class AuthService {
   async resetPassword(data: ForgotPasswordDto) {
     const user = await this.usersService.findByEmail(data.email);
     if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
+    await this.sendResetPasswordEmail(data.email);
+    return {
+      status: 'PENDING',
+      message: 'Email successfully sent',
+    };
   }
 
-  createPasswordResetRequest() {}
+  async sendResetPasswordEmail(email: string) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'perfectingthevoid@gmail.com',
+        pass: 'lmjewzmuoentgyzk\n',
+      },
+    });
+    const mailOptions = {
+      from: 'perfectingthevoid@gmail.com',
+      to: email,
+      subject: 'Reset password',
+      text: 'Reset your password',
+      html: Templates.passwordReset,
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Mail sent');
+      }
+    });
+  }
 
   async logout(userId: string) {
     return this.usersService.update(userId, { refresh_token: null });
