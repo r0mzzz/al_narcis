@@ -22,16 +22,19 @@ export class TodoController {
     return this.todoService.getTodos();
   }
 
+  @UseGuards(AccessTokenGuard)
   @Post()
   createTodo(@Body() dto: CreateTodoDto) {
     return this.todoService.createTodo(dto);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Put('/:id')
   updateTodo(@Body() dto: CreateTodoDto, @Param('id') id: string) {
     return this.todoService.updateTodo(id, dto);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Delete('/:id')
   deleteTodo(@Param('id') id: string) {
     return this.todoService.deleteTodo(id);
