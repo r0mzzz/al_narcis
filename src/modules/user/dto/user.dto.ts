@@ -1,5 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import * as uuid from 'uuid';
+import { AppError } from '../../../common/errors';
 
 export class CreateUserDto {
   constructor() {
@@ -20,6 +28,14 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @MinLength(4)
+  @MaxLength(20)
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    {
+      message: AppError.PASSWORD_PATTERN_MATCH,
+    },
+  )
   password?;
 
   @IsNotEmpty()
