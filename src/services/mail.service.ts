@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Templates } from '../common/templates';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MailService {
+  constructor(private readonly configService: ConfigService) {}
   async sendResetPasswordEmail(email: string) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'perfectingthevoid@gmail.com',
-        pass: 'lmjewzmuoentgyzk\n',
+        pass: this.configService.get('GMAIL_PASS'),
       },
     });
     const mailOptions = {

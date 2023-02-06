@@ -12,6 +12,8 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { AppError } from '../../common/errors';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { MailService } from '../../services/mail.service';
+import { Status } from '../../common/status';
+import { Messages } from '../../common/messages';
 
 @Injectable()
 export class AuthService {
@@ -58,8 +60,8 @@ export class AuthService {
     if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
     await this.mailService.sendResetPasswordEmail(data.email);
     return {
-      status: 'PENDING',
-      message: 'Email successfully sent',
+      status: Status.PENDING,
+      message: Messages.MAIL_SENT,
     };
   }
 
