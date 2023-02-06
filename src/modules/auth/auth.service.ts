@@ -10,6 +10,7 @@ import { CreateUserDto } from '../user/dto/user.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
 import { AppError } from '../../common/errors';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
+
   async signUp(createUserDto: CreateUserDto): Promise<any> {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
     const username = await this.usersService.findByUsername(
@@ -48,6 +50,13 @@ export class AuthService {
     await this.updateRefreshToken(user._id, tokens.refresh_token);
     return tokens;
   }
+
+  async resetPassword(data: ForgotPasswordDto) {
+    const user = await this.usersService.findByEmail(data.email);
+    if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
+  }
+
+  createPasswordResetRequest() {}
 
   async logout(userId: string) {
     return this.usersService.update(userId, { refresh_token: null });
