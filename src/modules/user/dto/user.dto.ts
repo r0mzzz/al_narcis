@@ -6,12 +6,12 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import * as uuid from 'uuid';
 import { AppError } from '../../../common/errors';
+import { randomUUID } from 'crypto';
 
 export class CreateUserDto {
   constructor() {
-    this.user_id = uuid.v4();
+    this.user_id = randomUUID();
   }
 
   @IsNotEmpty()
