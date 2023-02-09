@@ -46,7 +46,7 @@ describe('UserController', () => {
         first_name: 'Test',
         last_name: 'Test',
         email: 'test@bk.ru',
-        username: 'tesr',
+        username: 'test',
       };
       expect(controller.create(userCreateDto)).toEqual(userCreateDto);
       expect(mockUserService.create).toHaveBeenCalledWith(userCreateDto);
@@ -72,7 +72,7 @@ describe('UserController', () => {
 
   describe('findAllUsers', () => {
     it('should return all users', () => {
-      expect(controller.findAll()).toEqual({});
+      expect(controller.findAll()).toEqual([]);
       expect(mockUserService.findAll).toHaveBeenCalled();
     });
   });
