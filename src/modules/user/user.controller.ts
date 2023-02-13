@@ -15,7 +15,7 @@ import { CreateUserDto } from './dto/user.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { Request } from 'express';
 
-@Controller('api/users')
+@Controller('/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

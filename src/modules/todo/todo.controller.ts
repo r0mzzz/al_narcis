@@ -15,7 +15,7 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
-@Controller('/api/todos/')
+@Controller('/todos/')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
