@@ -7,7 +7,7 @@ import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { RefreshTokenGuard } from '../../guards/jwt-refresh-guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
-@Controller('api/auth')
+@Controller('/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 

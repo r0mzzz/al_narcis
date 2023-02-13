@@ -13,6 +13,7 @@ const bootstrap = async () => {
     const configService = app.get(ConfigService);
     const port = configService.get('port');
     app.enableCors();
+    app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({
         transform: true,
