@@ -1,14 +1,16 @@
-import { Injectable } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { Todo, TodoDocument } from "./schema/todo.schema";
-import { CreateTodoDto } from "./dto/create-todo.dto";
-import * as uuid from "uuid";
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Todo, TodoDocument } from './schema/todo.schema';
+import { CreateTodoDto } from './dto/create-todo.dto';
+import * as uuid from 'uuid';
+import { FileService } from '../file/file.service';
 
 @Injectable()
 export class TodoService {
   constructor(
     @InjectModel(Todo.name) private todoDocumentModel: Model<TodoDocument>,
+    private fileService: FileService,
   ) {}
 
   async getTodos(): Promise<Todo[]> {
@@ -16,11 +18,14 @@ export class TodoService {
     return todos;
   }
 
-  async createTodo(dto: CreateTodoDto): Promise<Todo> {
-    return await this.todoDocumentModel.create({
+  async createTodo(dto: CreateTodoDto, image): Promise<Todo> {
+    const imagePath = this.fileService.createFile(image);
+    const todo = await this.todoDocumentModel.create({
       ...dto,
       todo_id: uuid.v4(),
+      image: imagePath,
     });
+    return todo;
   }
 
   async updateTodo(id: any, dto: CreateTodoDto): Promise<Todo> {
