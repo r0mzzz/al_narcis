@@ -13,6 +13,9 @@ export class Todo {
   @Prop()
   description: string;
 
+  @Prop()
+  image: string;
+
   @Prop({ type: Date })
   start_date;
 

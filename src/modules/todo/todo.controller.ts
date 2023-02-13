@@ -6,11 +6,14 @@ import {
   Param,
   Post,
   Put,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 @Controller('/api/todos/')
 export class TodoController {
@@ -22,10 +25,12 @@ export class TodoController {
     return this.todoService.getTodos();
   }
 
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
   @UseGuards(AccessTokenGuard)
   @Post()
-  createTodo(@Body() dto: CreateTodoDto) {
-    return this.todoService.createTodo(dto);
+  createTodo(@Body() dto: CreateTodoDto, @UploadedFiles() files?) {
+    const { image } = files;
+    return this.todoService.createTodo(dto, image[0]);
   }
 
   @UseGuards(AccessTokenGuard)
