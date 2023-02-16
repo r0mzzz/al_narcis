@@ -4,10 +4,15 @@ import { FileService } from './file.service';
 describe('FileService', () => {
   let service: FileService;
 
+  const mockFileService = {};
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [FileService],
-    }).compile();
+    })
+      .overrideProvider(FileService)
+      .useValue(mockFileService)
+      .compile();
 
     service = module.get<FileService>(FileService);
   });

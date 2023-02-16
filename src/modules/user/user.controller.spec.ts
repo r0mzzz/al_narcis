@@ -9,7 +9,7 @@ describe('UserController', () => {
   let service: UsersService;
 
   const mockUserService = {
-    create: jest.fn((dto) => {
+    create: jest.fn((dto: CreateUserDto) => {
       return {
         ...dto,
       };
@@ -19,6 +19,9 @@ describe('UserController', () => {
       ...dto,
     })),
     findAll: jest.fn(() => {
+      return [];
+    }),
+    findById: jest.fn(() => {
       return [];
     }),
   };
@@ -73,6 +76,13 @@ describe('UserController', () => {
   describe('findAllUsers', () => {
     it('should return all users', () => {
       expect(controller.findAll()).toEqual([]);
+      expect(mockUserService.findAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('findUserById', () => {
+    it('should return users by id', () => {
+      expect(controller.findById('1')).toEqual([]);
       expect(mockUserService.findAll).toHaveBeenCalled();
     });
   });
