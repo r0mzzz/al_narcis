@@ -1,7 +1,10 @@
 # compiled output
 /dist
 /node_modules
+
+# Secret file
 .env
+
 # Logs
 logs
 *.log
