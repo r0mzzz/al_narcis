@@ -5,6 +5,9 @@
 # Secret file
 .env
 
+#Dockerfile
+Dockerfile
+
 # Logs
 logs
 *.log
