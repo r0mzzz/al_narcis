@@ -3,12 +3,12 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class LoginUserDto {
   @IsNotEmpty()
   @IsString()
-  readonly email;
+  readonly email: string;
 
   @IsNotEmpty()
   @IsString()
-  password;
+  password: string;
 
-  access_token: string;
-  refresh_token: string;
+  access_token?: string;
+  refresh_token?: string;
 }
