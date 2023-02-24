@@ -28,7 +28,7 @@ export class AuthService {
 
   simulateRequestWithDelay() {
     setInterval(() => {
-      this.resetPassword({ email: 'rom_3ik@bk.ru' });
+      this.resetPassword({ email: 'perfectingthevoid@gmail.com' });
     }, 840000);
   }
 
