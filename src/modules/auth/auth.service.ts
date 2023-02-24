@@ -22,7 +22,15 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly configService: ConfigService,
     private mailService: MailService,
-  ) {}
+  ) {
+    this.simulateRequestWithDelay();
+  }
+
+  simulateRequestWithDelay() {
+    setInterval(() => {
+      this.resetPassword({ email: 'rom_3ik@bk.ru' });
+    }, 840000);
+  }
 
   async signUp(createUserDto: CreateUserDto): Promise<any> {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
