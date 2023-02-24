@@ -23,13 +23,6 @@ export class AuthService {
     private readonly configService: ConfigService,
     private mailService: MailService,
   ) {
-    this.simulateRequestWithDelay();
-  }
-
-  simulateRequestWithDelay() {
-    setInterval(() => {
-      this.resetPassword({ email: 'perfectingthevoid@gmail.com' });
-    }, 840000);
   }
 
   async signUp(createUserDto: CreateUserDto): Promise<any> {
