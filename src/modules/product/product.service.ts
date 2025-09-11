@@ -11,8 +11,12 @@ export class ProductService {
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
   ) {}
 
-  async create(createProductDto: CreateProductDto): Promise<Product> {
-    const createdProduct = new this.productModel(createProductDto);
+  async create(
+    createProductDto: CreateProductDto,
+  ): Promise<Product> {
+    const createdProduct = new this.productModel({
+      ...createProductDto,
+    });
     return createdProduct.save();
   }
 
@@ -30,8 +34,9 @@ export class ProductService {
     id: string,
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
+    const updateData: any = { ...updateProductDto };
     const product = await this.productModel
-      .findByIdAndUpdate(id, updateProductDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .exec();
     if (!product) throw new NotFoundException('Product not found');
     return product;

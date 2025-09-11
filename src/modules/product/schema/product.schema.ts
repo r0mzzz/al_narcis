@@ -5,18 +5,26 @@ export type ProductDocument = Product & Document;
 
 @Schema({ versionKey: false })
 export class Product {
-  @Prop({ required: true })
-  productImage: string;
-
-  @Prop({ required: true })
-  capacity: number; // in ml
-
-  @Prop({ required: true })
-  price: number;
+  @Prop({
+    required: true,
+    type: [
+      {
+        capacity: { type: Number, enum: [30, 50, 100], required: true },
+        price: { type: Number, required: true },
+      },
+    ],
+    validate: [(val: any[]) => val.length > 0, 'At least one variant required'],
+  })
+  variants: { capacity: number; price: number }[];
 
   @Prop({ required: true })
   quantity: number;
+
+  @Prop({ required: true })
+  productName: string;
+
+  @Prop()
+  productDesc: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
-
