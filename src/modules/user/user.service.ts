@@ -16,10 +16,15 @@ export class UsersService {
     const referralCode = `${createUserDto.first_name[0] || ''}${
       createUserDto.last_name[0] || ''
     }${createUserDto.mobile.slice(-4)}`.toUpperCase();
-    const createdUser = new this.userModel({
+    const userData: any = {
       ...createUserDto,
       referralCode,
-    });
+      balance: 0,
+      balanceFromReferrals: 0,
+      businessCashbackBalance:
+        createUserDto.accountType === 'BUSINESS' ? 0 : null,
+    };
+    const createdUser = new this.userModel(userData);
     return createdUser.save();
   }
 
@@ -31,7 +36,11 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserDocument> {
-    return this.userModel.findById(id);
+    const user = await this.userModel.findOne({ user_id: id });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    return user;
   }
 
   async findByEmail(email: string): Promise<UserDocument> {

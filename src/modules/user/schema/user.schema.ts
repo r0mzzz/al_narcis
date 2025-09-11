@@ -31,6 +31,15 @@ export class User {
 
   @Prop()
   referralCode?: string;
+
+  @Prop({ default: 0 })
+  balance: number;
+
+  @Prop({ default: 0 })
+  balanceFromReferrals: number;
+
+  @Prop({ default: 0, required: false })
+  businessCashbackBalance?: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
