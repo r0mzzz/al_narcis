@@ -27,13 +27,8 @@ export class AuthService {
 
   async signUp(createUserDto: CreateUserDto): Promise<any> {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
-    const username = await this.usersService.findByUsername(
-      createUserDto.username,
-    );
     if (userExists) {
       throw new BadRequestException(AppError.USER_EXISTS);
-    } else if (username) {
-      throw new BadRequestException(AppError.USERNAME_EXISTS);
     }
 
     const hash = await this.hashData(createUserDto.password);

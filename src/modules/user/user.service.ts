@@ -27,10 +27,6 @@ export class UsersService {
     return this.userModel.findById(id);
   }
 
-  async findByUsername(username: string): Promise<UserDocument> {
-    return this.userModel.findOne({ username }).exec();
-  }
-
   async findByEmail(email: string): Promise<UserDocument> {
     return this.userModel.findOne({ email }).exec();
   }
@@ -47,12 +43,15 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserDocument> {
-    return await this.userModel
+    return this.userModel
       .findOneAndUpdate(
         { user_id: id },
         {
           first_name: updateUserDto.first_name,
           last_name: updateUserDto.last_name,
+          mobile: updateUserDto.mobile,
+          accountType: updateUserDto.accountType,
+          referralCode: updateUserDto.referralCode,
         },
         {
           new: true,
@@ -63,7 +62,7 @@ export class UsersService {
   }
 
   async userExists(id: string) {
-    return await this.userModel.findOne({ user_id: id }).exec();
+    return this.userModel.findOne({ user_id: id }).exec();
   }
 
   async deleteUser(id: string): Promise<any> {

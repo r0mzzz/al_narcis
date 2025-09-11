@@ -11,9 +11,6 @@ export class User {
   @Prop({ required: true })
   last_name: string;
 
-  @Prop({ required: true, unique: true })
-  username: string;
-
   @Prop({ required: true })
   password: string;
 
@@ -25,6 +22,15 @@ export class User {
 
   @Prop()
   user_id: string;
+
+  @Prop({ required: true })
+  mobile: string;
+
+  @Prop({ required: true, enum: ['BUSINESS', 'BUYER'] })
+  accountType: string;
+
+  @Prop()
+  referralCode?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -5,26 +5,36 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
 
+export enum AccountType {
+  BUSINESS = 'BUSINESS',
+  BUYER = 'BUYER',
+}
+
 export class CreateUserDto {
   constructor() {
     this.user_id = randomUUID();
+    if (this.referralCode === undefined) {
+      this.referralCode = null;
+    }
   }
 
   @IsNotEmpty()
   @IsString()
-  readonly first_name?;
+  readonly first_name: string;
 
   @IsNotEmpty()
   @IsString()
-  readonly last_name?;
+  readonly last_name: string;
 
   @IsNotEmpty()
   @IsEmail()
-  readonly email?;
+  readonly email: string;
 
   @IsNotEmpty()
   @IsString()
@@ -36,12 +46,20 @@ export class CreateUserDto {
       message: AppError.PASSWORD_PATTERN_MATCH,
     },
   )
-  password?;
+  password: string;
 
   @IsNotEmpty()
-  username?;
+  @IsString()
+  readonly mobile: string;
 
-  user_id?;
+  @IsNotEmpty()
+  @IsEnum(AccountType)
+  readonly accountType: AccountType;
 
-  refresh_token?;
+  @IsString()
+  @IsOptional()
+  readonly referralCode?: string | null;
+
+  user_id?: string;
+  refresh_token?: string;
 }
