@@ -12,7 +12,14 @@ export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
-    const createdUser = new this.userModel(createUserDto);
+    // Generate referralCode: first letter of first_name + first letter of last_name + last 4 digits of mobile
+    const referralCode = `${createUserDto.first_name[0] || ''}${
+      createUserDto.last_name[0] || ''
+    }${createUserDto.mobile.slice(-4)}`.toUpperCase();
+    const createdUser = new this.userModel({
+      ...createUserDto,
+      referralCode,
+    });
     return createdUser.save();
   }
 
@@ -50,8 +57,6 @@ export class UsersService {
           first_name: updateUserDto.first_name,
           last_name: updateUserDto.last_name,
           mobile: updateUserDto.mobile,
-          accountType: updateUserDto.accountType,
-          referralCode: updateUserDto.referralCode,
         },
         {
           new: true,

@@ -4,6 +4,7 @@ import { TodoModule } from './modules/todo/todo.module';
 import { ConfigModule } from '@nestjs/config';
 import configurations from './configuration';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductModule } from './modules/product/product.module';
 
 @Module({
   imports: [
@@ -12,10 +13,11 @@ import { AuthModule } from './modules/auth/auth.module';
       load: [configurations],
     }),
     MongooseModule.forRoot(
-      'mongodb://localhost:27017',
+      `mongodb://localhost:27017`,
     ),
     TodoModule,
     AuthModule,
+    ProductModule,
   ],
 })
 export class AppModule {}

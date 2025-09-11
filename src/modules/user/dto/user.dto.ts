@@ -6,7 +6,6 @@ import {
   MaxLength,
   MinLength,
   IsEnum,
-  IsOptional,
 } from 'class-validator';
 import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
@@ -19,9 +18,6 @@ export enum AccountType {
 export class CreateUserDto {
   constructor() {
     this.user_id = randomUUID();
-    if (this.referralCode === undefined) {
-      this.referralCode = null;
-    }
   }
 
   @IsNotEmpty()
@@ -55,10 +51,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsEnum(AccountType)
   readonly accountType: AccountType;
-
-  @IsString()
-  @IsOptional()
-  readonly referralCode?: string | null;
 
   user_id?: string;
   refresh_token?: string;
