@@ -36,11 +36,13 @@ export class ProductController {
     return this.productService.findAll();
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get('capacities')
   async getCapacities() {
     return await this.capacityService.getCapacities();
   }
 
+  @UseGuards(AccessTokenGuard)
   @Post('capacities')
   async addCapacity(@Body('capacity') capacity: any) {
     if (
@@ -66,16 +68,19 @@ export class ProductController {
     }
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productService.update(id, updateProductDto);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(id);
