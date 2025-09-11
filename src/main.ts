@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { useContainer } from 'class-validator';
 
 const bootstrap = async () => {
   try {
@@ -10,6 +11,8 @@ const bootstrap = async () => {
       cors: true,
       logger: ['error', 'warn', 'log'],
     });
+    // Enable class-validator to use NestJS dependency injection
+    useContainer(app.select(AppModule), { fallbackOnErrors: true });
     const configService = app.get(ConfigService);
     const port = configService.get('port');
     app.enableCors();

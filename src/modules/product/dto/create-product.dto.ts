@@ -6,18 +6,16 @@ import {
   IsArray,
   ArrayNotEmpty,
   ArrayUnique,
-  IsIn,
   IsString,
   ValidateNested,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-
-const ALLOWED_CAPACITIES = [30, 50, 100];
+import { IsAllowedCapacity } from './is-allowed-capacity.validator';
 
 class VariantDto {
   @IsNotEmpty()
   @IsNumber()
-  @IsIn(ALLOWED_CAPACITIES)
+  @IsAllowedCapacity({ message: 'Capacity ($value) is not allowed.' })
   @Transform(({ value }) => Number(value))
   capacity: number;
 

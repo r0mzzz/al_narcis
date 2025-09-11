@@ -15,10 +15,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { CapacityService } from './capacity.service';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly capacityService: CapacityService,
+  ) {}
 
   @UseGuards(AccessTokenGuard)
   @Post()
@@ -32,16 +36,43 @@ export class ProductController {
     return this.productService.findAll();
   }
 
+  @Get('capacities')
+  async getCapacities() {
+    return await this.capacityService.getCapacities();
+  }
+
+  @Post('capacities')
+  async addCapacity(@Body('capacity') capacity: any) {
+    if (
+      capacity === undefined ||
+      capacity === null ||
+      capacity === '' ||
+      isNaN(Number(capacity))
+    ) {
+      return {
+        statusCode: 400,
+        message: 'Capacity must be a non-empty number',
+      };
+    }
+    try {
+      const result = await this.capacityService.addCapacity(Number(capacity));
+      return { statusCode: 201, capacities: result };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        message: 'Failed to add capacity',
+        error: error?.message || error,
+      };
+    }
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productService.update(id, updateProductDto);
   }
 

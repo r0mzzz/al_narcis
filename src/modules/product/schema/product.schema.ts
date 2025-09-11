@@ -9,7 +9,7 @@ export class Product {
     required: true,
     type: [
       {
-        capacity: { type: Number, enum: [30, 50, 100], required: true },
+        capacity: { type: Number, required: true },
         price: { type: Number, required: true },
       },
     ],
