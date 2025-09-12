@@ -32,12 +32,15 @@ export class MinioService {
     }
   }
 
-  async upload(file: Express.Multer.File): Promise<string> {
-    this.logger.log(`Uploading file: ${file.originalname}, size: ${file.size}`);
-    const fileName = `${Date.now()}-${file.originalname}`;
+  async upload(file: Express.Multer.File, productId: string): Promise<string> {
+    const fileName = `products/${productId}/main${this.getFileExtension(
+      file.originalname,
+    )}`;
+
     const metaData = {
       'Content-Type': file.mimetype,
     };
+
     try {
       await this.minioClient.putObject(
         this.bucket,
@@ -51,10 +54,16 @@ export class MinioService {
       this.logger.error(`Failed to upload file to Minio: ${err}`);
       throw err;
     }
-    const url = `${this.configService.get('minio').endPoint}:${
-      this.configService.get('minio').port
-    }/${this.bucket}/${fileName}`;
+
+    const url = `http://localhost:9000/${this.bucket}/${encodeURIComponent(
+      fileName,
+    )}`;
     this.logger.log(`Returning file URL: ${url}`);
     return url;
+  }
+
+  private getFileExtension(filename: string): string {
+    const idx = filename.lastIndexOf('.');
+    return idx !== -1 ? filename.substring(idx) : '';
   }
 }

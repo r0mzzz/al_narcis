@@ -15,21 +15,6 @@ export class ProductService {
     private readonly minioService: MinioService,
   ) {}
 
-  async create(
-    createProductDto: CreateProductDto,
-    image?: Express.Multer.File,
-  ): Promise<Product> {
-    let productImage: string | undefined = undefined;
-    if (image) {
-      productImage = await this.minioService.upload(image);
-    }
-    const createdProduct = new this.productModel({
-      ...createProductDto,
-      productImage,
-    });
-    return createdProduct.save();
-  }
-
   async findAll(): Promise<Product[]> {
     return this.productModel.find().exec();
   }
@@ -40,6 +25,29 @@ export class ProductService {
     return product;
   }
 
+  async create(
+    createProductDto: CreateProductDto,
+    image?: Express.Multer.File,
+  ): Promise<Product> {
+    // First create the product without image so we can get its _id
+    const createdProduct = new this.productModel({
+      ...createProductDto,
+    });
+    await createdProduct.save();
+
+    if (image) {
+      // Use the product's Mongo _id as unique identifier for MinIO
+      const productImage = await this.minioService.upload(
+        image,
+        createdProduct._id.toString(),
+      );
+      createdProduct.productImage = productImage;
+      await createdProduct.save(); // update with image URL
+    }
+
+    return createdProduct;
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
@@ -48,15 +56,19 @@ export class ProductService {
     this.logger.log(
       `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
     );
+
     const updateData: any = { ...updateProductDto };
+
     if (image) {
       this.logger.log(`Uploading new product image for product ${id}`);
-      updateData.productImage = await this.minioService.upload(image);
+      updateData.productImage = await this.minioService.upload(image, id);
     }
+
     this.logger.log(`Mongo updateData: ${JSON.stringify(updateData)}`);
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .exec();
+
     if (!product) throw new NotFoundException('Product not found');
     this.logger.log(`Updated product: ${JSON.stringify(product)}`);
     return product;
