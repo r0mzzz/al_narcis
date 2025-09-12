@@ -11,6 +11,15 @@ import { AppError } from '../../common/errors';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
+  // Helper to determine gradation
+  private getGradation(referralCount: number): string {
+    if (referralCount >= 50) return 'platinum';
+    if (referralCount >= 35) return 'brilliant';
+    if (referralCount >= 20) return 'gold';
+    if (referralCount >= 10) return 'silver';
+    return 'bronze';
+  }
+
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     // Generate referralCode: first letter of first_name + first letter of last_name + last 4 digits of mobile
     const referralCode = `${createUserDto.first_name[0] || ''}${
@@ -23,7 +32,22 @@ export class UsersService {
       balanceFromReferrals: 0,
       businessCashbackBalance:
         createUserDto.accountType === 'BUSINESS' ? 0 : null,
+      referralCount: 0,
+      gradation: 'bronze',
     };
+
+    // Handle referral logic
+    if (createUserDto.referralCode) {
+      const referrer = await this.userModel.findOne({
+        referralCode: createUserDto.referralCode,
+      });
+      if (referrer) {
+        referrer.referralCount = (referrer.referralCount || 0) + 1;
+        referrer.gradation = this.getGradation(referrer.referralCount);
+        await referrer.save();
+      }
+    }
+
     const createdUser = new this.userModel(userData);
     return createdUser.save();
   }

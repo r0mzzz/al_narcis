@@ -38,8 +38,15 @@ export class User {
   @Prop({ default: 0 })
   balanceFromReferrals: number;
 
-  @Prop({ default: 0, required: false })
-  businessCashbackBalance?: number;
+  @Prop({ default: 0 })
+  referralCount: number;
+
+  @Prop({
+    type: String,
+    enum: ['bronze', 'silver', 'gold', 'brilliant', 'platinum'],
+    default: 'bronze',
+  })
+  gradation: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

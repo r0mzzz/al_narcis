@@ -48,6 +48,9 @@ export class CreateUserDto {
   @IsString()
   readonly mobile: string;
 
+  @IsString()
+  readonly referralCode?: string;
+
   @IsNotEmpty()
   @IsEnum(AccountType)
   readonly accountType: AccountType;
