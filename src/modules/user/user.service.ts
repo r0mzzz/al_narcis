@@ -20,7 +20,7 @@ export class UsersService {
     return 'bronze';
   }
 
-  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
+  async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Generate referralCode: first letter of first_name + first letter of last_name + last 4 digits of mobile
     const referralCode = `${createUserDto.first_name[0] || ''}${
       createUserDto.last_name[0] || ''
@@ -49,41 +49,40 @@ export class UsersService {
     }
 
     const createdUser = new this.userModel(userData);
-    return createdUser.save();
+    const savedUser = await createdUser.save();
+    const obj = savedUser.toObject();
+    const { _id, __v, ...rest } = obj;
+    return rest;
   }
 
-  async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find(
-      {},
-      { password: false, refresh_token: false, _id: false },
-    );
+  async findAll(): Promise<Record<string, any>[]> {
+    const users = await this.userModel.find({}, { password: false, refresh_token: false }).select('-_id -__v').exec();
+    return users.map(user => user.toObject());
   }
 
-  async findById(id: string): Promise<UserDocument> {
-    const user = await this.userModel.findOne({ user_id: id });
+  async findById(id: string): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: id }).select('-_id -__v -password -refresh_token').exec();
     if (!user) {
       throw new BadRequestException('User not found');
     }
-    return user;
+    return user.toObject();
   }
 
-  async findByEmail(email: string): Promise<UserDocument> {
-    return this.userModel.findOne({ email }).exec();
+  async findByEmail(email: string): Promise<Record<string, any> | null> {
+    const user = await this.userModel.findOne({ email }).select('-_id -__v -password -refresh_token').exec();
+    return user ? user.toObject() : null;
   }
 
-  async getUserProfileData(id: string): Promise<UserDocument> {
-    return this.userModel.findById(id, {
-      password: false,
-      refresh_token: false,
-      _id: false,
-    });
+  async getUserProfileData(id: string): Promise<Record<string, any>> {
+    const user = await this.userModel.findById(id).select('-_id -__v -password -refresh_token').exec();
+    return user ? user.toObject() : null;
   }
 
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<UserDocument> {
-    return this.userModel
+  ): Promise<Record<string, any> | null> {
+    const user = await this.userModel
       .findOneAndUpdate(
         { user_id: id },
         {
@@ -93,10 +92,11 @@ export class UsersService {
         },
         {
           new: true,
-          projection: { password: false, _id: false, refresh_token: false },
         },
       )
+      .select('-_id -__v -password -refresh_token')
       .exec();
+    return user ? user.toObject() : null;
   }
 
   async userExists(id: string) {

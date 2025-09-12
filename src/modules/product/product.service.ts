@@ -15,20 +15,24 @@ export class ProductService {
     private readonly minioService: MinioService,
   ) {}
 
-  async findAll(): Promise<Product[]> {
-    return this.productModel.find().exec();
+  async findAll(): Promise<Record<string, any>[]> {
+    const docs = await this.productModel.find().select('-_id -__v').exec();
+    return docs.map((doc) => doc.toObject());
   }
 
-  async findOne(id: string): Promise<Product> {
-    const product = await this.productModel.findById(id).exec();
+  async findOne(id: string): Promise<Record<string, any>> {
+    const product = await this.productModel
+      .findById(id)
+      .select('-_id -__v')
+      .exec();
     if (!product) throw new NotFoundException('Product not found');
-    return product;
+    return product.toObject();
   }
 
   async create(
     createProductDto: CreateProductDto,
     image?: Express.Multer.File,
-  ): Promise<Product> {
+  ): Promise<Record<string, any>> {
     // First create the product without image so we can get its _id
     const createdProduct = new this.productModel({
       ...createProductDto,
@@ -37,22 +41,23 @@ export class ProductService {
 
     if (image) {
       // Use the product's Mongo _id as unique identifier for MinIO
-      const productImage = await this.minioService.upload(
+      createdProduct.productImage = await this.minioService.upload(
         image,
         createdProduct._id.toString(),
       );
-      createdProduct.productImage = productImage;
       await createdProduct.save(); // update with image URL
     }
-
-    return createdProduct;
+    const obj = createdProduct.toObject();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, __v, ...rest } = obj;
+    return rest;
   }
 
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
     image?: Express.Multer.File,
-  ): Promise<Product> {
+  ): Promise<Record<string, any>> {
     this.logger.log(
       `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
     );
@@ -67,11 +72,12 @@ export class ProductService {
     this.logger.log(`Mongo updateData: ${JSON.stringify(updateData)}`);
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
+      .select('-_id -__v')
       .exec();
 
     if (!product) throw new NotFoundException('Product not found');
     this.logger.log(`Updated product: ${JSON.stringify(product)}`);
-    return product;
+    return product.toObject();
   }
 
   async remove(id: string): Promise<void> {

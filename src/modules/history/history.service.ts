@@ -1,0 +1,54 @@
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { PaymentHistory } from './schema/payment-history.schema';
+import { CreatePaymentHistoryDto } from './dto/create-payment-history.dto';
+import { v4 as uuidv4 } from 'uuid';
+
+@Injectable()
+export class HistoryService {
+  constructor(
+    @InjectModel(PaymentHistory.name)
+    private paymentHistoryModel: Model<PaymentHistory>,
+  ) {}
+
+  async create(data: CreatePaymentHistoryDto): Promise<Record<string, any>> {
+    const toSave = {
+      ...data,
+      paymentKey: uuidv4(),
+      date: new Date(),
+    };
+    const created = await this.paymentHistoryModel.create(toSave);
+    const obj = created.toObject();
+    // Remove _id and __v
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, __v, ...rest } = obj;
+    return rest;
+  }
+
+  async findAll(): Promise<Record<string, any>[]> {
+    const docs = await this.paymentHistoryModel
+      .find()
+      .select('-_id -__v')
+      .exec();
+    return docs.map((doc) => doc.toObject());
+  }
+
+  async findByUser(userId: string): Promise<Record<string, any>[]> {
+    const docs = await this.paymentHistoryModel
+      .find({ userId })
+      .select('-_id -__v')
+      .exec();
+    return docs.map((doc) => doc.toObject());
+  }
+
+  async findByPaymentKey(
+    paymentKey: string,
+  ): Promise<Record<string, any> | null> {
+    const doc = await this.paymentHistoryModel
+      .findOne({ paymentKey })
+      .select('-_id -__v')
+      .exec();
+    return doc ? doc.toObject() : null;
+  }
+}
