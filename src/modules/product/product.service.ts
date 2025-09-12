@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schema/product.schema';
@@ -8,6 +8,8 @@ import { MinioService } from '../../services/minio.service';
 
 @Injectable()
 export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     private readonly minioService: MinioService,
@@ -41,12 +43,22 @@ export class ProductService {
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
+    image?: Express.Multer.File,
   ): Promise<Product> {
+    this.logger.log(
+      `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
+    );
     const updateData: any = { ...updateProductDto };
+    if (image) {
+      this.logger.log(`Uploading new product image for product ${id}`);
+      updateData.productImage = await this.minioService.upload(image);
+    }
+    this.logger.log(`Mongo updateData: ${JSON.stringify(updateData)}`);
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .exec();
     if (!product) throw new NotFoundException('Product not found');
+    this.logger.log(`Updated product: ${JSON.stringify(product)}`);
     return product;
   }
 

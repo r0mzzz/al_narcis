@@ -83,8 +83,39 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(id, updateProductDto);
+  @UseInterceptors(FileInterceptor('productImage'))
+  async update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ) {
+    console.log('Raw updateProductDto:', updateProductDto);
+    // Parse variants if present and stringified
+    if (typeof updateProductDto.variants === 'string') {
+      try {
+        updateProductDto.variants = JSON.parse(updateProductDto.variants);
+      } catch (e) {
+        console.log('Failed to parse variants:', e);
+        updateProductDto.variants = undefined;
+      }
+    }
+    // Parse quantity if present and stringified
+    if (typeof updateProductDto.quantity === 'string') {
+      const parsed = Number(updateProductDto.quantity);
+      updateProductDto.quantity = isNaN(parsed) ? undefined : parsed;
+    }
+    if (image) {
+      console.log('Received image for update:', image.originalname);
+    } else {
+      console.log('No image received for update.');
+    }
+    const updatedProduct = await this.productService.update(
+      id,
+      updateProductDto,
+      image,
+    );
+    console.log('Updated product:', updatedProduct);
+    return updatedProduct;
   }
 
   @UseGuards(AccessTokenGuard)
