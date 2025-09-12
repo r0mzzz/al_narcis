@@ -6,6 +6,7 @@ import { ProductController } from './product.controller';
 import { Capacity, CapacitySchema } from './schema/capacity.schema';
 import { CapacityService } from './capacity.service';
 import { IsAllowedCapacityConstraint } from './dto/is-allowed-capacity.validator';
+import { MinioService } from '../../services/minio.service';
 
 @Module({
   imports: [
@@ -15,7 +16,12 @@ import { IsAllowedCapacityConstraint } from './dto/is-allowed-capacity.validator
     ]),
   ],
   controllers: [ProductController],
-  providers: [ProductService, CapacityService, IsAllowedCapacityConstraint],
+  providers: [
+    ProductService,
+    CapacityService,
+    IsAllowedCapacityConstraint,
+    MinioService,
+  ],
   exports: [ProductService],
 })
 export class ProductModule {}

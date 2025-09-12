@@ -5,22 +5,32 @@ services:
     env_file:
       - .env
     ports:
-      - 27017:27017
+      - 27018:27017
     volumes:
       - mongodb_data_container:/data/db
 
   api:
     build: .
-    volumes:
-      - .:/app
-      - /app/node_modules
     ports:
       - ${PORT}:${PORT}
-    command: npm run start:dev
     env_file:
       - .env
     depends_on:
       - mongodb
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server --console-address ":9001" /data
+    volumes:
+      - minio_data:/data
+
 volumes:
   mongodb_data_container:
+  minio_data:

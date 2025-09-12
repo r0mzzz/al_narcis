@@ -4,18 +4,26 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schema/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { MinioService } from '../../services/minio.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly minioService: MinioService,
   ) {}
 
   async create(
     createProductDto: CreateProductDto,
+    image?: Express.Multer.File,
   ): Promise<Product> {
+    let productImage: string | undefined = undefined;
+    if (image) {
+      productImage = await this.minioService.upload(image);
+    }
     const createdProduct = new this.productModel({
       ...createProductDto,
+      productImage,
     });
     return createdProduct.save();
   }

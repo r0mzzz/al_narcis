@@ -22,7 +22,7 @@ const bootstrap = async () => {
         transform: true,
       }),
     );
-    await app.listen(port, () =>
+    await app.listen(port, '0.0.0.0', () =>
       console.log(`SERVER STARTED ON PORT: ${port}`),
     );
   } catch (e) {

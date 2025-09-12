@@ -25,6 +25,9 @@ export class Product {
 
   @Prop()
   productDesc: string;
+
+  @Prop({ required: false })
+  productImage?: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

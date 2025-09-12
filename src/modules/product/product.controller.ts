@@ -7,6 +7,8 @@ import {
   Patch,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -16,6 +18,7 @@ import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { CapacityService } from './capacity.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('products')
 export class ProductController {
@@ -26,8 +29,12 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Post()
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productService.create(createProductDto);
+  @UseInterceptors(FileInterceptor('image'))
+  create(
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ) {
+    return this.productService.create(createProductDto, image);
   }
 
   @UseGuards(AccessTokenGuard)
