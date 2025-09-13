@@ -6,6 +6,7 @@ import {
   MaxLength,
   MinLength,
   IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
@@ -48,6 +49,7 @@ export class CreateUserDto {
   @IsString()
   readonly mobile: string;
 
+  @IsOptional()
   @IsString()
   readonly referralCode?: string;
 

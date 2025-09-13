@@ -22,9 +22,9 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Generate referralCode: first letter of first_name + first letter of last_name + last 4 digits of mobile
-    const referralCode = `${createUserDto.first_name[0] || ''}${
-      createUserDto.last_name[0] || ''
-    }${createUserDto.mobile.slice(-4)}`.toUpperCase();
+    const referralCode = `${createUserDto.first_name?.[0] || ''}${
+      createUserDto.last_name?.[0] || ''
+    }${createUserDto.mobile?.slice(-4) || ''}`.toUpperCase();
     const userData: any = {
       ...createUserDto,
       referralCode,
@@ -36,8 +36,12 @@ export class UsersService {
       gradation: 'bronze',
     };
 
-    // Handle referral logic
-    if (createUserDto.referralCode) {
+    // Only handle referral logic if referralCode is a non-empty string
+    let invitedBy: string | null = null;
+    if (
+      typeof createUserDto.referralCode === 'string' &&
+      createUserDto.referralCode.trim() !== ''
+    ) {
       const referrer = await this.userModel.findOne({
         referralCode: createUserDto.referralCode,
       });
@@ -45,36 +49,81 @@ export class UsersService {
         referrer.referralCount = (referrer.referralCount || 0) + 1;
         referrer.gradation = this.getGradation(referrer.referralCount);
         await referrer.save();
+        invitedBy = referrer.user_id;
       }
     }
+
+    // Generate invite link based on referralCode
+    const inviteBaseUrl =
+      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    userData.inviteLink = `${inviteBaseUrl}?code=${referralCode}`;
+    userData.invitedBy = invitedBy;
 
     const createdUser = new this.userModel(userData);
     const savedUser = await createdUser.save();
     const obj = savedUser.toObject();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, __v, ...rest } = obj;
-    return rest;
+    return { ...rest, invitedBy };
   }
 
   async findAll(): Promise<Record<string, any>[]> {
-    const users = await this.userModel.find({}, { password: false, refresh_token: false }).select('-_id -__v').exec();
-    return users.map(user => user.toObject());
+    const users = await this.userModel
+      .find({}, { password: false, refresh_token: false })
+      .select('-_id -__v')
+      .exec();
+    const inviteBaseUrl =
+      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    return users.map((user) => {
+      const obj = user.toObject();
+      return {
+        ...obj,
+        inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+      };
+    });
   }
 
   async findById(id: string): Promise<Record<string, any>> {
-    const user = await this.userModel.findOne({ user_id: id }).select('-_id -__v -password -refresh_token').exec();
+    const user = await this.userModel
+      .findOne({ user_id: id })
+      .select('-_id -__v -password -refresh_token')
+      .exec();
     if (!user) {
       throw new BadRequestException('User not found');
     }
-    return user.toObject();
+    const obj = user.toObject();
+    const inviteBaseUrl =
+      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    return {
+      ...obj,
+      inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+    };
   }
 
   async findByEmail(email: string): Promise<Record<string, any> | null> {
-    const user = await this.userModel.findOne({ email }).select('-_id -__v -password -refresh_token').exec();
-    return user ? user.toObject() : null;
+    const user = await this.userModel
+      .findOne({ email })
+      .select('-_id -__v -password -refresh_token')
+      .exec();
+    if (!user) return null;
+    const obj = user.toObject();
+    const inviteBaseUrl =
+      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    return {
+      ...obj,
+      inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+    };
+  }
+
+  async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).select('+password').exec();
   }
 
   async getUserProfileData(id: string): Promise<Record<string, any>> {
-    const user = await this.userModel.findById(id).select('-_id -__v -password -refresh_token').exec();
+    const user = await this.userModel
+      .findById(id)
+      .select('-_id -__v -password -refresh_token')
+      .exec();
     return user ? user.toObject() : null;
   }
 

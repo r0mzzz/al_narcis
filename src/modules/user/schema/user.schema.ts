@@ -47,6 +47,12 @@ export class User {
     default: 'bronze',
   })
   gradation: string;
+
+  @Prop()
+  inviteLink?: string;
+
+  @Prop()
+  invitedBy?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
