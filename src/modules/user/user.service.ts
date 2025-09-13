@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
-import { CreateUserDto } from './dto/user.dto';
+import { AccountType, CreateUserDto } from './dto/user.dto';
 import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
 
@@ -31,7 +31,7 @@ export class UsersService {
       balance: 0,
       balanceFromReferrals: 0,
       businessCashbackBalance:
-        createUserDto.accountType === 'BUSINESS' ? 0 : null,
+        createUserDto.accountType === AccountType.BUSINESS ? 0 : null,
       referralCount: 0,
       gradation: 'bronze',
     };

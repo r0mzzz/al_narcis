@@ -10,11 +10,7 @@ import {
 } from 'class-validator';
 import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
-
-export enum AccountType {
-  BUSINESS = 'BUSINESS',
-  BUYER = 'BUYER',
-}
+import { AccountType } from '../../../common/account-type.enum';
 
 export class CreateUserDto {
   constructor() {

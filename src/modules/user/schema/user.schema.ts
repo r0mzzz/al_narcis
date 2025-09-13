@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { AccountType } from '../../../common/account-type.enum';
 
 export type UserDocument = User & Document;
 
@@ -26,8 +27,8 @@ export class User {
   @Prop({ required: true })
   mobile: string;
 
-  @Prop({ required: true, enum: ['BUSINESS', 'BUYER'] })
-  accountType: string;
+  @Prop({ required: true, enum: Object.values(AccountType) })
+  accountType: AccountType;
 
   @Prop()
   referralCode?: string;

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schema/user.schema';
 import { CASHBACK_PERCENT_ARRAY } from './cashback.enum';
+import { AccountType } from '../../common/account-type.enum';
 
 @Injectable()
 export class PaymentService {
@@ -30,8 +31,8 @@ export class PaymentService {
       if (!inviter) break;
       // Only apply cashback if BOTH inviter and invited (currentUser) are BUSINESS accounts
       if (
-        inviter.accountType === 'BUSINESS' &&
-        currentUser.accountType === 'BUSINESS'
+        inviter.accountType === AccountType.BUSINESS &&
+        currentUser.accountType === AccountType.BUSINESS
       ) {
         // Calculate cashback as percent of units, then convert to coins
         const cashbackPercent = CASHBACK_PERCENT_ARRAY[level];
