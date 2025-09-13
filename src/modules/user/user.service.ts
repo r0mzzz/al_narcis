@@ -38,17 +38,17 @@ export class UsersService {
 
     // Only handle referral logic if referralCode is a non-empty string
     let invitedBy: string | null = null;
+    let referrer: UserDocument | null = null;
     if (
       typeof createUserDto.referralCode === 'string' &&
       createUserDto.referralCode.trim() !== ''
     ) {
-      const referrer = await this.userModel.findOne({
+      referrer = await this.userModel.findOne({
         referralCode: createUserDto.referralCode,
       });
       if (referrer) {
         referrer.referralCount = (referrer.referralCount || 0) + 1;
         referrer.gradation = this.getGradation(referrer.referralCount);
-        await referrer.save();
         invitedBy = referrer.user_id;
       }
     }
@@ -62,6 +62,22 @@ export class UsersService {
     const createdUser = new this.userModel(userData);
     const savedUser = await createdUser.save();
     const obj = savedUser.toObject();
+    // If referrer exists, push this user to their invites array and save
+    if (referrer) {
+      referrer.invites = referrer.invites || [];
+      referrer.invites.push({
+        user_id: obj.user_id,
+        first_name: obj.first_name,
+        last_name: obj.last_name,
+        email: obj.email,
+        mobile: obj.mobile,
+        accountType: obj.accountType,
+        referralCode: obj.referralCode,
+        gradation: obj.gradation,
+        inviteLink: obj.inviteLink,
+      });
+      await referrer.save();
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, __v, ...rest } = obj;
     return { ...rest, invitedBy };
@@ -94,9 +110,25 @@ export class UsersService {
     const obj = user.toObject();
     const inviteBaseUrl =
       process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    // Find all users invited by this user
+    const invites = await this.userModel
+      .find({ invitedBy: obj.user_id })
+      .select('first_name last_name email')
+      .exec();
+    // Mask email helper
+    const maskEmail = (email: string) => {
+      const [name, domain] = email.split('@');
+      if (!name || !domain) return email;
+      return name[0] + '***' + name.slice(-1) + '@' + domain;
+    };
     return {
       ...obj,
       inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+      invites: invites.map((inv) => ({
+        first_name: inv.first_name,
+        last_name: inv.last_name,
+        email: maskEmail(inv.email),
+      })),
     };
   }
 
@@ -109,9 +141,25 @@ export class UsersService {
     const obj = user.toObject();
     const inviteBaseUrl =
       process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
+    // Find all users invited by this user
+    const invites = await this.userModel
+      .find({ invitedBy: obj.user_id })
+      .select('first_name last_name email')
+      .exec();
+    // Mask email helper
+    const maskEmail = (email: string) => {
+      const [name, domain] = email.split('@');
+      if (!name || !domain) return email;
+      return name[0] + '***' + name.slice(-1) + '@' + domain;
+    };
     return {
       ...obj,
       inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+      invites: invites.map((inv) => ({
+        first_name: inv.first_name,
+        last_name: inv.last_name,
+        email: maskEmail(inv.email),
+      })),
     };
   }
 

@@ -53,6 +53,9 @@ export class User {
 
   @Prop()
   invitedBy?: string;
+
+  @Prop({ type: [Object], default: [] })
+  invites?: any[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
