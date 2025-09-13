@@ -3,7 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
-import { AccountType, CreateUserDto } from './dto/user.dto';
+import { CreateUserDto } from './dto/user.dto';
+import { AccountType } from '../../common/account-type.enum';
 import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
 

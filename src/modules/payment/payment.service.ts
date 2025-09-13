@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schema/user.schema';
-import { CASHBACK_PERCENT_ARRAY } from './cashback.enum';
+import { CashbackConfigService } from '../cashback/cashback-config.service';
 import { AccountType } from '../../common/account-type.enum';
 
 @Injectable()
 export class PaymentService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private cashbackConfigService: CashbackConfigService,
+  ) {}
 
   /**
    * Calculates and distributes cashback up to 3 levels of referral chain.
@@ -22,9 +25,17 @@ export class PaymentService {
     // Convert coins to units for percentage calculation
     const amountInUnits = amount / 100;
 
+    // Fetch cashback config from DB
+    const cashbackConfig = await this.cashbackConfigService.getConfig();
+    const cashbackPercents = [
+      cashbackConfig.lvl1Percent / 100,
+      cashbackConfig.lvl2Percent / 100,
+      cashbackConfig.lvl3Percent / 100,
+    ];
+
     // Traverse up to 3 levels of referral chain
     let currentUser = buyer;
-    for (let level = 0; level < CASHBACK_PERCENT_ARRAY.length; level++) {
+    for (let level = 0; level < cashbackPercents.length; level++) {
       const inviterId = currentUser.invitedBy;
       if (!inviterId) break;
       const inviter = await this.userModel.findOne({ user_id: inviterId });
@@ -35,7 +46,7 @@ export class PaymentService {
         currentUser.accountType === AccountType.BUSINESS
       ) {
         // Calculate cashback as percent of units, then convert to coins
-        const cashbackPercent = CASHBACK_PERCENT_ARRAY[level];
+        const cashbackPercent = cashbackPercents[level];
         const cashbackInUnits = amountInUnits * cashbackPercent;
         const cashbackInCoins = Math.floor(cashbackInUnits * 100);
         if (cashbackInCoins > 0) {
