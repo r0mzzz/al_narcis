@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -7,6 +8,31 @@ import { CreateUserDto } from './dto/user.dto';
 import { AccountType } from '../../common/account-type.enum';
 import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
+
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+function base62FromBytes(buf: Buffer): string {
+  let num = BigInt('0x' + buf.toString('hex'));
+  let out = '';
+  while (out.length < 8) {
+    out = BASE62[Number(num % 62n)] + out;
+    num = num / 62n;
+  }
+  return out;
+}
+
+async function generateUniqueReferralCode(
+  userModel: Model<UserDocument>,
+  maxAttempts = 5,
+): Promise<string> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const rand = crypto.randomBytes(6);
+    const code = base62FromBytes(rand).slice(0, 8);
+    const exists = await userModel.exists({ referralCode: code });
+    if (!exists) return code;
+  }
+  throw new Error('Failed to generate unique referral code after retries');
+}
 
 @Injectable()
 export class UsersService {
@@ -22,10 +48,8 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
-    // Generate referralCode: first letter of first_name + first letter of last_name + last 4 digits of mobile
-    const referralCode = `${createUserDto.first_name?.[0] || ''}${
-      createUserDto.last_name?.[0] || ''
-    }${createUserDto.mobile?.slice(-4) || ''}`.toUpperCase();
+    // Generate a secure, unique referralCode
+    const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
       ...createUserDto,
       referralCode,
