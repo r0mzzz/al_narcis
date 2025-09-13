@@ -47,6 +47,9 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @Matches(/^\+994\d{9}$/, {
+    message: 'Mobile number must be in format +994XXXXXXXXX',
+  })
   readonly mobile: string;
 
   @IsOptional()
