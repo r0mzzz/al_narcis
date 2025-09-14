@@ -16,7 +16,7 @@ export class ProductService {
   ) {}
 
   async findAll(): Promise<Record<string, any>[]> {
-    const docs = await this.productModel.find().select('-_id -__v').exec();
+    const docs = await this.productModel.find().select('-__v').exec();
     return docs.map((doc) => doc.toObject());
   }
 
