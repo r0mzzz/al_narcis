@@ -8,6 +8,10 @@ services:
       - 27018:27017
     volumes:
       - mongodb_data_container:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: al_narcis_db
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: r4m4z4n94!
 
   api:
     build: .

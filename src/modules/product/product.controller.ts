@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -58,10 +59,7 @@ export class ProductController {
       capacity === '' ||
       isNaN(Number(capacity))
     ) {
-      return {
-        statusCode: 400,
-        message: 'Capacity must be a non-empty number',
-      };
+      throw new NotFoundException('Capacity must be a non-empty number');
     }
     try {
       const result = await this.capacityService.addCapacity(Number(capacity));
