@@ -32,10 +32,14 @@ export class MinioService {
     }
   }
 
-  async upload(file: Express.Multer.File, productId: string): Promise<string> {
+  async upload(
+    file: Express.Multer.File,
+    productName: string,
+    productId: string,
+  ): Promise<string> {
     const fileExtension = this.getFileExtension(file.originalname);
     const baseName = file.originalname.replace(fileExtension, '');
-    const fileName = `products/${productId}/${baseName}${fileExtension}`;
+    const fileName = `products/${productName}-${productId}/${baseName}${fileExtension}`;
 
     const metaData = {
       'Content-Type': file.mimetype,

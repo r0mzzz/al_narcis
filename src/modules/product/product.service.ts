@@ -108,17 +108,19 @@ export class ProductService {
     await createdProduct.save();
 
     if (image) {
-      // Use the product's name as unique identifier for MinIO
+      // Use the product's name and _id as unique identifier for MinIO
       createdProduct.productImage = await this.minioService.upload(
         image,
         createProductDto.productName,
+        createdProduct._id.toString(),
       );
       await createdProduct.save(); // update with image URL
     }
     const obj = createdProduct.toObject();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { _id, __v, ...rest } = obj;
-    return rest;
+    const { __v, ...rest } = obj;
+    // Return productId as _id
+    return { ...rest, productId: obj._id };
   }
 
   async update(
@@ -139,18 +141,20 @@ export class ProductService {
       updateData.productImage = await this.minioService.upload(
         image,
         updateProductDto.productName,
+        id,
       );
     }
-
-    this.logger.log(`Mongo updateData: ${JSON.stringify(updateData)}`);
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .select('-_id -__v')
       .exec();
 
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
-    this.logger.log(`Updated product: ${JSON.stringify(product)}`);
-    return product.toObject();
+    const obj = product.toObject();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { __v, ...rest } = obj;
+    // Return productId as id
+    return { ...rest, productId: product._id };
   }
 
   async remove(id: string): Promise<void> {
