@@ -7,4 +7,17 @@ export const AppError = {
   ID_DOESNT_EXISTS: 'User with this id doesnt exists',
   PASSWORD_PATTERN_MATCH:
     'password must contain at least 1 upper case, 1 lower case, numeric, and special character',
+  CAPACITY_MUST_BE_NUMBER: 'Capacity must be a non-empty number',
+  FAILED_ADD_CAPACITY: 'Failed to add capacity',
+  FAILED_UPDATE_CAPACITY: 'Failed to update capacity',
+  FAILED_DELETE_CAPACITY: 'Failed to delete capacity',
+  CATEGORY_NAME_REQUIRED: 'Category name is required',
+  CATEGORY_ALREADY_EXISTS: 'Category already exists',
+  CATEGORY_NOT_EXISTS: 'Category does not exist',
+  PRODUCT_NOT_FOUND: 'Product not found',
+  TYPE_NAME_REQUIRED: 'Type name is required',
+  PRODUCT_TYPE_ALREADY_EXISTS: 'Product type already exists',
+  PRODUCT_TYPE_NOT_FOUND: 'Product type not found',
+  CAPACITY_MUST_BE_NUMBER_ONLY: 'Capacity must be a number',
+  CAPACITY_NOT_FOUND: 'Capacity not found',
 };

@@ -11,6 +11,7 @@ import {
   ProductCategory,
   ProductCategorySchema,
 } from './schema/product-category.schema';
+import { ProductType, ProductTypeSchema } from './schema/product-type.schema';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import {
       { name: Product.name, schema: ProductSchema },
       { name: Capacity.name, schema: CapacitySchema },
       { name: ProductCategory.name, schema: ProductCategorySchema },
+      { name: ProductType.name, schema: ProductTypeSchema }, // Register ProductType
     ]),
   ],
   controllers: [ProductController],

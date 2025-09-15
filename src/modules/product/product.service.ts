@@ -14,6 +14,8 @@ import {
   ProductCategory,
   ProductCategoryDocument,
 } from './schema/product-category.schema';
+import { ProductType, ProductTypeDocument } from './schema/product-type.schema';
+import { AppError } from '../../common/errors';
 
 @Injectable()
 export class ProductService {
@@ -24,6 +26,8 @@ export class ProductService {
     private readonly minioService: MinioService,
     @InjectModel(ProductCategory.name)
     private categoryModel: Model<ProductCategoryDocument>,
+    @InjectModel(ProductType.name)
+    private productTypeModel: Model<ProductTypeDocument>,
   ) {}
 
   async findAll(
@@ -63,26 +67,27 @@ export class ProductService {
       .findById(id)
       .select('-_id -__v')
       .exec();
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
     return product.toObject();
   }
 
   async addCategory(categoryName: string): Promise<{ categoryName: string }> {
     if (!categoryName || typeof categoryName !== 'string')
-      throw new BadRequestException('Category name is required');
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
     categoryName = categoryName.trim();
-    if (!categoryName) throw new BadRequestException('Category name is required');
+    if (!categoryName)
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
     const exists = await this.categoryModel.findOne({ categoryName }).exec();
-    if (exists) throw new BadRequestException('Category already exists');
+    if (exists) throw new BadRequestException(AppError.CATEGORY_ALREADY_EXISTS);
     const created = new this.categoryModel({ categoryName });
     await created.save();
     return { categoryName: created.categoryName };
   }
 
   async listCategories(): Promise<{ categoryName: string }[]> {
-    return (await this.categoryModel.find().select('categoryName -_id').exec()).map(
-      (c) => ({ categoryName: c.categoryName }),
-    );
+    return (
+      await this.categoryModel.find().select('categoryName -_id').exec()
+    ).map((c) => ({ categoryName: c.categoryName }));
   }
 
   async categoryExists(categoryName: string): Promise<boolean> {
@@ -94,7 +99,7 @@ export class ProductService {
     image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
     if (!(await this.categoryExists(createProductDto.category))) {
-      throw new BadRequestException('Category does not exist');
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
     // First create the product without image so we can get its _id
     const createdProduct = new this.productModel({
@@ -125,7 +130,7 @@ export class ProductService {
       updateProductDto.category &&
       !(await this.categoryExists(updateProductDto.category))
     ) {
-      throw new BadRequestException('Category does not exist');
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
     this.logger.log(
       `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
@@ -144,13 +149,53 @@ export class ProductService {
       .select('-_id -__v')
       .exec();
 
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
     this.logger.log(`Updated product: ${JSON.stringify(product)}`);
     return product.toObject();
   }
 
   async remove(id: string): Promise<void> {
     const result = await this.productModel.findByIdAndDelete(id).exec();
-    if (!result) throw new NotFoundException('Product not found');
+    if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+  }
+
+  // ProductType CRUD
+  async createProductType(name: string): Promise<{ name: string }> {
+    if (!name || typeof name !== 'string')
+      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    name = name.trim();
+    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    const exists = await this.productTypeModel.findOne({ name }).exec();
+    if (exists)
+      throw new BadRequestException(AppError.PRODUCT_TYPE_ALREADY_EXISTS);
+    const created = new this.productTypeModel({ name });
+    await created.save();
+    return { name: created.name };
+  }
+
+  async getProductTypes(): Promise<{ _id: string; name: string }[]> {
+    return (await this.productTypeModel.find().select('name').exec()).map(
+      (t) => ({ _id: t._id.toString(), name: t.name }),
+    );
+  }
+
+  async updateProductType(
+    id: string,
+    name: string,
+  ): Promise<{ _id: string; name: string }> {
+    if (!name || typeof name !== 'string')
+      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    name = name.trim();
+    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    const updated = await this.productTypeModel
+      .findByIdAndUpdate(id, { name }, { new: true })
+      .exec();
+    if (!updated) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
+    return { _id: updated._id.toString(), name: updated.name };
+  }
+
+  async deleteProductType(id: string): Promise<void> {
+    const deleted = await this.productTypeModel.findByIdAndDelete(id).exec();
+    if (!deleted) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
   }
 }

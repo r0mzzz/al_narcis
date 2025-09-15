@@ -21,6 +21,7 @@ import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { CapacityService } from './capacity.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AppError } from '../../common/errors';
 
 @Controller('products')
 export class ProductController {
@@ -82,7 +83,7 @@ export class ProductController {
       capacity === '' ||
       isNaN(Number(capacity))
     ) {
-      throw new NotFoundException('Capacity must be a non-empty number');
+      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER);
     }
     try {
       const result = await this.capacityService.addCapacity(Number(capacity));
@@ -90,7 +91,7 @@ export class ProductController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: 'Failed to add capacity',
+        message: AppError.FAILED_ADD_CAPACITY,
         error: error?.message || error,
       };
     }
@@ -143,6 +144,73 @@ export class ProductController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(id);
+  }
+
+  // Product Type CRUD
+  @UseGuards(AccessTokenGuard)
+  @Post('types')
+  async createProductType(@Body('name') name: string) {
+    return this.productService.createProductType(name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('types')
+  async getProductTypes() {
+    return this.productService.getProductTypes();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('types/:id')
+  async updateProductType(@Param('id') id: string, @Body('name') name: string) {
+    return this.productService.updateProductType(id, name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('types/:id')
+  async deleteProductType(@Param('id') id: string) {
+    return this.productService.deleteProductType(id);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('capacities/:id')
+  async updateCapacity(
+    @Param('id') id: string,
+    @Body('capacity') capacity: any,
+  ) {
+    if (
+      capacity === undefined ||
+      capacity === null ||
+      capacity === '' ||
+      isNaN(Number(capacity))
+    ) {
+      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER);
+    }
+    try {
+      const result = await this.capacityService.updateCapacity(
+        id,
+        Number(capacity),
+      );
+      return { statusCode: 200, capacities: result };
+    } catch (error) {
+      return {
+        statusCode: 404,
+        message: AppError.FAILED_UPDATE_CAPACITY,
+      };
+    }
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('capacities/:id')
+  async deleteCapacity(@Param('id') id: string) {
+    try {
+      const result = await this.capacityService.deleteCapacity(id);
+      return { statusCode: 200, capacities: result };
+    } catch (error) {
+      return {
+        statusCode: 404,
+        message: AppError.FAILED_DELETE_CAPACITY,
+      };
+    }
   }
 }
 
