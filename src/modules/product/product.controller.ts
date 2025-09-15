@@ -106,6 +106,49 @@ export class ProductController {
     }
   }
 
+  // Product Type CRUD
+  @UseGuards(AccessTokenGuard)
+  @Get('types')
+  async getProductTypes() {
+    return this.productService.getProductTypes();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('types')
+  async createProductType(@Body('name') name: string) {
+    return this.productService.createProductType(name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('types/:id')
+  async updateProductType(@Param('id') id: string, @Body('name') name: string) {
+    return this.productService.updateProductType(id, name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('types/:id')
+  async deleteProductType(@Param('id') id: string) {
+    return this.productService.deleteProductType(id);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('types/add')
+  async addType(@Body('name') name: string) {
+    return this.productService.addType(name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('types/update/:id')
+  async updateType(@Param('id') id: string, @Body('name') name: string) {
+    return this.productService.updateType(id, name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('types/delete/:id')
+  async deleteType(@Param('id') id: string) {
+    return this.productService.deleteType(id);
+  }
+
   @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -139,31 +182,6 @@ export class ProductController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(id);
-  }
-
-  // Product Type CRUD
-  @UseGuards(AccessTokenGuard)
-  @Post('types')
-  async createProductType(@Body('name') name: string) {
-    return this.productService.createProductType(name);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Get('types')
-  async getProductTypes() {
-    return this.productService.getProductTypes();
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Patch('types/:id')
-  async updateProductType(@Param('id') id: string, @Body('name') name: string) {
-    return this.productService.updateProductType(id, name);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Delete('types/:id')
-  async deleteProductType(@Param('id') id: string) {
-    return this.productService.deleteProductType(id);
   }
 
   @UseGuards(AccessTokenGuard)

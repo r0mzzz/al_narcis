@@ -137,6 +137,9 @@ export class ProductService {
     if (!(await this.categoryExists(createProductDto.category))) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
+    if (!createProductDto.productType || !(await this.typeExists(createProductDto.productType))) {
+      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
+    }
     // First create the product without image so we can get its _id
     const createdProduct = new this.productModel({
       ...createProductDto,
@@ -171,7 +174,12 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
-
+    if (
+      updateProductDto.productType &&
+      !(await this.typeExists(updateProductDto.productType))
+    ) {
+      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
+    }
     const updateData: any = { ...updateProductDto };
     if (image) {
       updateData.productImage = await this.minioService.upload(
@@ -235,5 +243,44 @@ export class ProductService {
   async deleteProductType(id: string): Promise<void> {
     const deleted = await this.productTypeModel.findByIdAndDelete(id).exec();
     if (!deleted) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
+  }
+
+  async addType(name: string): Promise<{ name: string }> {
+    if (!name || typeof name !== 'string')
+      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    name = name.trim();
+    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    const exists = await this.productTypeModel.findOne({ name }).exec();
+    if (exists)
+      throw new BadRequestException(AppError.PRODUCT_TYPE_ALREADY_EXISTS);
+    const created = new this.productTypeModel({ name });
+    await created.save();
+    return { name: created.name };
+  }
+
+  async updateType(
+    id: string,
+    name: string,
+  ): Promise<{ _id: string; name: string }> {
+    if (!name || typeof name !== 'string')
+      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    name = name.trim();
+    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
+    const updated = await this.productTypeModel
+      .findByIdAndUpdate(id, { name }, { new: true })
+      .exec();
+    if (!updated) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
+    return { _id: updated._id.toString(), name: updated.name };
+  }
+
+  async deleteType(id: string): Promise<void> {
+    const deleted = await this.productTypeModel.findByIdAndDelete(id).exec();
+    if (!deleted) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
+  }
+
+  async typeExists(typeName: string): Promise<boolean> {
+    if (!typeName) return false;
+    const type = await this.productTypeModel.findOne({ name: typeName }).exec();
+    return !!type;
   }
 }
