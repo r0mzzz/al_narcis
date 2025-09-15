@@ -28,6 +28,15 @@ export class Product {
 
   @Prop({ required: false })
   productImage?: string;
+
+  @Prop({ required: true })
+  productType: string;
+
+  @Prop({ required: true })
+  category: string;
+
+  @Prop({ required: true, enum: ['MAN', 'WOMAN'] })
+  genre: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

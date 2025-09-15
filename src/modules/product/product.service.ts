@@ -15,9 +15,36 @@ export class ProductService {
     private readonly minioService: MinioService,
   ) {}
 
-  async findAll(): Promise<Record<string, any>[]> {
-    const docs = await this.productModel.find().select('-__v').exec();
-    return docs.map((doc) => doc.toObject());
+  async findAll(
+    productType?: string,
+    search?: string,
+    limit = 10,
+    page = 1,
+  ): Promise<{
+    data: Record<string, any>[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const filter: any = {};
+    if (productType) filter.productType = productType;
+    if (search) filter.productName = { $regex: search, $options: 'i' };
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.productModel
+        .find(filter)
+        .select('-__v')
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.productModel.countDocuments(filter),
+    ]);
+    return {
+      data: data.map((doc) => doc.toObject()),
+      total,
+      page,
+      limit,
+    };
   }
 
   async findOne(id: string): Promise<Record<string, any>> {

@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsArray, ArrayUnique, ValidateNested, Min, IsNumber, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsArray, ArrayUnique, ValidateNested, Min, IsNumber, IsIn, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { Genre } from '../../../common/genre.enum';
 
 const ALLOWED_CAPACITIES = [30, 50, 100];
 
@@ -31,6 +32,14 @@ export class UpdateProductDto {
   productDesc?: string;
 
   @IsOptional()
+  @IsString()
+  productType?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VariantDto)
@@ -42,4 +51,8 @@ export class UpdateProductDto {
   @IsNumber()
   @Min(0)
   quantity?: number;
+
+  @IsOptional()
+  @IsEnum(Genre)
+  genre?: Genre;
 }

@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -40,8 +41,18 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(
+    @Query('productType') productType?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.productService.findAll(
+      productType,
+      search,
+      limit ? parseInt(limit, 10) : 10,
+      page ? parseInt(page, 10) : 1,
+    );
   }
 
   @UseGuards(AccessTokenGuard)

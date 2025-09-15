@@ -8,9 +8,11 @@ import {
   ArrayUnique,
   IsString,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { IsAllowedCapacity } from './is-allowed-capacity.validator';
+import { Genre } from '../../../common/genre.enum';
 
 class VariantDto {
   @IsNotEmpty()
@@ -51,4 +53,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   productImage?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  productType: string;
+
+  @IsNotEmpty()
+  @IsString()
+  category: string;
+
+  @IsNotEmpty()
+  @IsEnum(Genre)
+  genre: Genre;
 }
