@@ -59,8 +59,10 @@ export class CreateProductDto {
   productType: string;
 
   @IsNotEmpty()
-  @IsString()
-  category: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  category: string[];
 
   @IsNotEmpty()
   @IsEnum(Genre)

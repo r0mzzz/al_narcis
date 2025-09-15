@@ -36,8 +36,9 @@ export class UpdateProductDto {
   productType?: string;
 
   @IsOptional()
-  @IsString()
-  category?: string;
+  @IsArray()
+  @IsString({ each: true })
+  category?: string[];
 
   @IsOptional()
   @IsArray()

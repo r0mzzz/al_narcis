@@ -47,12 +47,21 @@ export class ProductController {
     @Query('search') search?: string,
     @Query('limit') limit?: string,
     @Query('page') page?: string,
+    @Query('categories') categories?: string,
   ) {
+    // Parse categories as array if provided
+    const categoryArr = categories
+      ? categories
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean)
+      : undefined;
     return this.productService.findAll(
       productType,
       search,
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
+      categoryArr,
     );
   }
 
@@ -197,6 +206,21 @@ export class ProductController {
         message: AppError.FAILED_DELETE_CAPACITY,
       };
     }
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('categories/:id')
+  async updateCategory(
+    @Param('id') id: string,
+    @Body('categoryName') categoryName: string,
+  ) {
+    return this.productService.updateCategory(id, categoryName);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('categories/:id')
+  async deleteCategory(@Param('id') id: string) {
+    return this.productService.deleteCategory(id);
   }
 }
 

@@ -35,6 +35,7 @@ export class ProductService {
     search?: string,
     limit = 10,
     page = 1,
+    categories?: string[],
   ): Promise<{
     data: Record<string, any>[];
     total: number;
@@ -44,6 +45,9 @@ export class ProductService {
     const filter: any = {};
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
+    if (categories && categories.length > 0) {
+      filter.category = { $in: categories };
+    }
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.productModel
@@ -90,14 +94,46 @@ export class ProductService {
     ).map((c) => ({ categoryName: c.categoryName }));
   }
 
-  async categoryExists(categoryName: string): Promise<boolean> {
-    return !!(await this.categoryModel.findOne({ categoryName }).exec());
+  async categoryExists(categoryNames: string[]): Promise<boolean> {
+    if (!Array.isArray(categoryNames) || categoryNames.length === 0)
+      return false;
+    const count = await this.categoryModel.countDocuments({
+      categoryName: { $in: categoryNames },
+    });
+    return count === categoryNames.length;
+  }
+
+  async updateCategory(
+    id: string,
+    categoryName: string,
+  ): Promise<{ _id: string; categoryName: string }> {
+    if (!categoryName || typeof categoryName !== 'string')
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+    categoryName = categoryName.trim();
+    if (!categoryName)
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+    const updated = await this.categoryModel
+      .findByIdAndUpdate(id, { categoryName }, { new: true })
+      .exec();
+    if (!updated) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS);
+    return { _id: updated._id.toString(), categoryName: updated.categoryName };
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    const deleted = await this.categoryModel.findByIdAndDelete(id).exec();
+    if (!deleted) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS);
   }
 
   async create(
     createProductDto: CreateProductDto,
     image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
+    if (
+      !Array.isArray(createProductDto.category) ||
+      createProductDto.category.length === 0
+    ) {
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
+    }
     if (!(await this.categoryExists(createProductDto.category))) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
@@ -130,13 +166,13 @@ export class ProductService {
   ): Promise<Record<string, any>> {
     if (
       updateProductDto.category &&
-      !(await this.categoryExists(updateProductDto.category))
+      (!Array.isArray(updateProductDto.category) ||
+        !(await this.categoryExists(updateProductDto.category)))
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
 
     const updateData: any = { ...updateProductDto };
-
     if (image) {
       updateData.productImage = await this.minioService.upload(
         image,
@@ -148,7 +184,6 @@ export class ProductService {
       .findByIdAndUpdate(id, updateData, { new: true })
       .select('-_id -__v')
       .exec();
-
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
     const obj = product.toObject();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
