@@ -108,10 +108,10 @@ export class ProductService {
     await createdProduct.save();
 
     if (image) {
-      // Use the product's Mongo _id as unique identifier for MinIO
+      // Use the product's name as unique identifier for MinIO
       createdProduct.productImage = await this.minioService.upload(
         image,
-        createdProduct._id.toString(),
+        createProductDto.productName,
       );
       await createdProduct.save(); // update with image URL
     }
@@ -132,15 +132,14 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
-    this.logger.log(
-      `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
-    );
 
     const updateData: any = { ...updateProductDto };
 
     if (image) {
-      this.logger.log(`Uploading new product image for product ${id}`);
-      updateData.productImage = await this.minioService.upload(image, id);
+      updateData.productImage = await this.minioService.upload(
+        image,
+        updateProductDto.productName,
+      );
     }
 
     this.logger.log(`Mongo updateData: ${JSON.stringify(updateData)}`);
