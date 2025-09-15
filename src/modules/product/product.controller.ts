@@ -56,6 +56,18 @@ export class ProductController {
   }
 
   @UseGuards(AccessTokenGuard)
+  @Post('categories')
+  async addCategory(@Body('categoryName') name: string) {
+    return this.productService.addCategory(name);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('categories')
+  async listCategories() {
+    return this.productService.listCategories();
+  }
+
+  @UseGuards(AccessTokenGuard)
   @Get('capacities')
   async getCapacities() {
     return await this.capacityService.getCapacities();

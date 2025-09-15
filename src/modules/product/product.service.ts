@@ -1,10 +1,19 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schema/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { MinioService } from '../../services/minio.service';
+import {
+  ProductCategory,
+  ProductCategoryDocument,
+} from './schema/product-category.schema';
 
 @Injectable()
 export class ProductService {
@@ -13,6 +22,8 @@ export class ProductService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     private readonly minioService: MinioService,
+    @InjectModel(ProductCategory.name)
+    private categoryModel: Model<ProductCategoryDocument>,
   ) {}
 
   async findAll(
@@ -56,10 +67,35 @@ export class ProductService {
     return product.toObject();
   }
 
+  async addCategory(categoryName: string): Promise<{ categoryName: string }> {
+    if (!categoryName || typeof categoryName !== 'string')
+      throw new BadRequestException('Category name is required');
+    categoryName = categoryName.trim();
+    if (!categoryName) throw new BadRequestException('Category name is required');
+    const exists = await this.categoryModel.findOne({ categoryName }).exec();
+    if (exists) throw new BadRequestException('Category already exists');
+    const created = new this.categoryModel({ categoryName });
+    await created.save();
+    return { categoryName: created.categoryName };
+  }
+
+  async listCategories(): Promise<{ categoryName: string }[]> {
+    return (await this.categoryModel.find().select('categoryName -_id').exec()).map(
+      (c) => ({ categoryName: c.categoryName }),
+    );
+  }
+
+  async categoryExists(categoryName: string): Promise<boolean> {
+    return !!(await this.categoryModel.findOne({ categoryName }).exec());
+  }
+
   async create(
     createProductDto: CreateProductDto,
     image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
+    if (!(await this.categoryExists(createProductDto.category))) {
+      throw new BadRequestException('Category does not exist');
+    }
     // First create the product without image so we can get its _id
     const createdProduct = new this.productModel({
       ...createProductDto,
@@ -85,6 +121,12 @@ export class ProductService {
     updateProductDto: UpdateProductDto,
     image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
+    if (
+      updateProductDto.category &&
+      !(await this.categoryExists(updateProductDto.category))
+    ) {
+      throw new BadRequestException('Category does not exist');
+    }
     this.logger.log(
       `updateProductDto received: ${JSON.stringify(updateProductDto)}`,
     );

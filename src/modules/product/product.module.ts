@@ -7,12 +7,17 @@ import { Capacity, CapacitySchema } from './schema/capacity.schema';
 import { CapacityService } from './capacity.service';
 import { IsAllowedCapacityConstraint } from './dto/is-allowed-capacity.validator';
 import { MinioService } from '../../services/minio.service';
+import {
+  ProductCategory,
+  ProductCategorySchema,
+} from './schema/product-category.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: Capacity.name, schema: CapacitySchema },
+      { name: ProductCategory.name, schema: ProductCategorySchema },
     ]),
   ],
   controllers: [ProductController],
