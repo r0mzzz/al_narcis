@@ -35,7 +35,7 @@ export class Product {
   @Prop({ required: true, type: [String] })
   category: string[];
 
-  @Prop({ required: true, enum: ['MAN', 'WOMAN'] })
+  @Prop({ required: true, enum: ['MAN', 'WOMAN', 'UNISEX'] })
   genre: string;
 }
 
