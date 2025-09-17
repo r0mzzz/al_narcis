@@ -1,27 +1,38 @@
 import * as fs from 'fs';
 
-function getSecretOrThrow(name: string): string {
+/**
+ * Retrieves a secret from Docker secrets or falls back to environment variable.
+ * Throws if neither is found.
+ * @param name Secret name (and env var name)
+ * @returns Secret value as string
+ */
+function getSecret(name: string): string {
   const secretPath = `/run/secrets/${name}`;
   if (fs.existsSync(secretPath)) {
     return fs.readFileSync(secretPath, 'utf8').trim();
   }
-  throw new Error(`Docker secret '${name}' not found at ${secretPath}`);
+  if (process.env[name]) {
+    return process.env[name] as string;
+  }
+  throw new Error(
+    `Secret '${name}' not found as Docker secret or environment variable.`
+  );
 }
 
 export default () => ({
   port: process.env.PORT,
-  access_secret: getSecretOrThrow('SECRET'),
+  access_secret: getSecret('SECRET'),
   access_expire: process.env.EXPIRE_JWT,
   refresh_expire: process.env.EXPIRE_REFRESH_JWT,
-  refresh_secret: getSecretOrThrow('REFRESH_SECRET'),
-  gmail_pass: getSecretOrThrow('GMAIL_PASS'),
-  mongodb_uri: getSecretOrThrow('MONGODB_URI'),
+  refresh_secret: getSecret('REFRESH_SECRET'),
+  gmail_pass: getSecret('GMAIL_PASS'),
+  mongodb_uri: getSecret('MONGODB_URI'),
   minio: {
     endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-    port: parseInt(process.env.MINIO_PORT, 10) || 9000,
+    port: parseInt(process.env.MINIO_PORT || '9000', 10),
     useSSL: false,
-    accessKey: getSecretOrThrow('MINIO_ROOT_USER'),
-    secretKey: getSecretOrThrow('MINIO_ROOT_PASSWORD'),
+    accessKey: getSecret('MINIO_ROOT_USER'),
+    secretKey: getSecret('MINIO_ROOT_PASSWORD'),
     bucket: process.env.MINIO_BUCKET || 'product-images',
   },
 });
