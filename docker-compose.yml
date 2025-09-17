@@ -1,26 +1,28 @@
 version: '3.8'
+
 services:
   mongodb:
-    container_name: mongodb
     image: mongo:latest
-    env_file:
-      - .env
+    container_name: mongodb
     ports:
-      - 27018:27017
+      - "27018:27017"
     volumes:
       - mongodb_data_container:/data/db
     environment:
       MONGO_INITDB_DATABASE: al_narcis_db
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: r4m4z4n94!
+    deploy:
+      restart_policy:
+        condition: any
 
   api:
+    image: al_narcis_api:latest
     container_name: api
-    build: .
     ports:
-      - ${PORT}:${PORT}
+      - "5310:5310"   # убедись, что PORT задан в .env
     env_file:
-      - .env.public
+      - .env        # обычные переменные окружения
     depends_on:
       - mongodb
     secrets:
@@ -30,13 +32,9 @@ services:
       - GMAIL_PASS
       - MINIO_ROOT_USER
       - MINIO_ROOT_PASSWORD
-    volumes:
-      - ./docker/secrets/MONGODB_URI:/run/secrets/MONGODB_URI:ro
-      - ./docker/secrets/SECRET:/run/secrets/SECRET:ro
-      - ./docker/secrets/REFRESH_SECRET:/run/secrets/REFRESH_SECRET:ro
-      - ./docker/secrets/GMAIL_PASS:/run/secrets/GMAIL_PASS:ro
-      - ./docker/secrets/MINIO_ROOT_USER:/run/secrets/MINIO_ROOT_USER:ro
-      - ./docker/secrets/MINIO_ROOT_PASSWORD:/run/secrets/MINIO_ROOT_PASSWORD:ro
+    deploy:
+      restart_policy:
+        condition: any
 
   minio:
     image: minio/minio:latest
@@ -50,14 +48,20 @@ services:
     command: server --console-address ":9001" /data
     volumes:
       - minio_data:/data
+    deploy:
+      restart_policy:
+        condition: any
 
   redis:
-    container_name: redis
     image: redis:7
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    deploy:
+      restart_policy:
+        condition: any
 
 volumes:
   mongodb_data_container:
@@ -66,14 +70,14 @@ volumes:
 
 secrets:
   MONGODB_URI:
-    file: ./docker/secrets/MONGODB_URI
+    external: true
   SECRET:
-    file: ./docker/secrets/SECRET
+    external: true
   REFRESH_SECRET:
-    file: ./docker/secrets/REFRESH_SECRET
+    external: true
   GMAIL_PASS:
-    file: ./docker/secrets/GMAIL_PASS
+    external: true
   MINIO_ROOT_USER:
-    file: ./docker/secrets/MINIO_ROOT_USER
+    external: true
   MINIO_ROOT_PASSWORD:
-    file: ./docker/secrets/MINIO_ROOT_PASSWORD
+    external: true
