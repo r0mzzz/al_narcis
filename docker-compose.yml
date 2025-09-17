@@ -15,7 +15,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: r4m4z4n94!
 
   api:
-    container_name: al_narcis_api
+    container_name: api
     build: .
     ports:
       - ${PORT}:${PORT}
