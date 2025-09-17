@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   NotFoundException,
   Query,
 } from '@nestjs/common';
@@ -20,7 +21,7 @@ import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { CapacityService } from './capacity.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AppError } from '../../common/errors';
 
 @Controller('products')
@@ -32,7 +33,7 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Post()
-  @UseInterceptors(FileInterceptor('productImage'))
+  @UseInterceptors(FilesInterceptor('productImage'))
   create(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
@@ -157,11 +158,11 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('productImage'))
+  @UseInterceptors(FilesInterceptor('productImage'))
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
-    @UploadedFile() image?: Express.Multer.File,
+    @UploadedFiles() images?: Express.Multer.File[],
   ) {
     if (typeof updateProductDto.variants === 'string') {
       try {
@@ -175,7 +176,7 @@ export class ProductController {
       const parsed = Number(updateProductDto.quantity);
       updateProductDto.quantity = isNaN(parsed) ? undefined : parsed;
     }
-    return await this.productService.update(id, updateProductDto, image);
+    return await this.productService.update(id, updateProductDto, images);
   }
 
   @UseGuards(AccessTokenGuard)

@@ -178,7 +178,7 @@ export class ProductService {
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
-    image?: Express.Multer.File,
+    images?: Express.Multer.File[],
   ): Promise<Record<string, any>> {
     if (
       updateProductDto.category &&
@@ -194,12 +194,15 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
     const updateData: any = { ...updateProductDto };
-    if (image) {
-      updateData.productImage = await this.minioService.upload(
-        image,
-        updateProductDto.productName,
-        id,
-      );
+    // Handle multiple image uploads
+    if (images && images.length > 0) {
+      for (const image of images) {
+        await this.minioService.upload(
+          image,
+          updateProductDto.productName,
+          id,
+        );
+      }
     }
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
