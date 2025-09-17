@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
 import { CreateUserDto } from './dto/user.dto';
@@ -160,7 +160,7 @@ export class UsersService {
   async findByEmail(email: string): Promise<Record<string, any> | null> {
     const user = await this.userModel
       .findOne({ email })
-      .select('-_id -__v -password -refresh_token')
+      .select('-__v -password -refresh_token')
       .exec();
     if (!user) return null;
     const obj = user.toObject();
@@ -204,18 +204,24 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<Record<string, any> | null> {
+    // Build update object dynamically to allow updating any field
+    const updateObj: any = {};
+    for (const key in updateUserDto) {
+      if (updateUserDto[key] !== undefined) {
+        updateObj[key] = updateUserDto[key];
+      }
+    }
+    // Determine if id is a valid ObjectId
+    let query: any;
+    if (Types.ObjectId.isValid(id)) {
+      query = { _id: id };
+    } else {
+      query = { user_id: id };
+    }
     const user = await this.userModel
-      .findOneAndUpdate(
-        { user_id: id },
-        {
-          first_name: updateUserDto.first_name,
-          last_name: updateUserDto.last_name,
-          mobile: updateUserDto.mobile,
-        },
-        {
-          new: true,
-        },
-      )
+      .findOneAndUpdate(query, updateObj, {
+        new: true,
+      })
       .select('-_id -__v -password -refresh_token')
       .exec();
     return user ? user.toObject() : null;

@@ -6,9 +6,10 @@ import { AccessTokenStrategy } from '../../strategy/access-token';
 import { RefreshTokenStrategy } from '../../strategy/refresh-token';
 import { JwtModule } from '@nestjs/jwt';
 import { MailService } from '../../services/mail.service';
+import { RedisModule } from '../../services/redis.module';
 
 @Module({
-  imports: [UserModule, JwtModule.register({})],
+  imports: [UserModule, JwtModule.register({}), RedisModule],
   providers: [
     AuthService,
     AccessTokenStrategy,

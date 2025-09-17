@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ProductModule } from './modules/product/product.module';
 import { HistoryModule } from './modules/history/history.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { RedisService } from './services/redis.service';
 
 @Module({
   imports: [
@@ -19,5 +20,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     HistoryModule,
     PaymentModule,
   ],
+  providers: [RedisService],
+  exports: [RedisService],
 })
 export class AppModule {}

@@ -14,6 +14,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { MailService } from '../../services/mail.service';
 import { Status } from '../../common/status';
 import { Messages } from '../../common/messages';
+import { RedisService } from '../../services/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -22,8 +23,8 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly configService: ConfigService,
     private mailService: MailService,
-  ) {
-  }
+    private redisService: RedisService,
+  ) {}
 
   async signUp(createUserDto: CreateUserDto): Promise<any> {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
@@ -117,5 +118,71 @@ export class AuthService {
       access_token,
       refresh_token,
     };
+  }
+
+  /**
+   * Generates a 5-digit OTP, stores it in Redis, and sends it via email.
+   */
+  async sendForgotPasswordOtp(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
+    // Generate 5-digit OTP
+    const otp = Math.floor(10000 + Math.random() * 90000).toString();
+    const otpHash = await this.hashData(otp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const otpData = {
+      user_id: user._id.toString(),
+      otp_hash: otpHash,
+      expires_at: expiresAt.toISOString(),
+      attempts_left: 3,
+    };
+    await this.redisService.setJson(`otp:${user._id}`, otpData, 10 * 60); // 10 min TTL
+    await this.mailService.sendOtpEmail(user.email, otp);
+  }
+
+  /**
+   * Resets the user's password if OTP is valid (using Redis).
+   */
+  async resetPasswordWithOtp(
+    email: string,
+    otp: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
+    const redisKey = `otp:${user._id}`;
+    const otpData = await this.redisService.getJson(redisKey);
+    if (!otpData) throw new BadRequestException(Messages.OTP_NOT_REQUESTED);
+    if (new Date(otpData.expires_at) < new Date()) {
+      await this.redisService.del(redisKey);
+      throw new BadRequestException(Messages.OTP_EXPIRED);
+    }
+    if (otpData.attempts_left <= 0) {
+      await this.redisService.del(redisKey);
+      throw new BadRequestException('OTP attempts exceeded');
+    }
+    const isMatch = await bcrypt.compare(otp, otpData.otp_hash);
+    if (!isMatch) {
+      otpData.attempts_left -= 1;
+      if (otpData.attempts_left <= 0) {
+        await this.redisService.del(redisKey);
+        throw new BadRequestException('OTP attempts exceeded');
+      } else {
+        await this.redisService.setJson(
+          redisKey,
+          otpData,
+          Math.floor(
+            (new Date(otpData.expires_at).getTime() - Date.now()) / 1000,
+          ),
+        );
+        throw new BadRequestException(Messages.OTP_INVALID);
+      }
+    }
+    // OTP is valid
+    const hash = await this.hashData(newPassword);
+    await this.usersService.update(user._id, {
+      password: hash,
+    });
+    await this.redisService.del(redisKey);
   }
 }

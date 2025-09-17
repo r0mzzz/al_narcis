@@ -21,4 +21,15 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   refresh_token?: string;
+
+  @IsOptional()
+  @IsString()
+  readonly password?: string;
+
+  @IsOptional()
+  @IsString()
+  readonly resetOtp?: string;
+
+  @IsOptional()
+  readonly resetOtpExpires?: Date;
 }
