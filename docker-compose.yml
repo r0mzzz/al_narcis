@@ -20,9 +20,23 @@ services:
     ports:
       - ${PORT}:${PORT}
     env_file:
-      - .env
+      - .env.public
     depends_on:
       - mongodb
+    secrets:
+      - MONGODB_URI
+      - SECRET
+      - REFRESH_SECRET
+      - GMAIL_PASS
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+    volumes:
+      - ./docker/secrets/MONGODB_URI:/run/secrets/MONGODB_URI:ro
+      - ./docker/secrets/SECRET:/run/secrets/SECRET:ro
+      - ./docker/secrets/REFRESH_SECRET:/run/secrets/REFRESH_SECRET:ro
+      - ./docker/secrets/GMAIL_PASS:/run/secrets/GMAIL_PASS:ro
+      - ./docker/secrets/MINIO_ROOT_USER:/run/secrets/MINIO_ROOT_USER:ro
+      - ./docker/secrets/MINIO_ROOT_PASSWORD:/run/secrets/MINIO_ROOT_PASSWORD:ro
 
   minio:
     image: minio/minio:latest
@@ -49,3 +63,17 @@ volumes:
   mongodb_data_container:
   minio_data:
   redis_data:
+
+secrets:
+  MONGODB_URI:
+    file: ./docker/secrets/MONGODB_URI
+  SECRET:
+    file: ./docker/secrets/SECRET
+  REFRESH_SECRET:
+    file: ./docker/secrets/REFRESH_SECRET
+  GMAIL_PASS:
+    file: ./docker/secrets/GMAIL_PASS
+  MINIO_ROOT_USER:
+    file: ./docker/secrets/MINIO_ROOT_USER
+  MINIO_ROOT_PASSWORD:
+    file: ./docker/secrets/MINIO_ROOT_PASSWORD

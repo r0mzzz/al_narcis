@@ -57,12 +57,6 @@ export class User {
 
   @Prop({ type: [Object], default: [] })
   invites?: any[];
-
-  @Prop()
-  resetOtp?: string;
-
-  @Prop()
-  resetOtpExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
