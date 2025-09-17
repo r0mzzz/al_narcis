@@ -12,6 +12,7 @@ import {
   ProductCategorySchema,
 } from './schema/product-category.schema';
 import { ProductType, ProductTypeSchema } from './schema/product-type.schema';
+import { RedisModule } from '../../services/redis.module';
 
 @Module({
   imports: [
@@ -19,8 +20,9 @@ import { ProductType, ProductTypeSchema } from './schema/product-type.schema';
       { name: Product.name, schema: ProductSchema },
       { name: Capacity.name, schema: CapacitySchema },
       { name: ProductCategory.name, schema: ProductCategorySchema },
-      { name: ProductType.name, schema: ProductTypeSchema }, // Register ProductType
+      { name: ProductType.name, schema: ProductTypeSchema },
     ]),
+    RedisModule,
   ],
   controllers: [ProductController],
   providers: [

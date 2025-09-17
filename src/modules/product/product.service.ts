@@ -16,6 +16,7 @@ import {
 } from './schema/product-category.schema';
 import { ProductType, ProductTypeDocument } from './schema/product-type.schema';
 import { AppError } from '../../common/errors';
+import { RedisService } from '../../services/redis.service';
 
 @Injectable()
 export class ProductService {
@@ -28,6 +29,7 @@ export class ProductService {
     private categoryModel: Model<ProductCategoryDocument>,
     @InjectModel(ProductType.name)
     private productTypeModel: Model<ProductTypeDocument>,
+    private readonly redisService: RedisService,
   ) {}
 
   async findAll(
@@ -47,6 +49,18 @@ export class ProductService {
     if (search) filter.productName = { $regex: search, $options: 'i' };
     if (categories && categories.length > 0) {
       filter.category = { $in: categories };
+    }
+    // Build a cache key based on all query params
+    const cacheKey = `products:list:${JSON.stringify({
+      productType,
+      search,
+      limit,
+      page,
+      categories,
+    })}`;
+    const cached = await this.redisService.getJson(cacheKey);
+    if (cached) {
+      return cached;
     }
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
@@ -71,12 +85,14 @@ export class ProductService {
         return { ...obj, images };
       }),
     );
-    return {
+    const result = {
       data: dataWithImages,
       total,
       page,
       limit,
     };
+    await this.redisService.setJson(cacheKey, result, 3600);
+    return result;
   }
 
   async findOne(id: string): Promise<Record<string, any>> {
@@ -150,7 +166,10 @@ export class ProductService {
     if (!(await this.categoryExists(createProductDto.category))) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
     }
-    if (!createProductDto.productType || !(await this.typeExists(createProductDto.productType))) {
+    if (
+      !createProductDto.productType ||
+      !(await this.typeExists(createProductDto.productType))
+    ) {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
     // First create the product without image so we can get its _id
@@ -197,11 +216,7 @@ export class ProductService {
     // Handle multiple image uploads
     if (images && images.length > 0) {
       for (const image of images) {
-        await this.minioService.upload(
-          image,
-          updateProductDto.productName,
-          id,
-        );
+        await this.minioService.upload(image, updateProductDto.productName, id);
       }
     }
     const product = await this.productModel
