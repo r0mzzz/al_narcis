@@ -11,7 +11,7 @@ export class MailService {
       service: 'gmail',
       auth: {
         user: 'perfectingthevoid@gmail.com',
-        pass: this.configService.get('GMAIL_PASS'),
+        pass: this.configService.get('gmail_pass'), // Uses value from Docker secret or env
       },
     });
     const mailOptions = {
@@ -30,20 +30,31 @@ export class MailService {
     });
   }
 
+  /**
+   * Helper to inject the OTP into the passwordReset template
+   */
+  private renderOtpTemplate(otp: string): string {
+    // Replace the hardcoded OTP in the template with the actual OTP
+    return Templates.passwordReset.replace(
+      /<div class="otp-code">\d{6}<\/div>/,
+      `<div class="otp-code">${otp}</div>`
+    );
+  }
+
   async sendOtpEmail(email: string, otp: string) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'perfectingthevoid@gmail.com',
-        pass: this.configService.get('GMAIL_PASS'),
+        pass: this.configService.get('gmail_pass'),
       },
     });
     const mailOptions = {
       from: 'perfectingthevoid@gmail.com',
       to: email,
-      subject: 'Your Password Reset Code',
-      text: `Your password reset code is: ${otp}`,
-      html: `<p>Your password reset code is: <b>${otp}</b></p>`,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${otp}`,
+      html: this.renderOtpTemplate(otp),
     };
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
