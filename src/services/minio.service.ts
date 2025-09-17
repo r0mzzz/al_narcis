@@ -66,6 +66,34 @@ export class MinioService {
     return url;
   }
 
+  /**
+   * Returns an array of image URLs for a given product.
+   * @param productName The name of the product.
+   * @param productId The ID of the product.
+   * @returns Promise<string[]> Array of image URLs.
+   */
+  async getProductImages(
+    productName: string,
+    productId: string,
+  ): Promise<string[]> {
+    const prefix = `products/${productName}-${productId}/`;
+    const imageUrls: string[] = [];
+    try {
+      const stream = this.minioClient.listObjectsV2(this.bucket, prefix, true);
+      for await (const obj of stream) {
+        if (obj.name) {
+          const url = `http://localhost:9000/${
+            this.bucket
+          }/${encodeURIComponent(obj.name)}`;
+          imageUrls.push(url);
+        }
+      }
+      return imageUrls;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   private getFileExtension(filename: string): string {
     const idx = filename.lastIndexOf('.');
     return idx !== -1 ? filename.substring(idx) : '';

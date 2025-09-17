@@ -58,8 +58,21 @@ export class ProductService {
         .exec(),
       this.productModel.countDocuments(filter),
     ]);
+    // Attach images array to each product
+    const dataWithImages = await Promise.all(
+      data.map(async (doc) => {
+        const obj = doc.toObject();
+        const images = await this.minioService.getProductImages(
+          obj.productName,
+          obj._id.toString(),
+        );
+        // Remove old productImage field if present
+        delete obj.productImage;
+        return { ...obj, images };
+      }),
+    );
     return {
-      data: data.map((doc) => doc.toObject()),
+      data: dataWithImages,
       total,
       page,
       limit,

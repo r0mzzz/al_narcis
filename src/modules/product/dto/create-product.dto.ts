@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { IsAllowedCapacity } from './is-allowed-capacity.validator';
-import { Genre } from '../../../common/genre.enum';
+import { Gender } from '../../../common/genre.enum';
 
 class VariantDto {
   @IsNotEmpty()
@@ -65,6 +65,6 @@ export class CreateProductDto {
   category: string[];
 
   @IsNotEmpty()
-  @IsEnum(Genre)
-  genre: Genre;
+  @IsEnum(Gender)
+  gender: Gender;
 }
