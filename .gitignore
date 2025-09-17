@@ -5,6 +5,8 @@
 # Secret file
 .env
 
+.env.public
+
 # Dockerfile
 Dockerfile
 
