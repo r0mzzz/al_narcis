@@ -1,11 +1,11 @@
 export const Templates = {
   passwordReset: `
   <!DOCTYPE html>
-<html lang="en">
+<html lang="az">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OTP Verification</title>
+  <title>OTP Təsdiqi</title>
   <style>
     /* General resets */
     body, html {
@@ -89,15 +89,15 @@ export const Templates = {
       <h1>Al Narcis</h1>
     </div>
     <div class="content">
-      <p>Hello,</p>
-      <p>Use the following OTP to complete your verification:</p>
+      <p>Salam,</p>
+      <p>Təsdiq üçün aşağıdakı OTP kodundan istifadə edin:</p>
       <div class="otp-code">123456</div>
-      <p>This OTP is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
-      <p>Thank you for choosing <strong>Al Narcis</strong>!</p>
+      <p>Bu OTP <strong>3 dəqiqə</strong> etibarlıdır. Zəhmət olmasa, bu kodu heç kimlə paylaşmayın.</p>
+      <p><strong>Al Narcis</strong> seçdiyiniz üçün təşəkkür edirik!</p>
     </div>
     <div class="footer">
-      &copy; 2025 Al Narcis. All rights reserved. <br>
-<!--      <a href="https://al-narcis.com">Visit our website</a>-->
+      &copy; 2025 Al Narcis. Bütün hüquqlar qorunur. <br>
+<!--      <a href="https://al-narcis.com">Veb saytımıza daxil olun</a>-->
     </div>
   </div>
 </body>

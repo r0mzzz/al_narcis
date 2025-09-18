@@ -52,8 +52,8 @@ export class MailService {
     const mailOptions = {
       from: 'perfectingthevoid@gmail.com',
       to: email,
-      subject: 'Your OTP Code',
-      text: `Your OTP code is: ${otp}`,
+      subject: 'OTP Kod',
+      text: `Sizin OTP kodunuz: ${otp}`,
       html: this.renderOtpTemplate(otp),
     };
     transporter.sendMail(mailOptions, (error, info) => {
