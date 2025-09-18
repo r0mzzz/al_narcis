@@ -1,15 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PaymentHistory } from './schema/payment-history.schema';
 import { CreatePaymentHistoryDto } from './dto/create-payment-history.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class HistoryService {
   constructor(
     @InjectModel(PaymentHistory.name)
     private paymentHistoryModel: Model<PaymentHistory>,
+    @Inject(forwardRef(() => PaymentService))
+    private paymentService: PaymentService,
   ) {}
 
   async create(data: CreatePaymentHistoryDto): Promise<Record<string, any>> {
@@ -20,10 +23,17 @@ export class HistoryService {
     };
     const created = await this.paymentHistoryModel.create(toSave);
     const obj = created.toObject();
-    // Remove _id and __v
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, __v, ...rest } = obj;
-    return rest;
+    // Always apply cashback using the new logic
+    let cashback = 0;
+    if (rest.userId && rest.amount) {
+      cashback = await this.paymentService.applySinglePaymentCashback(
+        rest.userId,
+        rest.amount,
+      );
+    }
+    return { ...rest, cashback };
   }
 
   async findAll(): Promise<Record<string, any>[]> {

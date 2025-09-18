@@ -57,6 +57,9 @@ export class User {
 
   @Prop({ type: [Object], default: [] })
   invites?: any[];
+
+  @Prop({ default: false })
+  cashbackMilestoneReached: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

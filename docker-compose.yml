@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -17,7 +15,10 @@ services:
         condition: any
 
   api:
-    image: al_narcis_api:latest
+    build:
+      context: .    # путь к Dockerfile твоего проекта
+      dockerfile: Dockerfile  # имя файла Dockerfile (если не стандартное)
+    image: rom3ik/al_narcis_api:latest
     container_name: api
     ports:
       - "5310:5310"   # убедись, что PORT задан в .env

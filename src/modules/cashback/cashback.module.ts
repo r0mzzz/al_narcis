@@ -6,15 +6,22 @@ import {
 } from './schema/cashback-config.schema';
 import { CashbackConfigService } from './cashback-config.service';
 import { CashbackConfigController } from './cashback-config.controller';
+import {
+  MainCashbackConfig,
+  MainCashbackConfigSchema,
+} from './schema/main-cashback-config.schema';
+import { MainCashbackConfigService } from './main-cashback-config.service';
+import { MainCashbackConfigController } from './main-cashback-config.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: CashbackConfig.name, schema: CashbackConfigSchema },
+      { name: MainCashbackConfig.name, schema: MainCashbackConfigSchema },
     ]),
   ],
-  providers: [CashbackConfigService],
-  controllers: [CashbackConfigController],
-  exports: [CashbackConfigService],
+  providers: [CashbackConfigService, MainCashbackConfigService],
+  controllers: [CashbackConfigController, MainCashbackConfigController],
+  exports: [CashbackConfigService, MainCashbackConfigService],
 })
 export class CashbackModule {}
