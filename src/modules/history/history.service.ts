@@ -5,6 +5,7 @@ import { PaymentHistory } from './schema/payment-history.schema';
 import { CreatePaymentHistoryDto } from './dto/create-payment-history.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { PaymentService } from '../payment/payment.service';
+import { RedisService } from '../../services/redis.service';
 
 @Injectable()
 export class HistoryService {
@@ -13,6 +14,7 @@ export class HistoryService {
     private paymentHistoryModel: Model<PaymentHistory>,
     @Inject(forwardRef(() => PaymentService))
     private paymentService: PaymentService,
+    private redisService: RedisService,
   ) {}
 
   async create(data: CreatePaymentHistoryDto): Promise<Record<string, any>> {
@@ -33,23 +35,42 @@ export class HistoryService {
         rest.amount,
       );
     }
+    // Invalidate caches after new payment
+    await this.redisService.del('history:all');
+    if (rest.userId) {
+      await this.redisService.del(`history:user:${rest.userId}`);
+    }
     return { ...rest, cashback };
   }
 
   async findAll(): Promise<Record<string, any>[]> {
+    const cacheKey = 'history:all';
+    const cached = await this.redisService.getJson<Record<string, any>[]>(
+      cacheKey,
+    );
+    if (cached) return cached;
     const docs = await this.paymentHistoryModel
       .find()
       .select('-_id -__v')
       .exec();
-    return docs.map((doc) => doc.toObject());
+    const result = docs.map((doc) => doc.toObject());
+    await this.redisService.setJson(cacheKey, result, 3600); // cache for 1 hour
+    return result;
   }
 
   async findByUser(userId: string): Promise<Record<string, any>[]> {
+    const cacheKey = `history:user:${userId}`;
+    const cached = await this.redisService.getJson<Record<string, any>[]>(
+      cacheKey,
+    );
+    if (cached) return cached;
     const docs = await this.paymentHistoryModel
       .find({ userId })
       .select('-_id -__v')
       .exec();
-    return docs.map((doc) => doc.toObject());
+    const result = docs.map((doc) => doc.toObject());
+    await this.redisService.setJson(cacheKey, result, 3600); // cache for 1 hour
+    return result;
   }
 
   async findByPaymentKey(

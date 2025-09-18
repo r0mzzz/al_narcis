@@ -4,6 +4,7 @@ import { PaymentHistory, PaymentHistorySchema } from './schema/payment-history.s
 import { HistoryService } from './history.service';
 import { HistoryController } from './history.controller';
 import { PaymentModule } from '../payment/payment.module';
+import { RedisModule } from '../../services/redis.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { PaymentModule } from '../payment/payment.module';
       { name: PaymentHistory.name, schema: PaymentHistorySchema },
     ]),
     forwardRef(() => PaymentModule),
+    RedisModule,
   ],
   providers: [HistoryService],
   controllers: [HistoryController],
