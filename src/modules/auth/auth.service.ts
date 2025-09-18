@@ -129,14 +129,14 @@ export class AuthService {
     // Generate 5-digit OTP
     const otp = Math.floor(10000 + Math.random() * 90000).toString();
     const otpHash = await this.hashData(otp);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
     const otpData = {
       user_id: user._id.toString(),
       otp_hash: otpHash,
       expires_at: expiresAt.toISOString(),
       attempts_left: 3,
     };
-    await this.redisService.setJson(`otp:${user._id}`, otpData, 10 * 60); // 10 min TTL
+    await this.redisService.setJson(`otp:${user._id}`, otpData, 3 * 60); // 3 min TTL
     await this.mailService.sendOtpEmail(user.email, otp);
   }
 
