@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cashback, CashbackDocument } from './schema/cashback.schema';
@@ -10,7 +10,15 @@ export class CashbackService {
     @InjectModel(Cashback.name) private cashbackModel: Model<CashbackDocument>,
   ) {}
 
-  async create(createCashbackDto: CreateCashbackDto): Promise<Cashback> {
+  async create(createCashbackDto: CreateCashbackDto): Promise<Cashback | null> {
+    if (!createCashbackDto.user_id || !createCashbackDto.from_user_id) {
+      Logger.error(
+        `Cashback creation failed: user_id or from_user_id is missing. Payload: ${JSON.stringify(createCashbackDto)}`,
+        '',
+        'CashbackService',
+      );
+      return null;
+    }
     const cashback = new this.cashbackModel(createCashbackDto);
     return cashback.save();
   }
@@ -19,4 +27,3 @@ export class CashbackService {
     return this.cashbackModel.find({ user_id }).exec();
   }
 }
-

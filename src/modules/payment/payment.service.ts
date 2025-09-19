@@ -191,7 +191,7 @@ export class PaymentService {
         cashbackAmount: cashbackInCoins,
         date: new Date(),
         paymentKey,
-        from_user_id: null,
+        from_user_id: user.user_id,
       });
     }
     return cashbackInCoins;
