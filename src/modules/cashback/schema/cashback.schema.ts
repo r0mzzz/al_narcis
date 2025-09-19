@@ -26,9 +26,8 @@ export class Cashback {
   @Prop({ required: true })
   paymentKey: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  from_user_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false, default: null })
+  from_user_id?: Types.ObjectId | null;
 }
 
 export const CashbackSchema = SchemaFactory.createForClass(Cashback);
-

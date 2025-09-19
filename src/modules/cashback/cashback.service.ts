@@ -11,9 +11,11 @@ export class CashbackService {
   ) {}
 
   async create(createCashbackDto: CreateCashbackDto): Promise<Cashback | null> {
-    if (!createCashbackDto.user_id || !createCashbackDto.from_user_id) {
+    if (!createCashbackDto.user_id) {
       Logger.error(
-        `Cashback creation failed: user_id or from_user_id is missing. Payload: ${JSON.stringify(createCashbackDto)}`,
+        `Cashback creation failed: user_id is missing. Payload: ${JSON.stringify(
+          createCashbackDto,
+        )}`,
         '',
         'CashbackService',
       );

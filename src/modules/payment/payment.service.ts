@@ -191,7 +191,7 @@ export class PaymentService {
         cashbackAmount: cashbackInCoins,
         date: new Date(),
         paymentKey,
-        from_user_id: user.user_id,
+        from_user_id: null, // Not a referral, so set to null
       });
     }
     return cashbackInCoins;
