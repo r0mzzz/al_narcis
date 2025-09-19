@@ -29,10 +29,11 @@ export class HistoryService {
     const { _id, __v, ...rest } = obj;
     // Always apply cashback using the new logic
     let cashback = 0;
-    if (rest.userId && rest.amount) {
+    if (rest.userId && rest.amount && rest.paymentKey) {
       cashback = await this.paymentService.applySinglePaymentCashback(
         rest.userId,
         rest.amount,
+        rest.paymentKey,
       );
     }
     // Invalidate caches after new payment

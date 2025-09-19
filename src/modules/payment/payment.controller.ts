@@ -13,11 +13,12 @@ export class PaymentController {
   async calculateCashback(
     @Body('amount') amount: number,
     @Body('user_id') userId: string,
+    @Body('paymentKey') paymentKey: string,
   ) {
     if (!userId) {
       return { message: 'user_id is required in body' };
     }
-    await this.paymentService.calculateCashback(amount, userId);
+    await this.paymentService.calculateCashback(amount, userId, paymentKey);
     return { message: 'Cashback calculated (if eligible)' };
   }
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   forwardRef,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,6 +12,8 @@ import { CashbackConfigService } from '../cashback/cashback-config.service';
 import { MainCashbackConfigService } from '../cashback/main-cashback-config.service';
 import { AccountType } from '../../common/account-type.enum';
 import { HistoryService } from '../history/history.service';
+import { CashbackService } from '../cashback/cashback.service';
+import { CashbackType } from '../cashback/schema/cashback.schema';
 
 @Injectable()
 export class PaymentService {
@@ -20,6 +23,7 @@ export class PaymentService {
     private mainCashbackConfigService: MainCashbackConfigService,
     @Inject(forwardRef(() => HistoryService))
     private historyService: HistoryService,
+    private cashbackService: CashbackService,
   ) {}
 
   /**
@@ -27,7 +31,11 @@ export class PaymentService {
    * @param amount The purchase amount in coins (e.g., 100 coins = 1 unit)
    * @param buyerUserId The user_id of the buyer
    */
-  async calculateCashback(amount: number, buyerUserId: string): Promise<void> {
+  async calculateCashback(
+    amount: number,
+    buyerUserId: string,
+    paymentKey: string,
+  ): Promise<void> {
     // Find the buyer by user_id
     const buyer = await this.userModel.findOne({ user_id: buyerUserId });
     if (!buyer) throw new NotFoundException('Buyer not found');
@@ -45,17 +53,34 @@ export class PaymentService {
 
     // Traverse up to 3 levels of referral chain
     let currentUser = buyer;
+    const payerUserId = buyer.user_id;
     for (let level = 0; level < cashbackPercents.length; level++) {
       const inviterId = currentUser.invitedBy;
       if (!inviterId) break;
       const inviter = await this.userModel.findOne({ user_id: inviterId });
       if (!inviter) break;
-      // Only apply cashback if BOTH inviter and invited (currentUser) are BUSINESS accounts
+      if (!inviter.user_id) {
+        Logger.error(
+          `Inviter found but user_id is missing: ${JSON.stringify(inviter)}`,
+          '',
+          'PaymentService',
+        );
+        break;
+      }
+      if (!currentUser.user_id) {
+        Logger.error(
+          `Current user found but user_id is missing: ${JSON.stringify(
+            currentUser,
+          )}`,
+          '',
+          'PaymentService',
+        );
+        break;
+      }
       if (
         inviter.accountType === AccountType.BUSINESS &&
         currentUser.accountType === AccountType.BUSINESS
       ) {
-        // Calculate cashback as percent of units, then convert to coins
         const cashbackPercent = cashbackPercents[level];
         const cashbackInUnits = amountInUnits * cashbackPercent;
         const cashbackInCoins = Math.floor(cashbackInUnits * 100);
@@ -64,6 +89,14 @@ export class PaymentService {
             { user_id: inviter.user_id },
             { $inc: { balanceFromReferrals: cashbackInCoins } },
           );
+          await this.cashbackService.create({
+            cashbackType: CashbackType.REFERRAL,
+            user_id: inviter.user_id,
+            cashbackAmount: cashbackInCoins,
+            date: new Date(),
+            paymentKey,
+            from_user_id: payerUserId,
+          });
         }
       }
       currentUser = inviter;
@@ -113,22 +146,53 @@ export class PaymentService {
   async applySinglePaymentCashback(
     userId: string,
     amount: number,
+    paymentKey: string,
   ): Promise<number> {
     const user = await this.userModel.findOne({ user_id: userId });
-    if (!user || user.accountType !== AccountType.BUSINESS) return 0;
+    if (!user) {
+      Logger.error(
+        `User with user_id ${userId} not found in applySinglePaymentCashback`,
+        '',
+        'PaymentService',
+      );
+      throw new NotFoundException(
+        `User with user_id ${userId} not found in applySinglePaymentCashback`,
+      );
+    }
+    if (!user.user_id) {
+      Logger.error(
+        `User found but user_id is missing: ${JSON.stringify(user)}`,
+        '',
+        'PaymentService',
+      );
+      throw new NotFoundException(
+        'User is missing user_id in applySinglePaymentCashback',
+      );
+    }
+    if (user.accountType !== AccountType.BUSINESS) return 0;
     const milestone = await this.checkAndSetCashbackMilestone(userId);
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
+    let cashbackType = CashbackType.PURCHASE;
     if (!milestone && amount >= config.defaultThreshold) {
       cashbackInCoins = Math.floor(amount * (config.defaultPercent / 100));
     } else if (milestone && amount >= config.milestoneThreshold) {
       cashbackInCoins = Math.floor(amount * (config.milestonePercent / 100));
+      cashbackType = CashbackType.BONUS;
     }
     if (cashbackInCoins > 0) {
       await this.userModel.updateOne(
         { user_id: userId },
         { $inc: { balance: cashbackInCoins } },
       );
+      await this.cashbackService.create({
+        cashbackType,
+        user_id: user.user_id,
+        cashbackAmount: cashbackInCoins,
+        date: new Date(),
+        paymentKey,
+        from_user_id: null,
+      });
     }
     return cashbackInCoins;
   }
