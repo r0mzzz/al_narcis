@@ -1,5 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Logger, Post, UsePipes, ValidationPipe } from '@nestjs/common';
 import { PaymentService } from './payment.service';
+import { CalculateCashbackDto } from './dto/calculate-cashback.dto';
 
 @Controller('payment')
 export class PaymentController {
@@ -10,15 +11,25 @@ export class PaymentController {
    * Body: { amount: number, user_id: string }
    */
   @Post('cashback')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async calculateCashback(
-    @Body('amount') amount: number,
-    @Body('user_id') userId: string,
-    @Body('paymentKey') paymentKey: string,
+    @Body() dto: CalculateCashbackDto,
   ) {
-    if (!userId) {
-      return { message: 'user_id is required in body' };
+    const { amount, user_id, paymentKey } = dto;
+    let cashbackError = null;
+    try {
+      await this.paymentService.calculateCashback(amount, user_id, paymentKey);
+    } catch (error) {
+      Logger.error(
+        'Cashback calculation failed',
+        error.stack,
+        'PaymentController',
+      );
+      cashbackError = error.message || 'Unknown cashback error';
     }
-    await this.paymentService.calculateCashback(amount, userId, paymentKey);
-    return { message: 'Cashback calculated (if eligible)' };
+    return {
+      message: 'Cashback calculated (if eligible)',
+      ...(cashbackError ? { cashbackError } : {}),
+    };
   }
 }

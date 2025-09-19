@@ -1,8 +1,9 @@
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min } from 'class-validator';
 
 export class CreatePaymentHistoryDto {
   @IsNotEmpty({ message: 'amount is required' })
   @IsNumber({}, { message: 'amount must be a number' })
+  @Min(1, { message: 'amount must be positive' })
   amount: number;
 
   @IsNotEmpty({ message: 'status is required' })
