@@ -7,6 +7,7 @@ import { ProductModule } from './modules/product/product.module';
 import { HistoryModule } from './modules/history/history.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { RedisService } from './services/redis.service';
+import { CashbackModule } from './modules/cashback/cashback.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RedisService } from './services/redis.service';
     ProductModule,
     HistoryModule,
     PaymentModule,
+    CashbackModule,
   ],
   providers: [RedisService],
   exports: [RedisService],

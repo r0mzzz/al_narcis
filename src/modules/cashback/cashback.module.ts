@@ -13,6 +13,8 @@ import {
   MainCashbackConfig,
   MainCashbackConfigSchema,
 } from './schema/main-cashback-config.schema';
+import { CashbackConfigController } from './cashback-config.controller';
+import { MainCashbackConfigController } from './main-cashback-config.controller';
 
 @Module({
   imports: [
@@ -22,7 +24,11 @@ import {
       { name: MainCashbackConfig.name, schema: MainCashbackConfigSchema },
     ]),
   ],
-  controllers: [CashbackController],
+  controllers: [
+    CashbackController,
+    CashbackConfigController,
+    MainCashbackConfigController,
+  ],
   providers: [
     CashbackService,
     CashbackConfigService,

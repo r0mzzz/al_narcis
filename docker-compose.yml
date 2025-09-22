@@ -26,13 +26,13 @@ services:
       - .env        # обычные переменные окружения
     depends_on:
       - mongodb
-    secrets:
-      - MONGODB_URI
-      - SECRET
-      - REFRESH_SECRET
-      - GMAIL_PASS
-      - MINIO_ROOT_USER
-      - MINIO_ROOT_PASSWORD
+#    secrets:
+#      - MONGODB_URI
+#      - SECRET
+#      - REFRESH_SECRET
+#      - GMAIL_PASS
+#      - MINIO_ROOT_USER
+#      - MINIO_ROOT_PASSWORD
     deploy:
       restart_policy:
         condition: any
@@ -55,7 +55,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: redis
+    container_name: al_narcis_redis
     ports:
       - "6379:6379"
     volumes:
@@ -69,16 +69,16 @@ volumes:
   minio_data:
   redis_data:
 
-secrets:
-  MONGODB_URI:
-    external: true
-  SECRET:
-    external: true
-  REFRESH_SECRET:
-    external: true
-  GMAIL_PASS:
-    external: true
-  MINIO_ROOT_USER:
-    external: true
-  MINIO_ROOT_PASSWORD:
-    external: true
+#secrets:
+#  MONGODB_URI:
+#    external: true
+#  SECRET:
+#    external: true
+#  REFRESH_SECRET:
+#    external: true
+#  GMAIL_PASS:
+#    external: true
+#  MINIO_ROOT_USER:
+#    external: true
+#  MINIO_ROOT_PASSWORD:
+#    external: true

@@ -7,10 +7,10 @@ import * as fs from 'fs';
  * @returns Secret value as string
  */
 function getSecret(name: string): string {
-  const secretPath = `/run/secrets/${name}`;
-  if (fs.existsSync(secretPath)) {
-    return fs.readFileSync(secretPath, 'utf8').trim();
-  }
+  // const secretPath = `/run/secrets/${name}`;
+  // if (fs.existsSync(secretPath)) {
+  //   return fs.readFileSync(secretPath, 'utf8').trim();
+  // }
   if (process.env[name]) {
     return process.env[name] as string;
   }
