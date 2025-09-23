@@ -1,84 +1,14 @@
-services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongodb_data_container:/data/db
-    environment:
-      MONGO_INITDB_DATABASE: al_narcis_db
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: r4m4z4n94!
-    deploy:
-      restart_policy:
-        condition: any
+version: '3.8'
 
+services:
   api:
     build:
-      context: .    # путь к Dockerfile твоего проекта
-      dockerfile: Dockerfile  # имя файла Dockerfile (если не стандартное)
+      context: .          # путь к проекту
+      dockerfile: Dockerfile
     image: rom3ik/al_narcis_api:latest
     container_name: api
     ports:
-      - "5310:5310"   # убедись, что PORT задан в .env
+      - "5310:5310"
     env_file:
-      - .env        # обычные переменные окружения
-    depends_on:
-      - mongodb
-#    secrets:
-#      - MONGODB_URI
-#      - SECRET
-#      - REFRESH_SECRET
-#      - GMAIL_PASS
-#      - MINIO_ROOT_USER
-#      - MINIO_ROOT_PASSWORD
-    deploy:
-      restart_policy:
-        condition: any
-
-  minio:
-    image: minio/minio:latest
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server --console-address ":9001" /data
-    volumes:
-      - minio_data:/data
-    deploy:
-      restart_policy:
-        condition: any
-
-  redis:
-    image: redis:7
-    container_name: al_narcis_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    deploy:
-      restart_policy:
-        condition: any
-
-volumes:
-  mongodb_data_container:
-  minio_data:
-  redis_data:
-
-#secrets:
-#  MONGODB_URI:
-#    external: true
-#  SECRET:
-#    external: true
-#  REFRESH_SECRET:
-#    external: true
-#  GMAIL_PASS:
-#    external: true
-#  MINIO_ROOT_USER:
-#    external: true
-#  MINIO_ROOT_PASSWORD:
-#    external: true
+      - .env
+    restart: always
