@@ -59,7 +59,7 @@ export class MinioService {
       throw err;
     }
 
-    const url = `http://localhost:9000/${this.bucket}/${encodeURIComponent(
+    const url = `http://94.20.222.102:9000/${this.bucket}/${encodeURIComponent(
       fileName,
     )}`;
     this.logger.log(`Returning file URL: ${url}`);
@@ -82,7 +82,7 @@ export class MinioService {
       const stream = this.minioClient.listObjectsV2(this.bucket, prefix, true);
       for await (const obj of stream) {
         if (obj.name) {
-          const url = `http://localhost:9000/${
+          const url = `http://94.20.222.102:9000/${
             this.bucket
           }/${encodeURIComponent(obj.name)}`;
           imageUrls.push(url);
