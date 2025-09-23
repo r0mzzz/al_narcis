@@ -4,7 +4,7 @@ import { AccountType } from '../../../common/account-type.enum';
 
 export type UserDocument = User & Document;
 
-@Schema({ versionKey: false, _id: false })
+@Schema({ versionKey: false})
 export class User {
   @Prop({ required: true })
   first_name: string;
