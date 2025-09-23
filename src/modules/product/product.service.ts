@@ -101,7 +101,12 @@ export class ProductService {
       .select('-_id -__v')
       .exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
-    return product.toObject();
+    const obj = product.toObject();
+    const images = await this.minioService.getProductImages(
+      obj.productName,
+      id,
+    );
+    return { ...obj, images };
   }
 
   async addCategory(categoryName: string): Promise<{ categoryName: string }> {
@@ -225,10 +230,14 @@ export class ProductService {
       .exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
     const obj = product.toObject();
+    const presignedImages = await this.minioService.getProductImages(
+      obj.productName,
+      id,
+    );
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { __v, ...rest } = obj;
     // Return productId as id
-    return { ...rest, productId: product._id };
+    return { ...rest, productId: product._id, images: presignedImages };
   }
 
   async remove(id: string): Promise<void> {

@@ -75,6 +75,7 @@ export class MinioService {
   async getProductImages(
     productName: string,
     productId: string,
+    expiry = 60 * 60,
   ): Promise<string[]> {
     const prefix = `products/${productName}-${productId}/`;
     const imageUrls: string[] = [];
@@ -82,15 +83,22 @@ export class MinioService {
       const stream = this.minioClient.listObjectsV2(this.bucket, prefix, true);
       for await (const obj of stream) {
         if (obj.name) {
-          const url = `http://94.20.222.102:9000/${
-            this.bucket
-          }/${encodeURIComponent(obj.name)}`;
-          imageUrls.push(url);
+          const presignedUrl = await this.getPresignedUrl(obj.name, expiry);
+          imageUrls.push(presignedUrl);
         }
       }
       return imageUrls;
     } catch (err) {
       throw err;
+    }
+  }
+
+  async getPresignedUrl(objectName: string, expiry = 60 * 60): Promise<string> {
+    try {
+      return await this.minioClient.presignedGetObject(this.bucket, objectName, expiry);
+    } catch (error) {
+      this.logger.error(`Failed to generate presigned URL for ${objectName}: ${error}`);
+      throw error;
     }
   }
 
