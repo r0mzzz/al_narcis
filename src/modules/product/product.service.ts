@@ -207,6 +207,7 @@ export class ProductService {
     await createdProduct.save();
 
     if (image) {
+      // Use the product's name and _id as unique identifier for MinIO
       const url = await this.minioService.upload(
         image,
         createProductDto.productName,
@@ -216,7 +217,17 @@ export class ProductService {
       await createdProduct.save();
     }
 
-    await this.redisService.delByPattern('products:list*');
+    try {
+      await this.redisService.delByPattern('products:list*');
+      this.logger.log('Invalidated products:list* cache after create');
+    } catch (e) {
+      this.logger.debug(
+        'Failed to invalidate products cache after create: ' +
+          (e?.message || e),
+      );
+    }
+
+    await this.refreshProductsCache();
 
     const obj = createdProduct.toObject();
     const { __v, ...rest } = obj;
@@ -270,7 +281,17 @@ export class ProductService {
 
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
-    await this.redisService.delByPattern('products:list*');
+    try {
+      await this.redisService.delByPattern('products:list*');
+      this.logger.log('Invalidated products:list* cache after update');
+    } catch (e) {
+      this.logger.debug(
+        'Failed to invalidate products cache after update: ' +
+          (e?.message || e),
+      );
+    }
+
+    await this.refreshProductsCache();
 
     const obj = product.toObject();
     return { ...obj, productId: product._id, images: obj.images || [] };
@@ -280,7 +301,16 @@ export class ProductService {
     const result = await this.productModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
-    await this.redisService.delByPattern('products:list*');
+    try {
+      await this.redisService.delByPattern('products:list*');
+      this.logger.log('Invalidated products:list* cache after delete');
+    } catch (e) {
+      this.logger.debug(
+        'Failed to invalidate products cache after delete: ' + (e?.message || e),
+      );
+    }
+
+    await this.refreshProductsCache();
   }
 
   async createProductType(name: string): Promise<{ name: string }> {
@@ -326,5 +356,52 @@ export class ProductService {
     if (!typeName) return false;
     const type = await this.productTypeModel.findOne({ name: typeName }).exec();
     return !!type;
+  }
+
+  // Helper to rebuild products list cache for given limit/page
+  private async refreshProductsCache(limit = 10, page = 1) {
+    try {
+      const parsedLimit = Number(limit) || 10;
+      const parsedPage = Number(page) || 1;
+      const skip = (parsedPage - 1) * parsedLimit;
+      const filter: any = {};
+      const [data, total] = await Promise.all([
+        this.productModel
+          .find(filter)
+          .select('-__v')
+          .skip(skip)
+          .limit(parsedLimit)
+          .sort({ _id: -1 })
+          .exec(),
+        this.productModel.countDocuments(filter),
+      ]);
+
+      const dataWithImages = await Promise.all(
+        data.map(async (doc) => {
+          const obj = doc.toObject();
+          const images =
+            Array.isArray(obj.images) && obj.images.length > 0
+              ? obj.images
+              : await this.minioService
+                  .getProductImages(obj.productName, obj._id.toString())
+                  .catch(() => []);
+          delete obj.productImage;
+          return { ...obj, images };
+        }),
+      );
+
+      const result = {
+        data: dataWithImages,
+        total,
+        page: parsedPage,
+        limit: parsedLimit,
+      };
+
+      const cacheKey = `products:list:${parsedLimit}:${parsedPage}`;
+      await this.redisService.setJson(cacheKey, result, 300);
+      this.logger.log(`Rebuilt products cache key=${cacheKey}`);
+    } catch (e) {
+      this.logger.debug('Failed to refresh products cache: ' + (e?.message || e));
+    }
   }
 }
