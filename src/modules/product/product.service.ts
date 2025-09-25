@@ -50,28 +50,42 @@ export class ProductService {
     if (categories && categories.length > 0) {
       filter.category = { $in: categories };
     }
-    // Build a cache key based on all query params
+
+    // Normalize pagination params
+    const parsedLimit = Number(limit) || 10;
+    const parsedPage = Number(page) || 1;
+
+    // Build a cache key based on query params. Only use cache for the unfiltered first page
+    // to avoid returning stale or accidentally narrow cached results for other queries.
+    const isCacheable = !productType && !search && (!categories || categories.length === 0) && parsedPage === 1;
     const cacheKey = `products:list:${JSON.stringify({
       productType,
       search,
-      limit,
-      page,
-      categories,
+      limit: parsedLimit,
+      page: parsedPage,
+      categories: categories && categories.length ? categories.slice().sort() : undefined,
     })}`;
-    const cached = await this.redisService.getJson(cacheKey);
-    if (cached) {
-      return cached;
+
+    if (isCacheable) {
+      const cached = await this.redisService.getJson(cacheKey);
+      if (cached) {
+        this.logger.debug(`Returning products from cache key=${cacheKey} count=${cached.data?.length ?? 0}`);
+        return cached;
+      }
     }
-    const skip = (page - 1) * limit;
+
+    const skip = (parsedPage - 1) * parsedLimit;
     const [data, total] = await Promise.all([
       this.productModel
         .find(filter)
         .select('-__v')
         .skip(skip)
-        .limit(limit)
+        .limit(parsedLimit)
+        .sort({ _id: -1 })
         .exec(),
       this.productModel.countDocuments(filter),
     ]);
+
     // Attach images array to each product
     const dataWithImages = await Promise.all(
       data.map(async (doc) => {
@@ -88,10 +102,13 @@ export class ProductService {
     const result = {
       data: dataWithImages,
       total,
-      page,
-      limit,
+      page: parsedPage,
+      limit: parsedLimit,
     };
-    await this.redisService.setJson(cacheKey, result, 3600);
+
+    if (isCacheable) {
+      await this.redisService.setJson(cacheKey, result, 3600);
+    }
     return result;
   }
 
