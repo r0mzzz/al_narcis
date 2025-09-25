@@ -55,7 +55,9 @@ export class ProductService {
     const parsedLimit = Number(limit) || 10;
     const parsedPage = Number(page) || 1;
 
-    this.logger.debug(`findAll called with parsedLimit=${parsedLimit} parsedPage=${parsedPage} productType=${productType} search=${search} categories=${categories}`);
+    this.logger.debug(
+      `findAll called with parsedLimit=${parsedLimit} parsedPage=${parsedPage} productType=${productType} search=${search} categories=${categories}`,
+    );
 
     // Build a cache key based on query params. Only use cache for the unfiltered first page
     // to avoid returning stale or accidentally narrow cached results for other queries.
@@ -78,15 +80,23 @@ export class ProductService {
       if (cached) {
         // verify cached total against current DB to avoid stale narrow results
         try {
-          const currentTotal = await this.productModel.countDocuments(filter).exec();
+          const currentTotal = await this.productModel
+            .countDocuments(filter)
+            .exec();
           const needed = Math.min(parsedLimit, currentTotal);
-          const cachedLength = Array.isArray(cached.data) ? cached.data.length : 0;
+          const cachedLength = Array.isArray(cached.data)
+            ? cached.data.length
+            : 0;
           if (cached.total === currentTotal && cachedLength >= needed) {
-            this.logger.debug(`Returning products from cache key=${cacheKey} count=${cachedLength}`);
+            this.logger.debug(
+              `Returning products from cache key=${cacheKey} count=${cachedLength}`,
+            );
             return cached;
           }
           // otherwise treat as cache miss and continue to fetch fresh data
-          this.logger.debug(`Cache mismatch for key=${cacheKey} (cached.total=${cached.total} current=${currentTotal} cachedLength=${cachedLength} needed=${needed}), refreshing`);
+          this.logger.debug(
+            `Cache mismatch for key=${cacheKey} (cached.total=${cached.total} current=${currentTotal} cachedLength=${cachedLength} needed=${needed}), refreshing`,
+          );
         } catch (e) {
           this.logger.debug('Failed to validate products cache: ' + e?.message);
           // fall through and fetch fresh data
@@ -95,7 +105,11 @@ export class ProductService {
     }
 
     const skip = (parsedPage - 1) * parsedLimit;
-    this.logger.debug(`Mongo query skip=${skip} limit=${parsedLimit} filter=${JSON.stringify(filter)}`);
+    this.logger.debug(
+      `Mongo query skip=${skip} limit=${parsedLimit} filter=${JSON.stringify(
+        filter,
+      )}`,
+    );
     const [data, total] = await Promise.all([
       this.productModel
         .find(filter)
@@ -107,7 +121,9 @@ export class ProductService {
       this.productModel.countDocuments(filter),
     ]);
 
-    this.logger.debug(`Mongo returned data.length=${data.length} total=${total}`);
+    this.logger.debug(
+      `Mongo returned data.length=${data.length} total=${total}`,
+    );
 
     // Attach images array to each product. Prefer images[] stored in DB to avoid external MinIO calls.
     const dataWithImages = await Promise.all(
@@ -123,7 +139,9 @@ export class ProductService {
               obj._id.toString(),
             );
           } catch (e) {
-            this.logger.debug(`Failed to fetch images for product ${obj._id}: ${e?.message}`);
+            this.logger.debug(
+              `Failed to fetch images for product ${obj._id}: ${e?.message}`,
+            );
             images = [];
           }
         }
@@ -282,12 +300,19 @@ export class ProductService {
     if (images && images.length > 0) {
       const uploadedUrls: string[] = [];
       for (const image of images) {
-        const url = await this.minioService.upload(image, updateProductDto.productName, id);
+        const url = await this.minioService.upload(
+          image,
+          updateProductDto.productName,
+          id,
+        );
         uploadedUrls.push(url);
       }
       // append uploaded urls to images array in DB
       try {
-        const existing = await this.productModel.findById(id).select('images').exec();
+        const existing = await this.productModel
+          .findById(id)
+          .select('images')
+          .exec();
         const merged = (existing?.images || []).concat(uploadedUrls);
         updateData.images = merged;
       } catch (e) {
