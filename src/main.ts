@@ -9,7 +9,7 @@ const bootstrap = async () => {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       cors: true,
-      logger: ['error', 'warn', 'log'],
+      logger: ['error', 'warn', 'log', 'debug'],
     });
     // Enable class-validator to use NestJS dependency injection
     useContainer(app.select(AppModule), { fallbackOnErrors: true });

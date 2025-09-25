@@ -6,7 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ProductModule } from './modules/product/product.module';
 import { HistoryModule } from './modules/history/history.module';
 import { PaymentModule } from './modules/payment/payment.module';
-import { RedisService } from './services/redis.service';
+import { RedisModule } from './services/redis.module';
 import { CashbackModule } from './modules/cashback/cashback.module';
 
 @Module({
@@ -26,8 +26,7 @@ import { CashbackModule } from './modules/cashback/cashback.module';
     HistoryModule,
     PaymentModule,
     CashbackModule,
+    RedisModule,
   ],
-  providers: [RedisService],
-  exports: [RedisService],
 })
 export class AppModule {}
