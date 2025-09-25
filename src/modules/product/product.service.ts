@@ -55,6 +55,8 @@ export class ProductService {
     const parsedLimit = Number(limit) || 10;
     const parsedPage = Number(page) || 1;
 
+    this.logger.debug(`findAll called with parsedLimit=${parsedLimit} parsedPage=${parsedPage} productType=${productType} search=${search} categories=${categories}`);
+
     // Build a cache key based on query params. Only use cache for the unfiltered first page
     // to avoid returning stale or accidentally narrow cached results for other queries.
     const isCacheable =
@@ -93,6 +95,7 @@ export class ProductService {
     }
 
     const skip = (parsedPage - 1) * parsedLimit;
+    this.logger.debug(`Mongo query skip=${skip} limit=${parsedLimit} filter=${JSON.stringify(filter)}`);
     const [data, total] = await Promise.all([
       this.productModel
         .find(filter)
@@ -104,14 +107,26 @@ export class ProductService {
       this.productModel.countDocuments(filter),
     ]);
 
-    // Attach images array to each product
+    this.logger.debug(`Mongo returned data.length=${data.length} total=${total}`);
+
+    // Attach images array to each product. Prefer images[] stored in DB to avoid external MinIO calls.
     const dataWithImages = await Promise.all(
       data.map(async (doc) => {
         const obj = doc.toObject();
-        const images = await this.minioService.getProductImages(
-          obj.productName,
-          obj._id.toString(),
-        );
+        let images: string[] = [];
+        if (Array.isArray(obj.images) && obj.images.length > 0) {
+          images = obj.images;
+        } else {
+          try {
+            images = await this.minioService.getProductImages(
+              obj.productName,
+              obj._id.toString(),
+            );
+          } catch (e) {
+            this.logger.debug(`Failed to fetch images for product ${obj._id}: ${e?.message}`);
+            images = [];
+          }
+        }
         // Remove old productImage field if present
         delete obj.productImage;
         return { ...obj, images };
