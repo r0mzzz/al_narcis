@@ -30,6 +30,9 @@ export class Product {
   @Prop({ required: false })
   productImage?: string;
 
+  @Prop({ type: [String], default: [] })
+  images?: string[];
+
   @Prop({ required: true })
   productType: string;
 

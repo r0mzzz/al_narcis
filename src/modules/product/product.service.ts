@@ -57,20 +57,38 @@ export class ProductService {
 
     // Build a cache key based on query params. Only use cache for the unfiltered first page
     // to avoid returning stale or accidentally narrow cached results for other queries.
-    const isCacheable = !productType && !search && (!categories || categories.length === 0) && parsedPage === 1;
+    const isCacheable =
+      !productType &&
+      !search &&
+      (!categories || categories.length === 0) &&
+      parsedPage === 1;
     const cacheKey = `products:list:${JSON.stringify({
       productType,
       search,
       limit: parsedLimit,
       page: parsedPage,
-      categories: categories && categories.length ? categories.slice().sort() : undefined,
+      categories:
+        categories && categories.length ? categories.slice().sort() : undefined,
     })}`;
 
     if (isCacheable) {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
-        this.logger.debug(`Returning products from cache key=${cacheKey} count=${cached.data?.length ?? 0}`);
-        return cached;
+        // verify cached total against current DB to avoid stale narrow results
+        try {
+          const currentTotal = await this.productModel.countDocuments(filter).exec();
+          const needed = Math.min(parsedLimit, currentTotal);
+          const cachedLength = Array.isArray(cached.data) ? cached.data.length : 0;
+          if (cached.total === currentTotal && cachedLength >= needed) {
+            this.logger.debug(`Returning products from cache key=${cacheKey} count=${cachedLength}`);
+            return cached;
+          }
+          // otherwise treat as cache miss and continue to fetch fresh data
+          this.logger.debug(`Cache mismatch for key=${cacheKey} (cached.total=${cached.total} current=${currentTotal} cachedLength=${cachedLength} needed=${needed}), refreshing`);
+        } catch (e) {
+          this.logger.debug('Failed to validate products cache: ' + e?.message);
+          // fall through and fetch fresh data
+        }
       }
     }
 
@@ -202,12 +220,22 @@ export class ProductService {
 
     if (image) {
       // Use the product's name and _id as unique identifier for MinIO
-      createdProduct.productImage = await this.minioService.upload(
+      const url = await this.minioService.upload(
         image,
         createProductDto.productName,
         createdProduct._id.toString(),
       );
-      await createdProduct.save(); // update with image URL
+      createdProduct.productImage = url;
+      createdProduct.images = Array.isArray(createdProduct.images)
+        ? [...createdProduct.images, url]
+        : [url];
+      await createdProduct.save(); // update with image URL(s)
+    }
+    // Invalidate product list cache so clients get fresh data
+    try {
+      await this.redisService.delByPattern('products:list*');
+    } catch (e) {
+      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
     }
     const obj = createdProduct.toObject();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -237,8 +265,19 @@ export class ProductService {
     const updateData: any = { ...updateProductDto };
     // Handle multiple image uploads
     if (images && images.length > 0) {
+      const uploadedUrls: string[] = [];
       for (const image of images) {
-        await this.minioService.upload(image, updateProductDto.productName, id);
+        const url = await this.minioService.upload(image, updateProductDto.productName, id);
+        uploadedUrls.push(url);
+      }
+      // append uploaded urls to images array in DB
+      try {
+        const existing = await this.productModel.findById(id).select('images').exec();
+        const merged = (existing?.images || []).concat(uploadedUrls);
+        updateData.images = merged;
+      } catch (e) {
+        this.logger.debug('Failed to merge images for product: ' + e?.message);
+        updateData.images = uploadedUrls;
       }
     }
     const product = await this.productModel
@@ -254,12 +293,24 @@ export class ProductService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { __v, ...rest } = obj;
     // Return productId as id
+    // Invalidate cache for product lists so clients see updated data
+    try {
+      await this.redisService.delByPattern('products:list*');
+    } catch (e) {
+      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
+    }
     return { ...rest, productId: product._id, images: presignedImages };
   }
 
   async remove(id: string): Promise<void> {
     const result = await this.productModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+    // Invalidate cache after deletion
+    try {
+      await this.redisService.delByPattern('products:list*');
+    } catch (e) {
+      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
+    }
   }
 
   // ProductType CRUD
