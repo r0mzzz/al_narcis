@@ -1,10 +1,15 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
-  private logger: Logger
+  private logger: Logger;
 
   async onModuleInit() {
     this.client = new Redis({
@@ -23,7 +28,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         await this.delByPattern('products:list*');
       }
     } catch (e) {
-      this.logger.debug('Failed to purge products cache on startup: ' + e?.message);
+      this.logger.debug(
+        'Failed to purge products cache on startup: ' + e?.message,
+      );
     }
   }
 
@@ -31,7 +38,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.disconnect();
   }
 
-  async setJson(key: string, value: any, ttlSeconds?: number) {
+  async getJson<T>(key: string): Promise<T | null> {
+    const data = await this.client.get(key);
+    return data ? JSON.parse(data) : null;
+  }
+
+  async setJson(key: string, value: any, ttlSeconds?: number): Promise<void> {
     const data = JSON.stringify(value);
     if (ttlSeconds) {
       await this.client.set(key, data, 'EX', ttlSeconds);
@@ -40,29 +52,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async getJson<T = any>(key: string): Promise<T | null> {
-    const data = await this.client.get(key);
-    return data ? JSON.parse(data) : null;
+  async delByPattern(pattern: string): Promise<void> {
+    const stream = this.client.scanStream({
+      match: pattern,
+      count: 100,
+    });
+
+    stream.on('data', (keys: string[]) => {
+      if (keys.length) {
+        this.client.del(...keys);
+      }
+    });
+
+    return new Promise((resolve, reject) => {
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
   }
 
   async del(key: string) {
     await this.client.del(key);
-  }
-
-  // Delete keys by pattern (use with care in production)
-  async delByPattern(pattern: string) {
-    if (!this.client) return;
-    const stream = this.client.scanStream({ match: pattern, count: 100 });
-    const pipeline = this.client.pipeline();
-    let found = 0;
-    for await (const keys of stream) {
-      if (keys.length) {
-        found += keys.length;
-        keys.forEach((k: string) => pipeline.del(k));
-      }
-    }
-    if (found > 0) {
-      await pipeline.exec();
-    }
   }
 }

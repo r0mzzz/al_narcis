@@ -51,65 +51,27 @@ export class ProductService {
       filter.category = { $in: categories };
     }
 
-    // Normalize pagination params
     const parsedLimit = Number(limit) || 10;
     const parsedPage = Number(page) || 1;
 
-    this.logger.debug(
-      `findAll called with parsedLimit=${parsedLimit} parsedPage=${parsedPage} productType=${productType} search=${search} categories=${categories}`,
-    );
-
-    // Build a cache key based on query params. Only use cache for the unfiltered first page
-    // to avoid returning stale or accidentally narrow cached results for other queries.
     const isCacheable =
       !productType &&
       !search &&
       (!categories || categories.length === 0) &&
       parsedPage === 1;
-    const cacheKey = `products:list:${JSON.stringify({
-      productType,
-      search,
-      limit: parsedLimit,
-      page: parsedPage,
-      categories:
-        categories && categories.length ? categories.slice().sort() : undefined,
-    })}`;
+
+    const cacheKey = `products:list:${parsedLimit}:${parsedPage}`;
 
     if (isCacheable) {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
-        // verify cached total against current DB to avoid stale narrow results
-        try {
-          const currentTotal = await this.productModel
-            .countDocuments(filter)
-            .exec();
-          const needed = Math.min(parsedLimit, currentTotal);
-          const cachedLength = Array.isArray(cached.data)
-            ? cached.data.length
-            : 0;
-          if (cached.total === currentTotal && cachedLength >= needed) {
-            this.logger.debug(
-              `Returning products from cache key=${cacheKey} count=${cachedLength}`,
-            );
-            return cached;
-          }
-          // otherwise treat as cache miss and continue to fetch fresh data
-          this.logger.debug(
-            `Cache mismatch for key=${cacheKey} (cached.total=${cached.total} current=${currentTotal} cachedLength=${cachedLength} needed=${needed}), refreshing`,
-          );
-        } catch (e) {
-          this.logger.debug('Failed to validate products cache: ' + e?.message);
-          // fall through and fetch fresh data
-        }
+        this.logger.debug(`Returning products from cache key=${cacheKey}`);
+        return cached;
       }
     }
 
     const skip = (parsedPage - 1) * parsedLimit;
-    this.logger.debug(
-      `Mongo query skip=${skip} limit=${parsedLimit} filter=${JSON.stringify(
-        filter,
-      )}`,
-    );
+
     const [data, total] = await Promise.all([
       this.productModel
         .find(filter)
@@ -121,15 +83,11 @@ export class ProductService {
       this.productModel.countDocuments(filter),
     ]);
 
-    this.logger.debug(
-      `Mongo returned data.length=${data.length} total=${total}`,
-    );
-
-    // Attach images array to each product. Prefer images[] stored in DB to avoid external MinIO calls.
     const dataWithImages = await Promise.all(
       data.map(async (doc) => {
         const obj = doc.toObject();
         let images: string[] = [];
+
         if (Array.isArray(obj.images) && obj.images.length > 0) {
           images = obj.images;
         } else {
@@ -145,11 +103,12 @@ export class ProductService {
             images = [];
           }
         }
-        // Remove old productImage field if present
+
         delete obj.productImage;
         return { ...obj, images };
       }),
     );
+
     const result = {
       data: dataWithImages,
       total,
@@ -158,8 +117,9 @@ export class ProductService {
     };
 
     if (isCacheable) {
-      await this.redisService.setJson(cacheKey, result, 3600);
+      await this.redisService.setJson(cacheKey, result, 300); // 5 минут
     }
+
     return result;
   }
 
@@ -245,35 +205,26 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
-    // First create the product without image so we can get its _id
+
     const createdProduct = new this.productModel({
       ...createProductDto,
     });
     await createdProduct.save();
 
     if (image) {
-      // Use the product's name and _id as unique identifier for MinIO
       const url = await this.minioService.upload(
         image,
         createProductDto.productName,
         createdProduct._id.toString(),
       );
-      createdProduct.productImage = url;
-      createdProduct.images = Array.isArray(createdProduct.images)
-        ? [...createdProduct.images, url]
-        : [url];
-      await createdProduct.save(); // update with image URL(s)
+      createdProduct.images = [url];
+      await createdProduct.save();
     }
-    // Invalidate product list cache so clients get fresh data
-    try {
-      await this.redisService.delByPattern('products:list*');
-    } catch (e) {
-      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
-    }
+
+    await this.redisService.delByPattern('products:list*');
+
     const obj = createdProduct.toObject();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { __v, ...rest } = obj;
-    // Return productId as _id
     return { ...rest, productId: obj._id };
   }
 
@@ -295,8 +246,9 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
+
     const updateData: any = { ...updateProductDto };
-    // Handle multiple image uploads
+
     if (images && images.length > 0) {
       const uploadedUrls: string[] = [];
       for (const image of images) {
@@ -307,53 +259,35 @@ export class ProductService {
         );
         uploadedUrls.push(url);
       }
-      // append uploaded urls to images array in DB
-      try {
-        const existing = await this.productModel
-          .findById(id)
-          .select('images')
-          .exec();
-        const merged = (existing?.images || []).concat(uploadedUrls);
-        updateData.images = merged;
-      } catch (e) {
-        this.logger.debug('Failed to merge images for product: ' + e?.message);
-        updateData.images = uploadedUrls;
-      }
+
+      const existing = await this.productModel
+        .findById(id)
+        .select('images')
+        .exec();
+      const merged = (existing?.images || []).concat(uploadedUrls);
+      updateData.images = merged;
     }
+
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .select('-_id -__v')
       .exec();
+
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+
+    await this.redisService.delByPattern('products:list*');
+
     const obj = product.toObject();
-    const presignedImages = await this.minioService.getProductImages(
-      obj.productName,
-      id,
-    );
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { __v, ...rest } = obj;
-    // Return productId as id
-    // Invalidate cache for product lists so clients see updated data
-    try {
-      await this.redisService.delByPattern('products:list*');
-    } catch (e) {
-      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
-    }
-    return { ...rest, productId: product._id, images: presignedImages };
+    return { ...obj, productId: product._id, images: obj.images || [] };
   }
 
   async remove(id: string): Promise<void> {
     const result = await this.productModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
-    // Invalidate cache after deletion
-    try {
-      await this.redisService.delByPattern('products:list*');
-    } catch (e) {
-      this.logger.debug('Failed to invalidate products cache: ' + e?.message);
-    }
+
+    await this.redisService.delByPattern('products:list*');
   }
 
-  // ProductType CRUD
   async createProductType(name: string): Promise<{ name: string }> {
     if (!name || typeof name !== 'string')
       throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
@@ -389,39 +323,6 @@ export class ProductService {
   }
 
   async deleteProductType(id: string): Promise<void> {
-    const deleted = await this.productTypeModel.findByIdAndDelete(id).exec();
-    if (!deleted) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
-  }
-
-  async addType(name: string): Promise<{ name: string }> {
-    if (!name || typeof name !== 'string')
-      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
-    name = name.trim();
-    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
-    const exists = await this.productTypeModel.findOne({ name }).exec();
-    if (exists)
-      throw new BadRequestException(AppError.PRODUCT_TYPE_ALREADY_EXISTS);
-    const created = new this.productTypeModel({ name });
-    await created.save();
-    return { name: created.name };
-  }
-
-  async updateType(
-    id: string,
-    name: string,
-  ): Promise<{ _id: string; name: string }> {
-    if (!name || typeof name !== 'string')
-      throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
-    name = name.trim();
-    if (!name) throw new BadRequestException(AppError.TYPE_NAME_REQUIRED);
-    const updated = await this.productTypeModel
-      .findByIdAndUpdate(id, { name }, { new: true })
-      .exec();
-    if (!updated) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
-    return { _id: updated._id.toString(), name: updated.name };
-  }
-
-  async deleteType(id: string): Promise<void> {
     const deleted = await this.productTypeModel.findByIdAndDelete(id).exec();
     if (!deleted) throw new NotFoundException(AppError.PRODUCT_TYPE_NOT_FOUND);
   }
