@@ -38,12 +38,7 @@ export class ProductService {
     limit = 10,
     page = 1,
     categories?: string[],
-  ): Promise<{
-    data: Record<string, any>[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  ): Promise<unknown> {
     const filter: any = {};
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
