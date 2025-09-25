@@ -9,7 +9,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
-  private logger: Logger;
+  private logger = new Logger(RedisService.name);
 
   async onModuleInit() {
     this.client = new Redis({
@@ -18,8 +18,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       password: process.env.REDIS_PASSWORD || undefined,
     });
 
-    // Optionally purge products list cache at startup to avoid serving stale data.
-    // Set REDIS_PURGE_PRODUCTS_CACHE=true in .env to enable.
+    // Очистка кэша при старте (по желанию через .env)
     try {
       const purge = (
         process.env.REDIS_PURGE_PRODUCTS_CACHE || ''
@@ -63,7 +62,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
       stream.on('data', (keys: string[]) => {
         if (keys.length) {
-          keys.forEach((key) => pipeline.del(key));
+          keys.forEach((key) => {
+            this.logger.debug(`Deleting Redis key: ${key}`);
+            pipeline.del(key);
+          });
         }
       });
 
@@ -80,8 +82,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-
   async del(key: string) {
     await this.client.del(key);
+  }
+
+  async flushAll() {
+    await this.client.flushall();
   }
 }
