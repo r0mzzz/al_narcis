@@ -60,9 +60,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const keysToDelete: string[] = [];
 
     stream.on('data', (keys: string[]) => {
-      if (keys.length) {
-        keysToDelete.push(...keys);
-      }
+      if (keys.length) keysToDelete.push(...keys);
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -71,6 +69,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (keysToDelete.length > 0) {
+      // Ждём удаления всех ключей
       await this.client.del(...keysToDelete);
     }
   }
