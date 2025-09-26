@@ -83,24 +83,14 @@ export class ProductService {
         allProducts = await Promise.all(
           products.map(async (doc) => {
             const obj = doc.toObject();
-            let images: string[] = [];
-            if (Array.isArray(obj.images) && obj.images.length > 0) {
-              images = obj.images;
-            } else {
-              try {
-                images = await this.minioService.getProductImages(
-                  obj.productName,
-                  obj._id.toString(),
-                );
-              } catch (e) {
-                this.logger.debug(
-                  `Failed to fetch images for product ${obj._id}: ${e?.message}`,
-                );
-                images = [];
-              }
+            let presignedImage = '';
+            if (obj.productImage) {
+              presignedImage = await this.minioService.getPresignedUrl(
+                obj.productImage,
+              );
             }
-            delete obj.productImage;
-            return { ...obj, images };
+            delete obj.images;
+            return { ...obj, productImage: presignedImage };
           }),
         );
         total = allProducts.length;
@@ -121,24 +111,14 @@ export class ProductService {
       allProducts = await Promise.all(
         products.map(async (doc) => {
           const obj = doc.toObject();
-          let images: string[] = [];
-          if (Array.isArray(obj.images) && obj.images.length > 0) {
-            images = obj.images;
-          } else {
-            try {
-              images = await this.minioService.getProductImages(
-                obj.productName,
-                obj._id.toString(),
-              );
-            } catch (e) {
-              this.logger.debug(
-                `Failed to fetch images for product ${obj._id}: ${e?.message}`,
-              );
-              images = [];
-            }
+          let presignedImage = '';
+          if (obj.productImage) {
+            presignedImage = await this.minioService.getPresignedUrl(
+              obj.productImage,
+            );
           }
-          delete obj.productImage;
-          return { ...obj, images };
+          delete obj.images;
+          return { ...obj, productImage: presignedImage };
         }),
       );
       total = allProducts.length;
@@ -165,11 +145,12 @@ export class ProductService {
       .exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
     const obj = product.toObject();
-    const images = await this.minioService.getProductImages(
-      obj.productName,
-      id,
-    );
-    return { ...obj, images };
+    let presignedImage = '';
+    if (obj.productImage) {
+      presignedImage = await this.minioService.getPresignedUrl(obj.productImage);
+    }
+    delete obj.images;
+    return { ...obj, productImage: presignedImage };
   }
 
   async addCategory(categoryName: string): Promise<{ categoryName: string }> {
