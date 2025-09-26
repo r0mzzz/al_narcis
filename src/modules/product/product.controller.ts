@@ -132,7 +132,6 @@ export class ProductController {
     return this.productService.deleteProductType(id);
   }
 
-
   @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -141,11 +140,11 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Patch(':id')
-  @UseInterceptors(FilesInterceptor('productImage'))
+  @UseInterceptors(FilesInterceptor('productImage', 1))
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
-    @UploadedFiles() images?: Express.Multer.File[],
+    @UploadedFile() image?: Express.Multer.File,
   ) {
     if (typeof updateProductDto.variants === 'string') {
       try {
@@ -159,7 +158,7 @@ export class ProductController {
       const parsed = Number(updateProductDto.quantity);
       updateProductDto.quantity = isNaN(parsed) ? undefined : parsed;
     }
-    return await this.productService.update(id, updateProductDto, images);
+    return await this.productService.update(id, updateProductDto, image);
   }
 
   @UseGuards(AccessTokenGuard)
