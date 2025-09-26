@@ -229,9 +229,10 @@ export class ProductService {
     }
 
     try {
-      // Bump cache version and remove old caches
-      await this.redisService.incr('products:list:version');
+      // Bump cache version and remove old caches (including legacy keys)
+      const newVersion = await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
+      await this.redisService.set('products:list:version', String(newVersion));
       this.logger.log('Invalidated products:list cache after create');
     } catch (e) {
       this.logger.debug(
@@ -294,9 +295,10 @@ export class ProductService {
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
     try {
-      // Bump cache version and remove old caches
-      await this.redisService.incr('products:list:version');
+      // Bump cache version and remove old caches (including legacy keys)
+      const newVersion = await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
+      await this.redisService.set('products:list:version', String(newVersion));
       this.logger.log('Invalidated products:list cache after update');
     } catch (e) {
       this.logger.debug(
@@ -315,9 +317,10 @@ export class ProductService {
     if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
     try {
-      // Bump cache version and remove old caches
-      await this.redisService.incr('products:list:version');
+      // Bump cache version and remove old caches (including legacy keys)
+      const newVersion = await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
+      await this.redisService.set('products:list:version', String(newVersion));
       this.logger.log('Invalidated products:list cache after delete');
     } catch (e) {
       this.logger.debug(
@@ -417,9 +420,7 @@ export class ProductService {
       await this.redisService.setJson(cacheKey, result, 300);
       this.logger.log(`Rebuilt products cache key=${cacheKey}`);
     } catch (e) {
-      this.logger.debug(
-        `Failed to refresh products cache: ${e?.message || e}`,
-      );
+      this.logger.debug(`Failed to refresh products cache: ${e?.message || e}`);
     }
   }
 }

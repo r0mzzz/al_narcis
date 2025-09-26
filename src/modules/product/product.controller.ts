@@ -132,23 +132,6 @@ export class ProductController {
     return this.productService.deleteProductType(id);
   }
 
-  @UseGuards(AccessTokenGuard)
-  @Post('types/add')
-  async addType(@Body('name') name: string) {
-    return this.productService.addType(name);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Patch('types/update/:id')
-  async updateType(@Param('id') id: string, @Body('name') name: string) {
-    return this.productService.updateType(id, name);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Delete('types/delete/:id')
-  async deleteType(@Param('id') id: string) {
-    return this.productService.deleteType(id);
-  }
 
   @UseGuards(AccessTokenGuard)
   @Get(':id')
