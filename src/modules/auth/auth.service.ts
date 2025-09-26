@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -18,6 +19,8 @@ import { RedisService } from '../../services/redis.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -71,16 +74,25 @@ export class AuthService {
   }
 
   async refreshTokens(userId: string, refreshToken: string) {
+    this.logger.debug(`Attempting refresh for userId: ${userId}`);
     const user = await this.usersService.findById(userId);
-    if (!user || !user.refresh_token)
-      throw new ForbiddenException(AppError.ACCESS_DENIED);
+    if (!user) {
+      this.logger.warn(`User not found for userId: ${userId}`);
+      throw new ForbiddenException('User not found');
+    }
+    if (!user.refresh_token) {
+      this.logger.warn(`No refresh token stored for userId: ${userId}`);
+      throw new ForbiddenException('No refresh token stored');
+    }
     const refreshTokenMatches = await bcrypt.compare(
       refreshToken,
       user.refresh_token,
     );
-    if (!refreshTokenMatches)
-      throw new ForbiddenException(AppError.ACCESS_DENIED);
-    // Only return new access token, do NOT update refresh token in DB
+    if (!refreshTokenMatches) {
+      this.logger.warn(`Refresh token mismatch for userId: ${userId}`);
+      throw new ForbiddenException('Invalid refresh token');
+    }
+    this.logger.debug(`Refresh token valid for userId: ${userId}`);
     const access_token = await this.jwtService.signAsync(
       {
         sub: user.id,
