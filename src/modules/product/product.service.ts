@@ -387,14 +387,12 @@ export class ProductService {
       const allProducts = await Promise.all(
         products.map(async (doc) => {
           const obj = doc.toObject();
-          const images =
-            Array.isArray(obj.images) && obj.images.length > 0
-              ? obj.images
-              : await this.minioService
-                  .getProductImages(obj.productName, obj._id.toString())
-                  .catch(() => []);
-          delete (obj as any).productImage;
-          return { ...obj, images };
+          let presignedImage = '';
+          if (obj.productImage) {
+            presignedImage = await this.minioService.getPresignedUrl(obj.productImage);
+          }
+          delete obj.images;
+          return { ...obj, productImage: presignedImage };
         }),
       );
       const total = allProducts.length;

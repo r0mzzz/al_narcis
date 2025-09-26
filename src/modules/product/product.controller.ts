@@ -9,7 +9,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  UploadedFiles,
   NotFoundException,
   Query,
 } from '@nestjs/common';
@@ -33,7 +32,7 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Post()
-  @UseInterceptors(FilesInterceptor('productImage'))
+  @UseInterceptors(FilesInterceptor('productImage', 1))
   create(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
