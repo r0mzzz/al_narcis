@@ -11,6 +11,7 @@ import {
   UploadedFile,
   NotFoundException,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -20,11 +21,12 @@ import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { CapacityService } from './capacity.service';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AppError } from '../../common/errors';
 
 @Controller('products')
 export class ProductController {
+  private readonly logger = new Logger(ProductController.name);
   constructor(
     private readonly productService: ProductService,
     private readonly capacityService: CapacityService,
@@ -32,12 +34,15 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Post()
-  @UseInterceptors(FilesInterceptor('productImage', 1))
-  create(
+  @UseInterceptors(FileInterceptor('productImage'))
+  async create(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    return this.productService.create(createProductDto, image);
+    this.logger.log(
+      `Received create request. Image present: ${!!image}, filename: ${image?.originalname}`,
+    );
+    return await this.productService.create(createProductDto, image);
   }
 
   @UseGuards(AccessTokenGuard)
@@ -139,12 +144,15 @@ export class ProductController {
 
   @UseGuards(AccessTokenGuard)
   @Patch(':id')
-  @UseInterceptors(FilesInterceptor('productImage', 1))
+  @UseInterceptors(FileInterceptor('productImage'))
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
+    this.logger.log(
+      `Received update request for id=${id}. Image present: ${!!image}, filename: ${image?.originalname}`,
+    );
     if (typeof updateProductDto.variants === 'string') {
       try {
         updateProductDto.variants = JSON.parse(updateProductDto.variants);
