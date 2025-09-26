@@ -243,32 +243,30 @@ export class ProductService {
 
     const createdProduct = new this.productModel({
       ...createProductDto,
-      images: [],
+      productImage: '',
     });
     await createdProduct.save();
 
     if (image) {
-      // Upload image to Minio using productId as name
       const objectPath = await this.minioService.upload(image, createdProduct._id.toString());
-      createdProduct.images = [objectPath];
+      createdProduct.productImage = objectPath;
       await createdProduct.save();
     }
 
-    // Return product with presigned URLs for images
-    const presignedImages = await Promise.all(
-      (createdProduct.images || []).map((imgPath) =>
-        this.minioService.getPresignedUrl(imgPath)
-      )
-    );
+    // Return product with presigned URL for image
+    let presignedImage = '';
+    if (createdProduct.productImage) {
+      presignedImage = await this.minioService.getPresignedUrl(createdProduct.productImage);
+    }
     const obj = createdProduct.toObject();
-    obj.images = presignedImages;
+    obj.productImage = presignedImage;
     return obj;
   }
 
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
-    images?: Express.Multer.File[],
+    image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
     if (
       updateProductDto.category &&
@@ -284,51 +282,41 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
 
-    const updateData: any = { ...updateProductDto };
-
-    if (images && images.length > 0) {
-      const uploadedPaths: string[] = [];
-      for (const image of images) {
-        const objectPath = await this.minioService.upload(image, id);
-        uploadedPaths.push(objectPath);
-      }
-      const existing = await this.productModel
-        .findById(id)
-        .select('images')
-        .exec();
-      const merged = (existing?.images || []).concat(uploadedPaths);
-      updateData.images = merged;
-    }
-
-    const product = await this.productModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .select('-_id -__v')
-      .exec();
-
+    const product = await this.productModel.findById(id).exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
+    if (image) {
+      // Delete previous image from Minio if exists
+      if (product.productImage) {
+        await this.minioService.delete(product.productImage);
+      }
+      // Upload new image
+      const objectPath = await this.minioService.upload(image, id);
+      product.productImage = objectPath;
+    }
+
+    // Update other fields
+    Object.assign(product, updateProductDto);
+    await product.save();
+
+    // Invalidate cache
     try {
-      // Bump cache version and remove old caches (including legacy keys)
       const newVersion = await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
       await this.redisService.set('products:list:version', String(newVersion));
       this.logger.log('Invalidated products:list cache after update');
     } catch (e) {
-      this.logger.debug(
-        `Failed to invalidate products cache after update: ${e?.message || e}`,
-      );
+      this.logger.debug(`Failed to invalidate products cache after update: ${e?.message || e}`);
     }
-
     await this.refreshProductsCache();
 
-    // Return product with presigned URLs for images
-    const presignedImages = await Promise.all(
-      (product.images || []).map((imgPath) =>
-        this.minioService.getPresignedUrl(imgPath)
-      )
-    );
+    // Return product with presigned URL for image
+    let presignedImage = '';
+    if (product.productImage) {
+      presignedImage = await this.minioService.getPresignedUrl(product.productImage);
+    }
     const obj = product.toObject();
-    obj.images = presignedImages;
+    obj.productImage = presignedImage;
     return obj;
   }
 

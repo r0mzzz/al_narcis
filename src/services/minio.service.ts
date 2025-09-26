@@ -94,6 +94,16 @@ export class MinioService {
     }
   }
 
+  async delete(objectPath: string): Promise<void> {
+    try {
+      await this.minioClient.removeObject(this.bucket, objectPath);
+      this.logger.log(`Deleted file from Minio: ${objectPath}`);
+    } catch (err) {
+      this.logger.error(`Failed to delete file from Minio: ${err}`);
+      throw err;
+    }
+  }
+
   private getFileExtension(filename: string): string {
     const idx = filename.lastIndexOf('.');
     return idx !== -1 ? filename.substring(idx) : '';
