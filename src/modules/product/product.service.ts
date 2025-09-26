@@ -243,37 +243,26 @@ export class ProductService {
 
     const createdProduct = new this.productModel({
       ...createProductDto,
+      images: [],
     });
     await createdProduct.save();
 
     if (image) {
-      // Use the product's name and _id as unique identifier for MinIO
-      const url = await this.minioService.upload(
-        image,
-        createProductDto.productName,
-        createdProduct._id.toString(),
-      );
-      createdProduct.images = [url];
+      // Upload image to Minio using productId as name
+      const objectPath = await this.minioService.upload(image, createdProduct._id.toString());
+      createdProduct.images = [objectPath];
       await createdProduct.save();
     }
 
-    try {
-      // Bump cache version and remove old caches (including legacy keys)
-      const newVersion = await this.redisService.incr('products:list:version');
-      await this.redisService.delByPattern('products:list*');
-      await this.redisService.set('products:list:version', String(newVersion));
-      this.logger.log('Invalidated products:list cache after create');
-    } catch (e) {
-      this.logger.debug(
-        `Failed to invalidate products cache after create: ${e?.message || e}`,
-      );
-    }
-
-    await this.refreshProductsCache();
-
+    // Return product with presigned URLs for images
+    const presignedImages = await Promise.all(
+      (createdProduct.images || []).map((imgPath) =>
+        this.minioService.getPresignedUrl(imgPath)
+      )
+    );
     const obj = createdProduct.toObject();
-    delete (obj as any).__v;
-    return { ...obj, productId: obj._id };
+    obj.images = presignedImages;
+    return obj;
   }
 
   async update(
@@ -298,21 +287,16 @@ export class ProductService {
     const updateData: any = { ...updateProductDto };
 
     if (images && images.length > 0) {
-      const uploadedUrls: string[] = [];
+      const uploadedPaths: string[] = [];
       for (const image of images) {
-        const url = await this.minioService.upload(
-          image,
-          updateProductDto.productName,
-          id,
-        );
-        uploadedUrls.push(url);
+        const objectPath = await this.minioService.upload(image, id);
+        uploadedPaths.push(objectPath);
       }
-
       const existing = await this.productModel
         .findById(id)
         .select('images')
         .exec();
-      const merged = (existing?.images || []).concat(uploadedUrls);
+      const merged = (existing?.images || []).concat(uploadedPaths);
       updateData.images = merged;
     }
 
@@ -337,8 +321,15 @@ export class ProductService {
 
     await this.refreshProductsCache();
 
+    // Return product with presigned URLs for images
+    const presignedImages = await Promise.all(
+      (product.images || []).map((imgPath) =>
+        this.minioService.getPresignedUrl(imgPath)
+      )
+    );
     const obj = product.toObject();
-    return { ...obj, productId: product._id, images: obj.images || [] };
+    obj.images = presignedImages;
+    return obj;
   }
 
   async remove(id: string): Promise<void> {
