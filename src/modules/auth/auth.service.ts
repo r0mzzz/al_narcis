@@ -80,9 +80,17 @@ export class AuthService {
     );
     if (!refreshTokenMatches)
       throw new ForbiddenException(AppError.ACCESS_DENIED);
-    const tokens = await this.getTokens(user.id);
-    await this.updateRefreshToken(user.id, tokens.refresh_token);
-    return tokens;
+    // Only return new access token, do NOT update refresh token in DB
+    const access_token = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+      },
+      {
+        secret: this.configService.get('access_secret'),
+        expiresIn: this.configService.get('access_expire'),
+      },
+    );
+    return { access_token };
   }
 
   async updateRefreshToken(userId: string, refreshToken: string) {
