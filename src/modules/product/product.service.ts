@@ -147,7 +147,9 @@ export class ProductService {
     const obj = product.toObject();
     let presignedImage = '';
     if (obj.productImage) {
-      presignedImage = await this.minioService.getPresignedUrl(obj.productImage);
+      presignedImage = await this.minioService.getPresignedUrl(
+        obj.productImage,
+      );
     }
     delete obj.images;
     return { ...obj, productImage: presignedImage };
@@ -229,7 +231,10 @@ export class ProductService {
     await createdProduct.save();
 
     if (image) {
-      const objectPath = await this.minioService.upload(image, createdProduct._id.toString());
+      const objectPath = await this.minioService.upload(
+        image,
+        createdProduct._id.toString(),
+      );
       createdProduct.productImage = objectPath;
       await createdProduct.save();
     }
@@ -237,7 +242,9 @@ export class ProductService {
     // Return product with presigned URL for image
     let presignedImage = '';
     if (createdProduct.productImage) {
-      presignedImage = await this.minioService.getPresignedUrl(createdProduct.productImage);
+      presignedImage = await this.minioService.getPresignedUrl(
+        createdProduct.productImage,
+      );
     }
     const obj = createdProduct.toObject();
     obj.productImage = presignedImage;
@@ -287,14 +294,18 @@ export class ProductService {
       await this.redisService.set('products:list:version', String(newVersion));
       this.logger.log('Invalidated products:list cache after update');
     } catch (e) {
-      this.logger.debug(`Failed to invalidate products cache after update: ${e?.message || e}`);
+      this.logger.debug(
+        `Failed to invalidate products cache after update: ${e?.message || e}`,
+      );
     }
     await this.refreshProductsCache();
 
     // Return product with presigned URL for image
     let presignedImage = '';
     if (product.productImage) {
-      presignedImage = await this.minioService.getPresignedUrl(product.productImage);
+      presignedImage = await this.minioService.getPresignedUrl(
+        product.productImage,
+      );
     }
     const obj = product.toObject();
     obj.productImage = presignedImage;
