@@ -104,7 +104,11 @@ export class ProductService {
           }),
         );
         total = allProducts.length;
-        await this.redisService.setJson(cacheKey, { data: allProducts, total }, 300);
+        await this.redisService.setJson(
+          cacheKey,
+          { data: allProducts, total },
+          300,
+        );
         this.logger.log(`Rebuilt products cache key=${cacheKey}`);
       }
     } else {
@@ -425,7 +429,11 @@ export class ProductService {
       const total = allProducts.length;
       const version = await this.getProductsCacheVersion();
       const cacheKey = `products:list:v${version}`;
-      await this.redisService.setJson(cacheKey, { data: allProducts, total }, 300);
+      await this.redisService.setJson(
+        cacheKey,
+        { data: allProducts, total },
+        300,
+      );
       this.logger.log(`Rebuilt products cache key=${cacheKey}`);
     } catch (e) {
       this.logger.debug(`Failed to refresh products cache: ${e?.message || e}`);
