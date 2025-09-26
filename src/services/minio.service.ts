@@ -41,6 +41,7 @@ export class MinioService {
     const metaData = {
       'Content-Type': file.mimetype,
     };
+    this.logger.log(`Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`);
     try {
       await this.minioClient.putObject(
         this.bucket,
