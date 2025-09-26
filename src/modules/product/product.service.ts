@@ -56,77 +56,102 @@ export class ProductService {
       filter.category = { $in: categories };
     }
 
-    const parsedLimit = Number(limit) || 10;
-    const parsedPage = Number(page) || 1;
-
+    // Only cache unfiltered, unpaginated queries
     const isCacheable =
-      !productType &&
-      !search &&
-      (!categories || categories.length === 0) &&
-      parsedPage === 1;
-
+      !productType && !search && (!categories || categories.length === 0);
     const version = await this.getProductsCacheVersion();
-    const cacheKey = `products:list:v${version}:${parsedLimit}:${parsedPage}`;
+    const cacheKey = `products:list:v${version}`;
+
+    let allProducts: any[];
+    let total: number;
 
     if (isCacheable) {
-      const cached = await this.redisService.getJson(cacheKey);
+      const cached = await this.redisService.getJson<{
+        data: any[];
+        total: number;
+      }>(cacheKey);
       if (cached) {
         this.logger.debug(`Returning products from cache key=${cacheKey}`);
-        return cached;
+        allProducts = cached.data;
+        total = cached.total;
+      } else {
+        const products = await this.productModel
+          .find({})
+          .select('-__v')
+          .sort({ _id: -1 })
+          .exec();
+        allProducts = await Promise.all(
+          products.map(async (doc) => {
+            const obj = doc.toObject();
+            let images: string[] = [];
+            if (Array.isArray(obj.images) && obj.images.length > 0) {
+              images = obj.images;
+            } else {
+              try {
+                images = await this.minioService.getProductImages(
+                  obj.productName,
+                  obj._id.toString(),
+                );
+              } catch (e) {
+                this.logger.debug(
+                  `Failed to fetch images for product ${obj._id}: ${e?.message}`,
+                );
+                images = [];
+              }
+            }
+            delete obj.productImage;
+            return { ...obj, images };
+          }),
+        );
+        total = allProducts.length;
+        await this.redisService.setJson(cacheKey, { data: allProducts, total }, 300);
+        this.logger.log(`Rebuilt products cache key=${cacheKey}`);
       }
-    }
-
-    const skip = (parsedPage - 1) * parsedLimit;
-
-    const [data, total] = await Promise.all([
-      this.productModel
+    } else {
+      // For filtered queries, always hit DB
+      const products = await this.productModel
         .find(filter)
         .select('-__v')
-        .skip(skip)
-        .limit(parsedLimit)
         .sort({ _id: -1 })
-        .exec(),
-      this.productModel.countDocuments(filter),
-    ]);
-
-    const dataWithImages = await Promise.all(
-      data.map(async (doc) => {
-        const obj = doc.toObject();
-        let images: string[] = [];
-
-        if (Array.isArray(obj.images) && obj.images.length > 0) {
-          images = obj.images;
-        } else {
-          try {
-            images = await this.minioService.getProductImages(
-              obj.productName,
-              obj._id.toString(),
-            );
-          } catch (e) {
-            this.logger.debug(
-              `Failed to fetch images for product ${obj._id}: ${e?.message}`,
-            );
-            images = [];
+        .exec();
+      allProducts = await Promise.all(
+        products.map(async (doc) => {
+          const obj = doc.toObject();
+          let images: string[] = [];
+          if (Array.isArray(obj.images) && obj.images.length > 0) {
+            images = obj.images;
+          } else {
+            try {
+              images = await this.minioService.getProductImages(
+                obj.productName,
+                obj._id.toString(),
+              );
+            } catch (e) {
+              this.logger.debug(
+                `Failed to fetch images for product ${obj._id}: ${e?.message}`,
+              );
+              images = [];
+            }
           }
-        }
+          delete obj.productImage;
+          return { ...obj, images };
+        }),
+      );
+      total = allProducts.length;
+    }
 
-        delete obj.productImage;
-        return { ...obj, images };
-      }),
-    );
+    // Apply limit/page in memory
+    const parsedLimit = Number(limit) || 10;
+    const parsedPage = Number(page) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+    const pagedData = allProducts.slice(skip, skip + parsedLimit);
 
-    const result = {
-      data: dataWithImages,
+    return {
+      data: pagedData,
       total,
       page: parsedPage,
       limit: parsedLimit,
     };
-
-    if (isCacheable) {
-      await this.redisService.setJson(cacheKey, result, 300); // 5 минут
-    }
-
-    return result;
   }
 
   async findOne(id: string): Promise<Record<string, any>> {
@@ -377,25 +402,15 @@ export class ProductService {
   }
 
   // Helper to rebuild products list cache for given limit/page (defaults to 10/1)
-  private async refreshProductsCache(limit = 10, page = 1) {
+  private async refreshProductsCache() {
     try {
-      const parsedLimit = Number(limit) || 10;
-      const parsedPage = Number(page) || 1;
-      const skip = (parsedPage - 1) * parsedLimit;
-      const filter: any = {};
-      const [data, total] = await Promise.all([
-        this.productModel
-          .find(filter)
-          .select('-__v')
-          .skip(skip)
-          .limit(parsedLimit)
-          .sort({ _id: -1 })
-          .exec(),
-        this.productModel.countDocuments(filter),
-      ]);
-
-      const dataWithImages = await Promise.all(
-        data.map(async (doc) => {
+      const products = await this.productModel
+        .find({})
+        .select('-__v')
+        .sort({ _id: -1 })
+        .exec();
+      const allProducts = await Promise.all(
+        products.map(async (doc) => {
           const obj = doc.toObject();
           const images =
             Array.isArray(obj.images) && obj.images.length > 0
@@ -407,17 +422,10 @@ export class ProductService {
           return { ...obj, images };
         }),
       );
-
-      const result = {
-        data: dataWithImages,
-        total,
-        page: parsedPage,
-        limit: parsedLimit,
-      };
-
+      const total = allProducts.length;
       const version = await this.getProductsCacheVersion();
-      const cacheKey = `products:list:v${version}:${parsedLimit}:${parsedPage}`;
-      await this.redisService.setJson(cacheKey, result, 300);
+      const cacheKey = `products:list:v${version}`;
+      await this.redisService.setJson(cacheKey, { data: allProducts, total }, 300);
       this.logger.log(`Rebuilt products cache key=${cacheKey}`);
     } catch (e) {
       this.logger.debug(`Failed to refresh products cache: ${e?.message || e}`);
