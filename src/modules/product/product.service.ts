@@ -32,6 +32,16 @@ export class ProductService {
     private readonly redisService: RedisService,
   ) {}
 
+  private async getProductsCacheVersion(): Promise<string> {
+    // Default to '1' if not set
+    let v = await this.redisService.get('products:list:version');
+    if (!v) {
+      await this.redisService.set('products:list:version', '1');
+      v = '1';
+    }
+    return v;
+  }
+
   async findAll(
     productType?: string,
     search?: string,
@@ -55,7 +65,8 @@ export class ProductService {
       (!categories || categories.length === 0) &&
       parsedPage === 1;
 
-    const cacheKey = `products:list:${parsedLimit}:${parsedPage}`;
+    const version = await this.getProductsCacheVersion();
+    const cacheKey = `products:list:v${version}:${parsedLimit}:${parsedPage}`;
 
     if (isCacheable) {
       const cached = await this.redisService.getJson(cacheKey);
@@ -218,20 +229,21 @@ export class ProductService {
     }
 
     try {
+      // Bump cache version and remove old caches
+      await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
-      this.logger.log('Invalidated products:list* cache after create');
+      this.logger.log('Invalidated products:list cache after create');
     } catch (e) {
       this.logger.debug(
-        'Failed to invalidate products cache after create: ' +
-          (e?.message || e),
+        `Failed to invalidate products cache after create: ${e?.message || e}`,
       );
     }
 
     await this.refreshProductsCache();
 
     const obj = createdProduct.toObject();
-    const { __v, ...rest } = obj;
-    return { ...rest, productId: obj._id };
+    delete (obj as any).__v;
+    return { ...obj, productId: obj._id };
   }
 
   async update(
@@ -282,12 +294,13 @@ export class ProductService {
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
     try {
+      // Bump cache version and remove old caches
+      await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
-      this.logger.log('Invalidated products:list* cache after update');
+      this.logger.log('Invalidated products:list cache after update');
     } catch (e) {
       this.logger.debug(
-        'Failed to invalidate products cache after update: ' +
-          (e?.message || e),
+        `Failed to invalidate products cache after update: ${e?.message || e}`,
       );
     }
 
@@ -302,11 +315,13 @@ export class ProductService {
     if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
 
     try {
+      // Bump cache version and remove old caches
+      await this.redisService.incr('products:list:version');
       await this.redisService.delByPattern('products:list*');
-      this.logger.log('Invalidated products:list* cache after delete');
+      this.logger.log('Invalidated products:list cache after delete');
     } catch (e) {
       this.logger.debug(
-        'Failed to invalidate products cache after delete: ' + (e?.message || e),
+        `Failed to invalidate products cache after delete: ${e?.message || e}`,
       );
     }
 
@@ -358,7 +373,7 @@ export class ProductService {
     return !!type;
   }
 
-  // Helper to rebuild products list cache for given limit/page
+  // Helper to rebuild products list cache for given limit/page (defaults to 10/1)
   private async refreshProductsCache(limit = 10, page = 1) {
     try {
       const parsedLimit = Number(limit) || 10;
@@ -385,7 +400,7 @@ export class ProductService {
               : await this.minioService
                   .getProductImages(obj.productName, obj._id.toString())
                   .catch(() => []);
-          delete obj.productImage;
+          delete (obj as any).productImage;
           return { ...obj, images };
         }),
       );
@@ -397,11 +412,14 @@ export class ProductService {
         limit: parsedLimit,
       };
 
-      const cacheKey = `products:list:${parsedLimit}:${parsedPage}`;
+      const version = await this.getProductsCacheVersion();
+      const cacheKey = `products:list:v${version}:${parsedLimit}:${parsedPage}`;
       await this.redisService.setJson(cacheKey, result, 300);
       this.logger.log(`Rebuilt products cache key=${cacheKey}`);
     } catch (e) {
-      this.logger.debug('Failed to refresh products cache: ' + (e?.message || e));
+      this.logger.debug(
+        `Failed to refresh products cache: ${e?.message || e}`,
+      );
     }
   }
 }

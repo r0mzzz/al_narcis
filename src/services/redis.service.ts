@@ -39,6 +39,45 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.disconnect();
   }
 
+  // --- Simple string helpers ---
+  async get(key: string): Promise<string | null> {
+    try {
+      const val = await this.client.get(key);
+      return val;
+    } catch (err) {
+      this.logger.error(
+        `Redis GET (raw) failed for key=${key}: ${err?.message || err}`,
+      );
+      return null;
+    }
+  }
+
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    try {
+      if (ttlSeconds) {
+        await this.client.set(key, value, 'EX', ttlSeconds);
+      } else {
+        await this.client.set(key, value);
+      }
+    } catch (err) {
+      this.logger.error(
+        `Redis SET (raw) failed for key=${key}: ${err?.message || err}`,
+      );
+    }
+  }
+
+  async incr(key: string): Promise<number> {
+    try {
+      const v = await this.client.incr(key);
+      return v;
+    } catch (err) {
+      this.logger.error(
+        `Redis INCR failed for key=${key}: ${err?.message || err}`,
+      );
+      throw err;
+    }
+  }
+
   async getJson<T>(key: string): Promise<T | null> {
     try {
       const data = await this.client.get(key);
@@ -49,7 +88,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.logger.debug(`Redis GET miss for key=${key}`);
       return null;
     } catch (err) {
-      this.logger.error(`Redis GET failed for key=${key}: ${err?.message || err}`);
+      this.logger.error(
+        `Redis GET failed for key=${key}: ${err?.message || err}`,
+      );
       return null;
     }
   }
@@ -65,7 +106,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`Redis SET key=${key} (no TTL)`);
       }
     } catch (err) {
-      this.logger.error(`Redis SET failed for key=${key}: ${err?.message || err}`);
+      this.logger.error(
+        `Redis SET failed for key=${key}: ${err?.message || err}`,
+      );
     }
   }
 
@@ -77,11 +120,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       const keys = await this.client.keys(pattern);
       if (keys && keys.length > 0) {
         await this.client.del(...keys);
-        this.logger.log(`Deleted ${keys.length} Redis keys matching pattern "${pattern}" using KEYS()`);
+        this.logger.log(
+          `Deleted ${keys.length} Redis keys matching pattern "${pattern}" using KEYS()`,
+        );
         return keys.length;
       }
     } catch (e) {
-      this.logger.debug(`Redis KEYS() failed for pattern "${pattern}": ${e?.message}. Falling back to scanStream.`);
+      this.logger.debug(
+        `Redis KEYS() failed for pattern "${pattern}": ${e?.message}. Falling back to scanStream.`,
+      );
     }
 
     try {
@@ -103,13 +150,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
       if (found > 0) {
         await pipeline.exec();
-        this.logger.log(`Deleted ${found} Redis keys matching pattern "${pattern}" using scanStream`);
+        this.logger.log(
+          `Deleted ${found} Redis keys matching pattern "${pattern}" using scanStream`,
+        );
       } else {
         this.logger.debug(`No Redis keys matched pattern "${pattern}"`);
       }
       return found;
     } catch (err) {
-      this.logger.error(`Failed to delete Redis keys for pattern "${pattern}": ${err?.message || err}`);
+      this.logger.error(
+        `Failed to delete Redis keys for pattern "${pattern}": ${
+          err?.message || err
+        }`,
+      );
       throw err;
     }
   }
@@ -119,7 +172,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       await this.client.del(key);
       this.logger.debug(`Deleted Redis key=${key}`);
     } catch (err) {
-      this.logger.error(`Failed to delete Redis key=${key}: ${err?.message || err}`);
+      this.logger.error(
+        `Failed to delete Redis key=${key}: ${err?.message || err}`,
+      );
     }
   }
 
