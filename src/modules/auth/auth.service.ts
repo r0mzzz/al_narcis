@@ -151,7 +151,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
     const redisKey = `otp:${user._id}`;
-    const otpData = await this.redisService.getJson(redisKey);
+    const otpData = await this.redisService.getJson<OtpData>(redisKey);
     if (!otpData) throw new BadRequestException(Messages.OTP_NOT_REQUESTED);
     if (new Date(otpData.expires_at) < new Date()) {
       await this.redisService.del(redisKey);
@@ -185,4 +185,12 @@ export class AuthService {
     });
     await this.redisService.del(redisKey);
   }
+}
+
+// OTP data interface for Redis
+interface OtpData {
+  user_id: string;
+  otp_hash: string;
+  expires_at: string;
+  attempts_left: number;
 }
