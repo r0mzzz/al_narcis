@@ -40,8 +40,8 @@ export class AuthService {
       ...createUserDto,
       password: hash,
     });
-    const tokens = await this.getTokens(newUser._id);
-    await this.updateRefreshToken(newUser._id, tokens.refresh_token);
+    const tokens = await this.getTokens(newUser.user_id);
+    await this.updateRefreshToken(newUser.user_id, tokens.refresh_token);
     return tokens;
   }
 
@@ -50,8 +50,8 @@ export class AuthService {
     if (!user) throw new BadRequestException(AppError.USER_NOT_EXISTS);
     const passwordMatches = await bcrypt.compare(data.password, user.password);
     if (!passwordMatches) throw new BadRequestException(AppError.WRONG_DATA);
-    const tokens = await this.getTokens(user._id);
-    await this.updateRefreshToken(user._id, tokens.refresh_token);
+    const tokens = await this.getTokens(user.user_id);
+    await this.updateRefreshToken(user.user_id, tokens.refresh_token);
     return tokens;
   }
 
@@ -75,7 +75,7 @@ export class AuthService {
 
   async refreshTokens(userId: string, refreshToken: string) {
     this.logger.debug(`Attempting refresh for userId: ${userId}`);
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findByUserId(userId);
     if (!user) {
       this.logger.warn(`User not found for userId: ${userId}`);
       throw new ForbiddenException('User not found');
@@ -95,7 +95,7 @@ export class AuthService {
     this.logger.debug(`Refresh token valid for userId: ${userId}`);
     const access_token = await this.jwtService.signAsync(
       {
-        sub: user.id,
+        sub: user.user_id,
       },
       {
         secret: this.configService.get('access_secret'),

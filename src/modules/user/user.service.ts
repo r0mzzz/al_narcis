@@ -238,4 +238,8 @@ export class UsersService {
     await this.userModel.findOneAndDelete({ user_id: id }, {}).exec();
     return { message: Messages.DELETED(user.email) };
   }
+
+  async findByUserId(userId: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ user_id: userId });
+  }
 }
