@@ -151,7 +151,9 @@ export class ProductController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     this.logger.log(
-      `Received update request for id=${id}. Image present: ${!!image}, filename: ${image?.originalname}`,
+      `Received update request for id=${id}. Image present: ${!!image}, filename: ${
+        image?.originalname
+      }`,
     );
     if (typeof updateProductDto.variants === 'string') {
       try {
