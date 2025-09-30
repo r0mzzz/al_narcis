@@ -61,6 +61,9 @@ export class User {
 
   @Prop({ default: false })
   cashbackMilestoneReached: boolean;
+
+  @Prop({ required: true, unique: true, default: uuidv4 })
+  user_id: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

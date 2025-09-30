@@ -194,7 +194,7 @@ export class UsersService {
 
   async getUserProfileData(id: string): Promise<Record<string, any>> {
     const user = await this.userModel
-      .findById(id)
+      .findOne({ user_id: id })
       .select('-_id -__v -password -refresh_token')
       .exec();
     return user ? user.toObject() : null;
