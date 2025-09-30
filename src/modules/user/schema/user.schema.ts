@@ -5,8 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type UserDocument = User & Document;
 
-@Schema({ versionKey: false})
+@Schema({ versionKey: false })
 export class User {
+  @Prop({ type: String, default: uuidv4 })
+  _id: string;
+
   @Prop({ required: true })
   first_name: string;
 
@@ -21,9 +24,6 @@ export class User {
 
   @Prop({ required: true, unique: true })
   email: string;
-
-  @Prop({ required: true, unique: true, default: uuidv4 })
-  user_id: string;
 
   @Prop({ required: true })
   mobile: string;
