@@ -8,6 +8,7 @@ import { HistoryModule } from './modules/history/history.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { RedisModule } from './services/redis.module';
 import { CashbackModule } from './modules/cashback/cashback.module';
+import { BrandsModule } from './modules/brands/brands.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CashbackModule } from './modules/cashback/cashback.module';
     PaymentModule,
     CashbackModule,
     RedisModule,
+    BrandsModule,
   ],
 })
 export class AppModule {}

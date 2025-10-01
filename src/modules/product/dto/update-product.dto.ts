@@ -56,4 +56,8 @@ export class UpdateProductDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
 }

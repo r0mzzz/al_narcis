@@ -67,4 +67,8 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsEnum(Gender)
   gender: Gender;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
 }
