@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Brand, BrandDocument } from './schema/brand.schema';
@@ -20,12 +16,15 @@ export class BrandsService {
     createBrandDto: CreateBrandDto,
     image?: Express.Multer.File,
   ): Promise<Brand> {
-    let imagePath: string | undefined;
+    // Step 1: Create brand without image to get the ID
+    const created = new this.brandModel({ ...createBrandDto });
+    const brand = await created.save();
+    // Step 2: If image, upload and update imagePath
     if (image) {
-      imagePath = await this.minioService.upload(image, 'brands');
+      brand.imagePath = await this.minioService.uploadFile(image, 'brands', brand._id.toString());
+      await brand.save();
     }
-    const created = new this.brandModel({ ...createBrandDto, imagePath });
-    return created.save();
+    return brand;
   }
 
   async findAll(): Promise<Brand[]> {
@@ -47,7 +46,7 @@ export class BrandsService {
     if (!brand) throw new NotFoundException('Brand not found');
     if (image) {
       if (brand.imagePath) await this.minioService.delete(brand.imagePath);
-      brand.imagePath = await this.minioService.upload(image, 'brands');
+      brand.imagePath = await this.minioService.uploadFile(image, 'brands', id);
     }
     if (updateBrandDto.name) brand.name = updateBrandDto.name;
     return brand.save();
@@ -58,5 +57,9 @@ export class BrandsService {
     if (!brand) throw new NotFoundException('Brand not found');
     if (brand.imagePath) await this.minioService.delete(brand.imagePath);
     await this.brandModel.deleteOne({ _id: id });
+  }
+
+  async getPresignedImageUrl(imagePath: string): Promise<string> {
+    return this.minioService.getPresignedUrl(imagePath);
   }
 }

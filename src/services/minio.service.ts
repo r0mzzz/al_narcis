@@ -59,6 +59,33 @@ export class MinioService {
     return fileName;
   }
 
+  async uploadFile(
+    file: Express.Multer.File,
+    folder: string,
+    objectId: string,
+  ): Promise<string> {
+    const fileExtension = this.getFileExtension(file.originalname);
+    const fileName = `${folder}/${objectId}${fileExtension}`;
+    const metaData = {
+      'Content-Type': file.mimetype,
+    };
+    this.logger.log(`Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`);
+    try {
+      await this.minioClient.putObject(
+        this.bucket,
+        fileName,
+        Readable.from(file.buffer),
+        file.size,
+        metaData,
+      );
+      this.logger.log(`File uploaded to bucket ${this.bucket} as ${fileName}`);
+    } catch (err) {
+      this.logger.error(`Failed to upload file to Minio: ${err}`);
+      throw err;
+    }
+    return fileName;
+  }
+
   /**
    * Returns an array of image URLs for a given product.
    * @param productName The name of the product.
@@ -106,7 +133,7 @@ export class MinioService {
   }
 
   private getFileExtension(filename: string): string {
-    const idx = filename.lastIndexOf('.');
-    return idx !== -1 ? filename.substring(idx) : '';
+    const dotIndex = filename.lastIndexOf('.');
+    return dotIndex !== -1 ? filename.substring(dotIndex) : '';
   }
 }
