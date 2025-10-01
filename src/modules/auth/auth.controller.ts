@@ -45,7 +45,11 @@ export class AuthController {
 
   @Post('reset-password')
   async resetPasswordWithOtp(@Body() dto: ResetPasswordDto) {
-    await this.authService.resetPasswordWithOtp(dto.email, dto.otp, dto.newPassword);
+    await this.authService.resetPasswordWithOtp(
+      dto.email,
+      dto.otp,
+      dto.newPassword,
+    );
     return { status: 'ok', message: 'Password updated successfully' };
   }
 }

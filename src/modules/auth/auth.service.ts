@@ -66,7 +66,14 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    return this.usersService.update(userId, { refresh_token: null });
+    this.logger.debug(`Attempting logout for userId: ${userId}`);
+    const user = await this.usersService.updateByUserId(userId, { refresh_token: null });
+    if (!user) {
+      this.logger.warn(`User not found for logout, userId: ${userId}`);
+      throw new BadRequestException('User not found');
+    }
+    this.logger.debug(`Logout successful for userId: ${userId}`);
+    return { message: 'Logged out successfully' };
   }
 
   hashData(data: string) {
@@ -200,9 +207,10 @@ export class AuthService {
     }
     // OTP is valid
     const hash = await this.hashData(newPassword);
-    await this.usersService.update(user._id, {
+    await this.usersService.updateByUserId(user.user_id, {
       password: hash,
     });
+    this.logger.debug(`Password reset for user_id: ${user.user_id}`);
     await this.redisService.del(redisKey);
   }
 }

@@ -227,6 +227,25 @@ export class UsersService {
     return user ? user.toObject() : null;
   }
 
+  async updateByUserId(
+    user_id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Record<string, any> | null> {
+    const updateObj: any = {};
+    for (const key in updateUserDto) {
+      if (updateUserDto[key] !== undefined) {
+        updateObj[key] = updateUserDto[key];
+      }
+    }
+    const user = await this.userModel
+      .findOneAndUpdate({ user_id }, updateObj, {
+        new: true,
+      })
+      .select('-_id -__v -password -refresh_token')
+      .exec();
+    return user ? user.toObject() : null;
+  }
+
   async userExists(id: string) {
     return this.userModel.findOne({ user_id: id }).exec();
   }
