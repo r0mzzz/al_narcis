@@ -1,5 +1,10 @@
 import * as crypto from 'crypto';
-import { BadRequestException, Injectable, Inject, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
@@ -204,6 +209,46 @@ export class UsersService {
     return user ? user.toObject() : null;
   }
 
+  async uploadProfilePicture(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    // Remove previous image if exists
+    if (user.imagePath) {
+      try {
+        await this.minioService.removeObject(user.imagePath);
+      } catch (e) {
+        // Log but don't fail if image doesn't exist
+      }
+    }
+    // Upload new image to profile/user-profile/{user_id}/photo.{ext}
+    const fileExtension = file.originalname.substring(
+      file.originalname.lastIndexOf('.'),
+    );
+    const minioPath = `profile/user-profile/${userId}/photo${fileExtension}`;
+    await this.minioService.uploadToPath(file, minioPath);
+    user.imagePath = minioPath;
+    await user.save();
+    return user.toObject();
+  }
+
+  async deleteProfilePicture(userId: string): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    if (user.imagePath) {
+      try {
+        await this.minioService.removeObject(user.imagePath);
+      } catch (e) {
+        // Log but don't fail if image doesn't exist
+      }
+      user.imagePath = undefined;
+      await user.save();
+    }
+    return user.toObject();
+  }
+
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
@@ -215,15 +260,9 @@ export class UsersService {
         updateObj[key] = updateUserDto[key];
       }
     }
-    // Determine if id is a valid ObjectId
-    let query: any;
-    if (Types.ObjectId.isValid(id)) {
-      query = { _id: id };
-    } else {
-      query = { user_id: id };
-    }
+    // Always use user_id for lookup
     const user = await this.userModel
-      .findOneAndUpdate(query, updateObj, {
+      .findOneAndUpdate({ user_id: id }, updateObj, {
         new: true,
       })
       .select('-_id -__v -password -refresh_token')
@@ -264,38 +303,5 @@ export class UsersService {
 
   async findByUserId(userId: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ user_id: userId });
-  }
-
-  async uploadProfilePicture(userId: string, file: Express.Multer.File): Promise<Record<string, any>> {
-    const user = await this.userModel.findOne({ user_id: userId });
-    if (!user) throw new BadRequestException('User not found');
-    // Remove previous image if exists
-    if (user.imagePath) {
-      try {
-        await this.minioService.delete(user.imagePath);
-      } catch (e) {
-        // Log but don't fail if image doesn't exist
-      }
-    }
-    // Upload new image
-    const imagePath = await this.minioService.uploadFile(file, 'user-profile', userId);
-    user.imagePath = imagePath;
-    await user.save();
-    return user.toObject();
-  }
-
-  async deleteProfilePicture(userId: string): Promise<Record<string, any>> {
-    const user = await this.userModel.findOne({ user_id: userId });
-    if (!user) throw new BadRequestException('User not found');
-    if (user.imagePath) {
-      try {
-        await this.minioService.delete(user.imagePath);
-      } catch (e) {
-        // Log but don't fail if image doesn't exist
-      }
-      user.imagePath = undefined;
-      await user.save();
-    }
-    return user.toObject();
   }
 }
