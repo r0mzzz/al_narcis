@@ -7,9 +7,6 @@ export type UserDocument = User & Document;
 
 @Schema({ versionKey: false })
 export class User {
-  @Prop({ type: String, default: uuidv4 })
-  _id: string;
-
   @Prop({ required: true })
   first_name: string;
 
