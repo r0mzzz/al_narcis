@@ -272,7 +272,7 @@ export class UsersService {
     // Remove previous image if exists
     if (user.imagePath) {
       try {
-        await this.minioService.removeObject(user.imagePath);
+        await this.minioService.delete(user.imagePath);
       } catch (e) {
         // Log but don't fail if image doesn't exist
       }
