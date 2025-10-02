@@ -64,6 +64,9 @@ export class User {
 
   @Prop({ required: true, unique: true, default: uuidv4 })
   user_id: string;
+
+  @Prop()
+  imagePath?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

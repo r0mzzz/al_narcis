@@ -8,12 +8,15 @@ import {
   Delete,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { CreateUserDto } from './dto/user.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('/users')
 export class UsersController {
@@ -52,5 +55,16 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('profile-picture')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfilePicture(
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const userId = req.user['sub'];
+    return this.usersService.uploadProfilePicture(userId, file);
   }
 }

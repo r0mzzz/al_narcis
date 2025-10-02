@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
@@ -8,6 +8,7 @@ import { CreateUserDto } from './dto/user.dto';
 import { AccountType } from '../../common/account-type.enum';
 import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
+import { MinioService } from '../../services/minio.service';
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
@@ -36,7 +37,10 @@ async function generateUniqueReferralCode(
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly minioService: MinioService,
+  ) {}
 
   // Helper to determine gradation
   private getGradation(referralCount: number): string {
@@ -260,5 +264,23 @@ export class UsersService {
 
   async findByUserId(userId: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ user_id: userId });
+  }
+
+  async uploadProfilePicture(userId: string, file: Express.Multer.File): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    // Remove previous image if exists
+    if (user.imagePath) {
+      try {
+        await this.minioService.removeObject(user.imagePath);
+      } catch (e) {
+        // Log but don't fail if image doesn't exist
+      }
+    }
+    // Upload new image
+    const imagePath = await this.minioService.uploadFile(file, 'user-profile', userId);
+    user.imagePath = imagePath;
+    await user.save();
+    return user.toObject();
   }
 }
