@@ -67,4 +67,11 @@ export class UsersController {
     const userId = req.user['sub'];
     return this.usersService.uploadProfilePicture(userId, file);
   }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('profile-picture')
+  async deleteProfilePicture(@Req() req: Request) {
+    const userId = req.user['sub'];
+    return this.usersService.deleteProfilePicture(userId);
+  }
 }

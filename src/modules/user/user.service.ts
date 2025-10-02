@@ -283,4 +283,19 @@ export class UsersService {
     await user.save();
     return user.toObject();
   }
+
+  async deleteProfilePicture(userId: string): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    if (user.imagePath) {
+      try {
+        await this.minioService.delete(user.imagePath);
+      } catch (e) {
+        // Log but don't fail if image doesn't exist
+      }
+      user.imagePath = undefined;
+      await user.save();
+    }
+    return user.toObject();
+  }
 }
