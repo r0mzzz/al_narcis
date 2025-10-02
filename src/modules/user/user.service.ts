@@ -124,13 +124,20 @@ export class UsersService {
       .exec();
     const inviteBaseUrl =
       process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
-    return users.map((user) => {
-      const obj = user.toObject();
-      return {
-        ...obj,
-        inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
-      };
-    });
+    return Promise.all(
+      users.map(async (user) => {
+        const obj = user.toObject();
+        let presignedImage = '';
+        if (obj.imagePath) {
+          presignedImage = await this.minioService.getPresignedUrl(obj.imagePath);
+        }
+        return {
+          ...obj,
+          imagePath: presignedImage || undefined,
+          inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+        };
+      }),
+    );
   }
 
   async findById(id: string): Promise<Record<string, any>> {
@@ -142,14 +149,16 @@ export class UsersService {
       throw new BadRequestException('User not found');
     }
     const obj = user.toObject();
+    let presignedImage = '';
+    if (obj.imagePath) {
+      presignedImage = await this.minioService.getPresignedUrl(obj.imagePath);
+    }
     const inviteBaseUrl =
       process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
-    // Find all users invited by this user
     const invites = await this.userModel
       .find({ invitedBy: obj.user_id })
       .select('first_name last_name email')
       .exec();
-    // Mask email helper
     const maskEmail = (email: string) => {
       const [name, domain] = email.split('@');
       if (!name || !domain) return email;
@@ -157,6 +166,7 @@ export class UsersService {
     };
     return {
       ...obj,
+      imagePath: presignedImage || undefined,
       inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
       invites: invites.map((inv) => ({
         first_name: inv.first_name,
@@ -206,7 +216,16 @@ export class UsersService {
       .findOne({ user_id: id })
       .select('-_id -__v -password -refresh_token')
       .exec();
-    return user ? user.toObject() : null;
+    if (!user) return null;
+    const obj = user.toObject();
+    let presignedImage = '';
+    if (obj.imagePath) {
+      presignedImage = await this.minioService.getPresignedUrl(obj.imagePath);
+    }
+    return {
+      ...obj,
+      imagePath: presignedImage || undefined,
+    };
   }
 
   async uploadProfilePicture(
