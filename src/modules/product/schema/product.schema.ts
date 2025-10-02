@@ -44,6 +44,9 @@ export class Product {
 
   @Prop({ type: Types.ObjectId, ref: 'Brand', required: false })
   brand?: Types.ObjectId;
+
+  @Prop({ required: true, unique: true })
+  productId: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

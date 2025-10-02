@@ -17,6 +17,7 @@ import {
 import { ProductType, ProductTypeDocument } from './schema/product-type.schema';
 import { AppError } from '../../common/errors';
 import { RedisService } from '../../services/redis.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ProductService {
@@ -227,6 +228,7 @@ export class ProductService {
     const createdProduct = new this.productModel({
       ...createProductDto,
       productImage: '',
+      productId: uuidv4(),
     });
     await createdProduct.save();
 
