@@ -225,8 +225,15 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
 
+    let brand_id = createProductDto.brand_id || createProductDto.brand;
+    let brandObjId = undefined;
+    if (brand_id) {
+      brandObjId = Types.ObjectId.isValid(brand_id) ? new Types.ObjectId(brand_id) : undefined;
+    }
     const createdProduct = new this.productModel({
       ...createProductDto,
+      brand: brandObjId,
+      brand_id: brand_id,
       productImage: '',
       productId: uuidv4(),
     });
@@ -274,18 +281,19 @@ export class ProductService {
 
     const product = await this.productModel.findById(id).exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
-
     if (image) {
-      // Delete previous image from Minio if exists
       if (product.productImage) {
         await this.minioService.delete(product.productImage);
       }
-      // Upload new image
       const objectPath = await this.minioService.upload(image, id);
       product.productImage = objectPath;
     }
-
-    // Update other fields
+    // Handle brand_id/brand update
+    let brand_id = updateProductDto.brand_id || updateProductDto.brand;
+    if (brand_id) {
+      product.brand = Types.ObjectId.isValid(brand_id) ? new Types.ObjectId(brand_id) : undefined;
+      product.brand_id = brand_id;
+    }
     Object.assign(product, updateProductDto);
     await product.save();
 
@@ -379,10 +387,7 @@ export class ProductService {
   }
 
   async findByBrand(brandId: string, limit = 10, page = 1) {
-    if (!Types.ObjectId.isValid(brandId)) {
-      throw new BadRequestException('Invalid brandId');
-    }
-    const filter = { brand: new Types.ObjectId(brandId) };
+    const filter = { brand_id: brandId };
     const products = await this.productModel
       .find(filter)
       .select('-__v')

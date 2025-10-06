@@ -50,6 +50,9 @@ export class Product {
 
   @Prop({ type: [String], default: [] })
   tags?: string[];
+
+  @Prop({ required: false })
+  brand_id?: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

@@ -62,6 +62,10 @@ export class UpdateProductDto {
   brand?: string;
 
   @IsOptional()
+  @IsString()
+  brand_id?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
