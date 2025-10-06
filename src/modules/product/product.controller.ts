@@ -40,7 +40,8 @@ export class ProductController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     this.logger.log(
-      `Received create request. Image present: ${!!image}, filename: ${image?.originalname}`,
+      `Received create request. Image present: ${!!image}, filename: ` +
+        image?.originalname,
     );
     return await this.productService.create(createProductDto, image);
   }
@@ -53,6 +54,7 @@ export class ProductController {
     @Query('limit') limit?: string,
     @Query('page') page?: string,
     @Query('categories') categories?: string,
+    @Query('tag') tag?: string,
   ) {
     // Parse categories as array if provided
     const categoryArr = categories
@@ -67,6 +69,7 @@ export class ProductController {
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
       categoryArr,
+      tag,
     );
   }
 
@@ -151,9 +154,8 @@ export class ProductController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     this.logger.log(
-      `Received update request for id=${id}. Image present: ${!!image}, filename: ${
-        image?.originalname
-      }`,
+      `Received update request for id=${id}. Image present: ${!!image}, filename: ` +
+        image?.originalname,
     );
     if (typeof updateProductDto.variants === 'string') {
       try {

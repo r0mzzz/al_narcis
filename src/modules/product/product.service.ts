@@ -49,12 +49,16 @@ export class ProductService {
     limit = 10,
     page = 1,
     categories?: string[],
+    tag?: string,
   ): Promise<unknown> {
     const filter: any = {};
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
     if (categories && categories.length > 0) {
       filter.category = { $in: categories };
+    }
+    if (tag) {
+      filter.tags = tag;
     }
 
     // Only cache unfiltered, unpaginated queries
@@ -225,10 +229,12 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
 
-    let brand_id = createProductDto.brand_id || createProductDto.brand;
+    const brand_id = createProductDto.brand_id || createProductDto.brand;
     let brandObjId = undefined;
     if (brand_id) {
-      brandObjId = Types.ObjectId.isValid(brand_id) ? new Types.ObjectId(brand_id) : undefined;
+      brandObjId = Types.ObjectId.isValid(brand_id)
+        ? new Types.ObjectId(brand_id)
+        : undefined;
     }
     const createdProduct = new this.productModel({
       ...createProductDto,
@@ -289,9 +295,11 @@ export class ProductService {
       product.productImage = objectPath;
     }
     // Handle brand_id/brand update
-    let brand_id = updateProductDto.brand_id || updateProductDto.brand;
+    const brand_id = updateProductDto.brand_id || updateProductDto.brand;
     if (brand_id) {
-      product.brand = Types.ObjectId.isValid(brand_id) ? new Types.ObjectId(brand_id) : undefined;
+      product.brand = Types.ObjectId.isValid(brand_id)
+        ? new Types.ObjectId(brand_id)
+        : undefined;
       product.brand_id = brand_id;
     }
     Object.assign(product, updateProductDto);
