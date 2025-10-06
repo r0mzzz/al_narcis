@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './schema/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -379,7 +379,10 @@ export class ProductService {
   }
 
   async findByBrand(brandId: string, limit = 10, page = 1) {
-    const filter = { brand: brandId };
+    if (!Types.ObjectId.isValid(brandId)) {
+      throw new BadRequestException('Invalid brandId');
+    }
+    const filter = { brand: new Types.ObjectId(brandId) };
     const products = await this.productModel
       .find(filter)
       .select('-__v')
