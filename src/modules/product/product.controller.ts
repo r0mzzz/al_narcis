@@ -232,6 +232,48 @@ export class ProductController {
   async deleteCategory(@Param('id') id: string) {
     return this.productService.deleteCategory(id);
   }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('by-brand/:brandId')
+  async getByBrand(
+    @Param('brandId') brandId: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.productService.findByBrand(
+      brandId,
+      limit ? parseInt(limit, 10) : 10,
+      page ? parseInt(page, 10) : 1,
+    );
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('by-tag/:tag')
+  async getByTag(
+    @Param('tag') tag: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.productService.findByTag(
+      tag,
+      limit ? parseInt(limit, 10) : 10,
+      page ? parseInt(page, 10) : 1,
+    );
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('search')
+  async searchProducts(
+    @Query('query') query: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.productService.searchByProductName(
+      query,
+      limit ? parseInt(limit, 10) : 10,
+      page ? parseInt(page, 10) : 1,
+    );
+  }
 }
 
 @Module({

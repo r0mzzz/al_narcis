@@ -47,6 +47,9 @@ export class Product {
 
   @Prop({ required: true, unique: true })
   productId: string;
+
+  @Prop({ type: [String], default: [] })
+  tags?: string[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

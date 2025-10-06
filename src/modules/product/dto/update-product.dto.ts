@@ -60,4 +60,9 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   brand?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }

@@ -378,6 +378,90 @@ export class ProductService {
     return !!type;
   }
 
+  async findByBrand(brandId: string, limit = 10, page = 1) {
+    const filter = { brand: brandId };
+    const products = await this.productModel
+      .find(filter)
+      .select('-__v')
+      .sort({ _id: -1 })
+      .exec();
+    const allProducts = await Promise.all(
+      products.map(async (doc) => {
+        const obj = doc.toObject();
+        let presignedImage = '';
+        if (obj.productImage) {
+          presignedImage = await this.minioService.getPresignedUrl(
+            obj.productImage,
+          );
+        }
+        delete obj.images;
+        return { ...obj, productImage: presignedImage };
+      }),
+    );
+    const total = allProducts.length;
+    const parsedLimit = Number(limit) || 10;
+    const parsedPage = Number(page) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+    const pagedData = allProducts.slice(skip, skip + parsedLimit);
+    return { data: pagedData, total, page: parsedPage, limit: parsedLimit };
+  }
+
+  async findByTag(tag: string, limit = 10, page = 1) {
+    const filter = { tags: tag };
+    const products = await this.productModel
+      .find(filter)
+      .select('-__v')
+      .sort({ _id: -1 })
+      .exec();
+    const allProducts = await Promise.all(
+      products.map(async (doc) => {
+        const obj = doc.toObject();
+        let presignedImage = '';
+        if (obj.productImage) {
+          presignedImage = await this.minioService.getPresignedUrl(
+            obj.productImage,
+          );
+        }
+        delete obj.images;
+        return { ...obj, productImage: presignedImage };
+      }),
+    );
+    const total = allProducts.length;
+    const parsedLimit = Number(limit) || 10;
+    const parsedPage = Number(page) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+    const pagedData = allProducts.slice(skip, skip + parsedLimit);
+    return { data: pagedData, total, page: parsedPage, limit: parsedLimit };
+  }
+
+  async searchByProductName(query: string, limit = 10, page = 1) {
+    const filter = { productName: { $regex: query, $options: 'i' } };
+    const products = await this.productModel
+      .find(filter)
+      .select('-__v')
+      .sort({ _id: -1 })
+      .exec();
+    const allProducts = await Promise.all(
+      products.map(async (doc) => {
+        const obj = doc.toObject();
+        let presignedImage = '';
+        if (obj.productImage) {
+          presignedImage = await this.minioService.getPresignedUrl(
+            obj.productImage,
+          );
+        }
+        delete obj.images;
+        return { ...obj, productImage: presignedImage };
+      }),
+    );
+    const total = allProducts.length;
+    const parsedLimit = Number(limit) || 10;
+    const parsedPage = Number(page) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+    const pagedData = allProducts.slice(skip, skip + parsedLimit);
+    return { data: pagedData, total, page: parsedPage, limit: parsedLimit };
+  }
+
   // Helper to rebuild products list cache for given limit/page (defaults to 10/1)
   private async refreshProductsCache() {
     try {
@@ -391,7 +475,9 @@ export class ProductService {
           const obj = doc.toObject();
           let presignedImage = '';
           if (obj.productImage) {
-            presignedImage = await this.minioService.getPresignedUrl(obj.productImage);
+            presignedImage = await this.minioService.getPresignedUrl(
+              obj.productImage,
+            );
           }
           delete obj.images;
           return { ...obj, productImage: presignedImage };

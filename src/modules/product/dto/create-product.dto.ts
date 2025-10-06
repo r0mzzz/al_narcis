@@ -71,4 +71,9 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   brand?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }
