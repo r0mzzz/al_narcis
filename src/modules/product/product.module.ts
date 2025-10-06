@@ -13,6 +13,9 @@ import {
 } from './schema/product-category.schema';
 import { ProductType, ProductTypeSchema } from './schema/product-type.schema';
 import { RedisModule } from '../../services/redis.module';
+import { Tag, TagSchema } from './schema/tag.schema';
+import { TagService } from './tag.service';
+import { TagController } from './tag.controller';
 
 @Module({
   imports: [
@@ -21,15 +24,17 @@ import { RedisModule } from '../../services/redis.module';
       { name: Capacity.name, schema: CapacitySchema },
       { name: ProductCategory.name, schema: ProductCategorySchema },
       { name: ProductType.name, schema: ProductTypeSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
     RedisModule,
   ],
-  controllers: [ProductController],
+  controllers: [ProductController, TagController],
   providers: [
     ProductService,
     CapacityService,
     IsAllowedCapacityConstraint,
     MinioService,
+    TagService,
   ],
   exports: [ProductService],
 })

@@ -18,6 +18,7 @@ import { ProductType, ProductTypeDocument } from './schema/product-type.schema';
 import { AppError } from '../../common/errors';
 import { RedisService } from '../../services/redis.service';
 import { v4 as uuidv4 } from 'uuid';
+import { Tag, TagDocument } from './schema/tag.schema';
 
 @Injectable()
 export class ProductService {
@@ -31,6 +32,7 @@ export class ProductService {
     @InjectModel(ProductType.name)
     private productTypeModel: Model<ProductTypeDocument>,
     private readonly redisService: RedisService,
+    @InjectModel(Tag.name) private tagModel: Model<TagDocument>,
   ) {}
 
   private async getProductsCacheVersion(): Promise<string> {
@@ -228,6 +230,12 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
+    if (createProductDto.tags && createProductDto.tags.length > 0) {
+      const count = await this.tagModel.countDocuments({ name: { $in: createProductDto.tags } });
+      if (count !== createProductDto.tags.length) {
+        throw new BadRequestException('One or more tags do not exist');
+      }
+    }
 
     const brand_id = createProductDto.brand_id || createProductDto.brand;
     let brandObjId = undefined;
@@ -283,6 +291,12 @@ export class ProductService {
       !(await this.typeExists(updateProductDto.productType))
     ) {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
+    }
+    if (updateProductDto.tags && updateProductDto.tags.length > 0) {
+      const count = await this.tagModel.countDocuments({ name: { $in: updateProductDto.tags } });
+      if (count !== updateProductDto.tags.length) {
+        throw new BadRequestException('One or more tags do not exist');
+      }
     }
 
     const product = await this.productModel.findById(id).exec();
