@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 import { Gender } from '../../../common/genre.enum';
 
 export type ProductDocument = Product & Document;
@@ -42,8 +42,8 @@ export class Product {
   @Prop({ required: true, enum: Gender })
   gender: Gender;
 
-  @Prop({ type: Types.ObjectId, ref: 'Brand', required: false })
-  brand?: Types.ObjectId;
+  @Prop({ required: false })
+  brand?: string;
 
   @Prop({ required: true, unique: true })
   productId: string;

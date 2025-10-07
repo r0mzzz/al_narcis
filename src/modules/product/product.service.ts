@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schema/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -231,23 +231,23 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
     if (createProductDto.tags && createProductDto.tags.length > 0) {
-      const count = await this.tagModel.countDocuments({ name: { $in: createProductDto.tags } });
+      const count = await this.tagModel.countDocuments({
+        name: { $in: createProductDto.tags },
+      });
       if (count !== createProductDto.tags.length) {
         throw new BadRequestException('One or more tags do not exist');
       }
     }
 
     const brand_id = createProductDto.brand_id || createProductDto.brand;
-    let brandObjId = undefined;
+    let brandStr = undefined;
     if (brand_id) {
-      brandObjId = Types.ObjectId.isValid(brand_id)
-        ? new Types.ObjectId(brand_id)
-        : undefined;
+      brandStr = String(brand_id);
     }
     const createdProduct = new this.productModel({
       ...createProductDto,
-      brand: brandObjId,
-      brand_id: brand_id,
+      brand: brandStr,
+      brand_id: brandStr,
       productImage: '',
       productId: uuidv4(),
     });
@@ -293,7 +293,9 @@ export class ProductService {
       throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
     }
     if (updateProductDto.tags && updateProductDto.tags.length > 0) {
-      const count = await this.tagModel.countDocuments({ name: { $in: updateProductDto.tags } });
+      const count = await this.tagModel.countDocuments({
+        name: { $in: updateProductDto.tags },
+      });
       if (count !== updateProductDto.tags.length) {
         throw new BadRequestException('One or more tags do not exist');
       }
@@ -311,10 +313,8 @@ export class ProductService {
     // Handle brand_id/brand update
     const brand_id = updateProductDto.brand_id || updateProductDto.brand;
     if (brand_id) {
-      product.brand = Types.ObjectId.isValid(brand_id)
-        ? new Types.ObjectId(brand_id)
-        : undefined;
-      product.brand_id = brand_id;
+      product.brand = String(brand_id);
+      product.brand_id = String(brand_id);
     }
     Object.assign(product, updateProductDto);
     await product.save();
