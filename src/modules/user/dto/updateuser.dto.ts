@@ -8,6 +8,7 @@ import {
 import { Type } from 'class-transformer';
 import { AccountType } from '../../../common/account-type.enum';
 import { AddressDto } from './user.dto';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
   @IsString()
@@ -41,6 +42,11 @@ export class UpdateUserDto {
   @IsOptional()
   readonly resetOtpExpires?: Date;
 
+  @ApiProperty({
+    type: [AddressDto],
+    required: false,
+    description: 'List of user addresses',
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

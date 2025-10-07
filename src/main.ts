@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { useContainer } from 'class-validator';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 const bootstrap = async () => {
   try {
@@ -22,6 +23,15 @@ const bootstrap = async () => {
         transform: true,
       }),
     );
+
+    const config = new DocumentBuilder()
+      .setTitle('Al Narcis API')
+      .setDescription('API documentation for the Al Narcis project')
+      .setVersion('1.0')
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+
     await app.listen(port, '0.0.0.0', () =>
       console.log(`SERVER STARTED ON PORT: ${port}`),
     );

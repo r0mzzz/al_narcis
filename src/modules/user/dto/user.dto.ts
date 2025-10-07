@@ -15,11 +15,14 @@ import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
 import { AccountType } from '../../../common/account-type.enum';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AddressDto {
+  @ApiProperty({ example: '123 Main St', description: 'User address' })
   @IsString()
   address: string;
 
+  @ApiProperty({ example: true, description: 'Is this the favorite address?' })
   @IsBoolean()
   isFavorite: boolean;
 }
@@ -68,6 +71,7 @@ export class CreateUserDto {
   @IsEnum(AccountType)
   readonly accountType: AccountType;
 
+  @ApiProperty({ type: [AddressDto], description: 'List of user addresses' })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AddressDto)
