@@ -7,10 +7,22 @@ import {
   MinLength,
   IsEnum,
   IsOptional,
+  ValidateNested,
+  IsArray,
+  IsBoolean,
 } from 'class-validator';
 import { AppError } from '../../../common/errors';
 import { randomUUID } from 'crypto';
 import { AccountType } from '../../../common/account-type.enum';
+import { Type } from 'class-transformer';
+
+export class AddressDto {
+  @IsString()
+  address: string;
+
+  @IsBoolean()
+  isFavorite: boolean;
+}
 
 export class CreateUserDto {
   constructor() {
@@ -55,6 +67,11 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsEnum(AccountType)
   readonly accountType: AccountType;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AddressDto)
+  readonly addresses: AddressDto[];
 
   user_id?: string;
   refresh_token?: string;

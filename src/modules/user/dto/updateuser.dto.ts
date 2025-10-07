@@ -1,5 +1,13 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { AccountType } from '../../../common/account-type.enum';
+import { AddressDto } from './user.dto';
 
 export class UpdateUserDto {
   @IsString()
@@ -32,4 +40,10 @@ export class UpdateUserDto {
 
   @IsOptional()
   readonly resetOtpExpires?: Date;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AddressDto)
+  readonly addresses?: AddressDto[];
 }

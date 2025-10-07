@@ -64,6 +64,17 @@ export class User {
 
   @Prop()
   imagePath?: string;
+
+  @Prop({
+    type: [
+      {
+        address: { type: String, required: true },
+        isFavorite: { type: Boolean, required: true },
+      },
+    ],
+    default: [],
+  })
+  addresses: { address: string; isFavorite: boolean }[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
