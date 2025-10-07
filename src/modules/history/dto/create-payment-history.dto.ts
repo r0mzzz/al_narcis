@@ -1,24 +1,24 @@
 import { IsNotEmpty, IsString, IsNumber, Min } from 'class-validator';
 
 export class CreatePaymentHistoryDto {
-  @IsNotEmpty({ message: 'amount is required' })
-  @IsNumber({}, { message: 'amount must be a number' })
-  @Min(1, { message: 'amount must be positive' })
+  @IsNotEmpty({ message: 'Məbləğ tələb olunur' })
+  @IsNumber({}, { message: 'Məbləğ rəqəm olmalıdır' })
+  @Min(1, { message: 'Məbləğ müsbət olmalıdır' })
   amount: number;
 
-  @IsNotEmpty({ message: 'status is required' })
-  @IsString({ message: 'status must be a string' })
+  @IsNotEmpty({ message: 'Status tələb olunur' })
+  @IsString({ message: 'Status sətir olmalıdır' })
   status: string;
 
-  @IsNotEmpty({ message: 'productId is required' })
-  @IsString({ message: 'productId must be a string' })
+  @IsNotEmpty({ message: 'Məhsul ID-si tələb olunur' })
+  @IsString({ message: 'Məhsul ID-si sətir olmalıdır' })
   productId: string;
 
-  @IsNotEmpty({ message: 'userId is required' })
-  @IsString({ message: 'userId must be a string' })
+  @IsNotEmpty({ message: 'İstifadəçi ID-si tələb olunur' })
+  @IsString({ message: 'İstifadəçi ID-si sətir olmalıdır' })
   userId: string;
 
-  @IsNotEmpty({ message: 'productName is required' })
-  @IsString({ message: 'productName must be a string' })
+  @IsNotEmpty({ message: 'Məhsul adı tələb olunur' })
+  @IsString({ message: 'Məhsul adı sətir olmalıdır' })
   productName: string;
 }

@@ -1,9 +1,9 @@
 export const Messages = {
   DELETED: (value: string) => {
-    return `${value} successfully deleted`;
+    return `${value} uğurla silindi`;
   },
-  MAIL_SENT: 'Email successfully sent',
-  OTP_NOT_REQUESTED: 'OTP has not been requested for this user',
-  OTP_INVALID: 'The provided OTP is invalid',
-  OTP_EXPIRED: 'The OTP has expired',
+  MAIL_SENT: 'Email uğurla göndərildi',
+  OTP_NOT_REQUESTED: 'Bu istifadəçi üçün OTP tələb edilməyib',
+  OTP_INVALID: 'Daxil edilmiş OTP yanlışdır',
+  OTP_EXPIRED: 'OTP-nin müddəti bitib',
 };

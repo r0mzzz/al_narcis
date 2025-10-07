@@ -15,7 +15,11 @@ export class MainCashbackConfigService {
 
   async getConfig(): Promise<MainCashbackConfig> {
     const config = await this.mainCashbackConfigModel.findOne();
-    if (!config) throw new NotFoundException('Main cashback config not found');
+    if (!config)
+      throw new NotFoundException({
+        en: 'Main cashback config not found',
+        az: 'Əsas kəşbək konfiqi tapılmadı',
+      });
     return config;
   }
 
@@ -34,7 +38,11 @@ export class MainCashbackConfigService {
       data,
       { new: true },
     );
-    if (!config) throw new NotFoundException('Main cashback config not found');
+    if (!config)
+      throw new NotFoundException({
+        en: 'Main cashback config not found',
+        az: 'Əsas kəşbək konfiqi tapılmadı',
+      });
     return config;
   }
 }

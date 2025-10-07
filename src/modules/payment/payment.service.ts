@@ -38,7 +38,7 @@ export class PaymentService {
   ): Promise<void> {
     // Find the buyer by user_id
     const buyer = await this.userModel.findOne({ user_id: buyerUserId });
-    if (!buyer) throw new NotFoundException('Buyer not found');
+    if (!buyer) throw new NotFoundException('Alıcı tapılmadı');
 
     // Convert coins to units for percentage calculation
     const amountInUnits = amount / 100;

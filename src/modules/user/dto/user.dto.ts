@@ -36,7 +36,7 @@ export class CreateUserDto {
   @Matches(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
     {
-      message: AppError.PASSWORD_PATTERN_MATCH,
+      message: AppError.PASSWORD_PATTERN_MATCH.az,
     },
   )
   password: string;
@@ -44,7 +44,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   @Matches(/^\+994\d{9}$/, {
-    message: 'Mobile number must be in format +994XXXXXXXXX',
+    message: 'Mobil nömrə +994XXXXXXXXX formatında olmalıdır',
   })
   readonly mobile: string;
 

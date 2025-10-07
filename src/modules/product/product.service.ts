@@ -150,7 +150,7 @@ export class ProductService {
       .findById(id)
       .select('-_id -__v')
       .exec();
-    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND.az);
     const obj = product.toObject();
     let presignedImage = '';
     if (obj.productImage) {
@@ -164,12 +164,12 @@ export class ProductService {
 
   async addCategory(categoryName: string): Promise<{ categoryName: string }> {
     if (!categoryName || typeof categoryName !== 'string')
-      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED.az);
     categoryName = categoryName.trim();
     if (!categoryName)
-      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED.az);
     const exists = await this.categoryModel.findOne({ categoryName }).exec();
-    if (exists) throw new BadRequestException(AppError.CATEGORY_ALREADY_EXISTS);
+    if (exists) throw new BadRequestException(AppError.CATEGORY_ALREADY_EXISTS.az);
     const created = new this.categoryModel({ categoryName });
     await created.save();
     return { categoryName: created.categoryName };
@@ -195,20 +195,20 @@ export class ProductService {
     categoryName: string,
   ): Promise<{ _id: string; categoryName: string }> {
     if (!categoryName || typeof categoryName !== 'string')
-      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED.az);
     categoryName = categoryName.trim();
     if (!categoryName)
-      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED);
+      throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED.az);
     const updated = await this.categoryModel
       .findByIdAndUpdate(id, { categoryName }, { new: true })
       .exec();
-    if (!updated) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS);
+    if (!updated) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS.az);
     return { _id: updated._id.toString(), categoryName: updated.categoryName };
   }
 
   async deleteCategory(id: string): Promise<void> {
     const deleted = await this.categoryModel.findByIdAndDelete(id).exec();
-    if (!deleted) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS);
+    if (!deleted) throw new NotFoundException(AppError.CATEGORY_NOT_EXISTS.az);
   }
 
   async create(
@@ -219,23 +219,23 @@ export class ProductService {
       !Array.isArray(createProductDto.category) ||
       createProductDto.category.length === 0
     ) {
-      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
     if (!(await this.categoryExists(createProductDto.category))) {
-      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
     if (
       !createProductDto.productType ||
       !(await this.typeExists(createProductDto.productType))
     ) {
-      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
+      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND.az);
     }
     if (createProductDto.tags && createProductDto.tags.length > 0) {
       const count = await this.tagModel.countDocuments({
         name: { $in: createProductDto.tags },
       });
       if (count !== createProductDto.tags.length) {
-        throw new BadRequestException('One or more tags do not exist');
+        throw new BadRequestException('Bir və ya bir neçə etiket mövcud deyil');
       }
     }
 
@@ -284,25 +284,25 @@ export class ProductService {
       (!Array.isArray(updateProductDto.category) ||
         !(await this.categoryExists(updateProductDto.category)))
     ) {
-      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS);
+      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
     if (
       updateProductDto.productType &&
       !(await this.typeExists(updateProductDto.productType))
     ) {
-      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND);
+      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND.az);
     }
     if (updateProductDto.tags && updateProductDto.tags.length > 0) {
       const count = await this.tagModel.countDocuments({
         name: { $in: updateProductDto.tags },
       });
       if (count !== updateProductDto.tags.length) {
-        throw new BadRequestException('One or more tags do not exist');
+        throw new BadRequestException('Bir və ya bir neçə etiket mövcud deyil');
       }
     }
 
     const product = await this.productModel.findById(id).exec();
-    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+    if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND.az);
     if (image) {
       if (product.productImage) {
         await this.minioService.delete(product.productImage);
@@ -346,7 +346,7 @@ export class ProductService {
 
   async remove(id: string): Promise<void> {
     const result = await this.productModel.findByIdAndDelete(id).exec();
-    if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND);
+    if (!result) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND.az);
 
     try {
       // Bump cache version and remove old caches (including legacy keys)

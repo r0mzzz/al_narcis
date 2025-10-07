@@ -33,7 +33,7 @@ export class BrandsService {
 
   async findById(id: string): Promise<Brand> {
     const brand = await this.brandModel.findById(id).exec();
-    if (!brand) throw new NotFoundException('Brand not found');
+    if (!brand) throw new NotFoundException('Brend tapılmadı');
     return brand;
   }
 
@@ -43,7 +43,7 @@ export class BrandsService {
     image?: Express.Multer.File,
   ): Promise<Brand> {
     const brand = await this.brandModel.findById(id);
-    if (!brand) throw new NotFoundException('Brand not found');
+    if (!brand) throw new NotFoundException('Brend tapılmadı');
     if (image) {
       if (brand.imagePath) await this.minioService.delete(brand.imagePath);
       brand.imagePath = await this.minioService.uploadFile(image, 'brands', id);
@@ -54,7 +54,7 @@ export class BrandsService {
 
   async delete(id: string): Promise<void> {
     const brand = await this.brandModel.findById(id);
-    if (!brand) throw new NotFoundException('Brand not found');
+    if (!brand) throw new NotFoundException('Brend tapılmadı');
     if (brand.imagePath) await this.minioService.delete(brand.imagePath);
     await this.brandModel.deleteOne({ _id: id });
   }

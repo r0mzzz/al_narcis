@@ -8,7 +8,7 @@ export function IsOnlyDate(validationOptions?: ValidationOptions) {
       propertyName: propertyName,
       constraints: [],
       options: {
-        message: 'Please provide only date like 2020-12-08',
+        message: 'Zəhmət olmasa yalnız 2020-12-08 kimi tarixi daxil edin',
         ...validationOptions,
       },
       validator: {

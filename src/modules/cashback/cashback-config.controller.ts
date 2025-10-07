@@ -35,8 +35,8 @@ export class CashbackConfigController {
   }
 
   @Delete(':id')
-  async deleteConfig(@Param('id') id: string): Promise<{ message: string }> {
+  async deleteConfig(@Param('id') id: string): Promise<{ message: { en: string; az: string } }> {
     await this.cashbackConfigService.deleteConfig(id);
-    return { message: 'Deleted successfully' };
+    return { message: { en: 'Deleted successfully', az: 'Uğurla silindi' } };
   }
 }

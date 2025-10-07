@@ -15,7 +15,11 @@ export class CashbackConfigService {
 
   async getConfig(): Promise<CashbackConfig> {
     const config = await this.cashbackConfigModel.findOne();
-    if (!config) throw new NotFoundException('Cashback config not found');
+    if (!config)
+      throw new NotFoundException({
+        en: 'Cashback config not found',
+        az: 'Kəşbək konfiqi tapılmadı',
+      });
     return config;
   }
 
@@ -35,6 +39,10 @@ export class CashbackConfigService {
 
   async deleteConfig(id: string): Promise<void> {
     const result = await this.cashbackConfigModel.findByIdAndDelete(id);
-    if (!result) throw new NotFoundException('Cashback config not found');
+    if (!result)
+      throw new NotFoundException({
+        en: 'Cashback config not found',
+        az: 'Kəşbək konfiqi tapılmadı',
+      });
   }
 }

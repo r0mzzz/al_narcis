@@ -100,7 +100,7 @@ export class ProductController {
       capacity === '' ||
       isNaN(Number(capacity))
     ) {
-      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER);
+      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER.az);
     }
     try {
       const result = await this.capacityService.addCapacity(Number(capacity));
@@ -108,7 +108,7 @@ export class ProductController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: AppError.FAILED_ADD_CAPACITY,
+        message: AppError.FAILED_ADD_CAPACITY.az,
         error: error?.message || error,
       };
     }
@@ -190,7 +190,7 @@ export class ProductController {
       capacity === '' ||
       isNaN(Number(capacity))
     ) {
-      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER);
+      throw new NotFoundException(AppError.CAPACITY_MUST_BE_NUMBER.az);
     }
     try {
       const result = await this.capacityService.updateCapacity(
@@ -201,7 +201,7 @@ export class ProductController {
     } catch (error) {
       return {
         statusCode: 404,
-        message: AppError.FAILED_UPDATE_CAPACITY,
+        message: AppError.FAILED_UPDATE_CAPACITY.az,
       };
     }
   }
@@ -215,7 +215,7 @@ export class ProductController {
     } catch (error) {
       return {
         statusCode: 404,
-        message: AppError.FAILED_DELETE_CAPACITY,
+        message: AppError.FAILED_DELETE_CAPACITY.az,
       };
     }
   }

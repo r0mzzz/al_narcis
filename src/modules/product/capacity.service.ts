@@ -17,7 +17,7 @@ export class CapacityService {
   }
 
   async addCapacity(capacity: number): Promise<number[]> {
-    if (isNaN(capacity)) throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY);
+    if (isNaN(capacity)) throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY.az);
     const exists = await this.capacityModel.exists({ value: capacity });
     if (!exists) {
       await this.capacityModel.create({ value: capacity });
@@ -26,17 +26,17 @@ export class CapacityService {
   }
 
   async updateCapacity(id: string, value: number): Promise<number[]> {
-    if (isNaN(value)) throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY);
+    if (isNaN(value)) throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY.az);
     const updated = await this.capacityModel
       .findByIdAndUpdate(id, { value }, { new: true })
       .exec();
-    if (!updated) throw new Error(AppError.CAPACITY_NOT_FOUND);
+    if (!updated) throw new Error(AppError.CAPACITY_NOT_FOUND.az);
     return this.getCapacities();
   }
 
   async deleteCapacity(id: string): Promise<number[]> {
     const deleted = await this.capacityModel.findByIdAndDelete(id).exec();
-    if (!deleted) throw new Error(AppError.CAPACITY_NOT_FOUND);
+    if (!deleted) throw new Error(AppError.CAPACITY_NOT_FOUND.az);
     return this.getCapacities();
   }
 }

@@ -17,7 +17,7 @@ import { Gender } from '../../../common/genre.enum';
 class VariantDto {
   @IsNotEmpty()
   @IsNumber()
-  @IsAllowedCapacity({ message: 'Capacity ($value) is not allowed.' })
+  @IsAllowedCapacity({ message: 'Tutum ($value) icazə verilmir.' })
   @Transform(({ value }) => Number(value))
   capacity: number;
 

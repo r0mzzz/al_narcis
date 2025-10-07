@@ -28,7 +28,7 @@ export class PaymentController {
       cashbackError = error.message || 'Unknown cashback error';
     }
     return {
-      message: 'Cashback calculated (if eligible)',
+      message: { en: 'Cashback calculated (if eligible)', az: 'Kəşbək hesablandı (əgər uyğundursa)' },
       ...(cashbackError ? { cashbackError } : {}),
     };
   }

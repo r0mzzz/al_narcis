@@ -146,7 +146,7 @@ export class UsersService {
       .select('-_id -__v -password -refresh_token')
       .exec();
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('İstifadəçi tapılmadı');
     }
     const obj = user.toObject();
     let presignedImage = '';
@@ -233,7 +233,7 @@ export class UsersService {
     file: Express.Multer.File,
   ): Promise<Record<string, any>> {
     const user = await this.userModel.findOne({ user_id: userId });
-    if (!user) throw new BadRequestException('User not found');
+    if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
     // Remove previous image if exists
     if (user.imagePath) {
       try {
@@ -255,7 +255,7 @@ export class UsersService {
 
   async deleteProfilePicture(userId: string): Promise<Record<string, any>> {
     const user = await this.userModel.findOne({ user_id: userId });
-    if (!user) throw new BadRequestException('User not found');
+    if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
     if (user.imagePath) {
       try {
         await this.minioService.removeObject(user.imagePath);
