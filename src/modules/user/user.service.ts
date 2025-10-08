@@ -2,11 +2,9 @@ import * as crypto from 'crypto';
 import {
   BadRequestException,
   Injectable,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
 import { User, UserDocument } from './schema/user.schema';
 import { CreateUserDto } from './dto/user.dto';
@@ -14,6 +12,7 @@ import { AccountType } from '../../common/account-type.enum';
 import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
 import { MinioService } from '../../services/minio.service';
+import { AddAddressDto } from './dto/add-address.dto';
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
@@ -129,7 +128,9 @@ export class UsersService {
         const obj = user.toObject();
         let presignedImage = '';
         if (obj.imagePath) {
-          presignedImage = await this.minioService.getPresignedUrl(obj.imagePath);
+          presignedImage = await this.minioService.getPresignedUrl(
+            obj.imagePath,
+          );
         }
         return {
           ...obj,
@@ -322,5 +323,24 @@ export class UsersService {
 
   async findByUserId(userId: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ user_id: userId });
+  }
+
+  async addAddress(
+    userId: string,
+    addAddressDto: AddAddressDto,
+  ): Promise<Record<string, any>> {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) {
+      throw new BadRequestException('İstifadəçi tapılmadı');
+    }
+    if (!Array.isArray(user.addresses)) {
+      user.addresses = [];
+    }
+    user.addresses.push({
+      address: addAddressDto.address,
+      isFavorite: addAddressDto.isFavorite,
+    });
+    await user.save();
+    return user.toObject();
   }
 }

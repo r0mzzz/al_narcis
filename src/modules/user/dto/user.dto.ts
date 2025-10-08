@@ -71,6 +71,7 @@ export class CreateUserDto {
   @IsEnum(AccountType)
   readonly accountType: AccountType;
 
+  @IsOptional()
   @ApiProperty({ type: [AddressDto], description: 'List of user addresses' })
   @IsArray()
   @ValidateNested({ each: true })

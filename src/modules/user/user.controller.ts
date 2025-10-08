@@ -17,6 +17,7 @@ import { CreateUserDto } from './dto/user.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AddAddressDto } from './dto/add-address.dto';
 
 @Controller('/users')
 export class UsersController {
@@ -73,5 +74,12 @@ export class UsersController {
   async deleteProfilePicture(@Req() req: Request) {
     const userId = req.user['sub'];
     return this.usersService.deleteProfilePicture(userId);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('address/add')
+  async addAddress(@Req() req: Request, @Body() addAddressDto: AddAddressDto) {
+    const userId = req.user['sub'];
+    return this.usersService.addAddress(userId, addAddressDto);
   }
 }
