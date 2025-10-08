@@ -53,15 +53,17 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
+    // Remove addresses from user creation
+    const { addresses, ...restDto } = createUserDto as any;
     // Generate a secure, unique referralCode
     const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
-      ...createUserDto,
+      ...restDto,
       referralCode,
       balance: 0,
       balanceFromReferrals: 0,
       businessCashbackBalance:
-        createUserDto.accountType === AccountType.BUSINESS ? 0 : null,
+        restDto.accountType === AccountType.BUSINESS ? 0 : null,
       referralCount: 0,
       gradation: 'bronze',
     };
