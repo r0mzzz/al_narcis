@@ -18,6 +18,7 @@ import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AddAddressDto } from './dto/add-address.dto';
+import { UpdateAddressDto } from './dto/update-address.dto';
 
 @Controller('/users')
 export class UsersController {
@@ -81,5 +82,26 @@ export class UsersController {
   async addAddress(@Req() req: Request, @Body() addAddressDto: AddAddressDto) {
     const userId = req.user['sub'];
     return this.usersService.addAddress(userId, addAddressDto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('address/:addressId')
+  async updateAddress(
+    @Req() req: Request,
+    @Param('addressId') addressId: string,
+    @Body() updateAddressDto: UpdateAddressDto,
+  ) {
+    const userId = req.user['sub'];
+    return this.usersService.updateAddress(userId, addressId, updateAddressDto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('address/:addressId')
+  async deleteAddress(
+    @Req() req: Request,
+    @Param('addressId') addressId: string,
+  ) {
+    const userId = req.user['sub'];
+    return this.usersService.deleteAddress(userId, addressId);
   }
 }

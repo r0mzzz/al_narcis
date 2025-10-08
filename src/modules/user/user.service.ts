@@ -229,7 +229,9 @@ export class UsersService {
   }
 
   private isValidMinioObjectPath(path: string): boolean {
-    return typeof path === 'string' && !path.includes('://') && !path.includes('?');
+    return (
+      typeof path === 'string' && !path.includes('://') && !path.includes('?')
+    );
   }
 
   async uploadProfilePicture(
@@ -282,19 +284,10 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<Record<string, any> | null> {
-    // Build update object dynamically to allow updating any field
-    const updateObj: any = {};
-    for (const key in updateUserDto) {
-      if (updateUserDto[key] !== undefined) {
-        if (key === 'addresses' && Array.isArray(updateUserDto.addresses)) {
-          updateObj.addresses = updateUserDto.addresses.filter(
-            (a) => a && typeof a.address === 'string' && typeof a.isFavorite === 'boolean'
-          );
-        } else {
-          updateObj[key] = updateUserDto[key];
-        }
-      }
-    }
+    // Remove addresses from update
+    const { addresses, ...restDto } = updateUserDto as any;
+    // Build update object dynamically to allow updating any field except addresses
+    const updateObj: any = { ...restDto };
     // Always use user_id for lookup
     const user = await this.userModel
       .findOneAndUpdate({ user_id: id }, updateObj, {
@@ -357,5 +350,42 @@ export class UsersService {
     });
     await user.save();
     return user.toObject();
+  }
+
+  async updateAddress(
+    userId: string,
+    addressId: string,
+    updateAddressDto: Partial<{ address: string; isFavorite: boolean }>,
+  ) {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    const address = user.addresses.find(
+      (a: any) => a._id?.toString() === addressId,
+    );
+    if (!address) throw new BadRequestException('Address not found');
+    if (updateAddressDto.address !== undefined) {
+      address.address = updateAddressDto.address;
+    }
+    if (updateAddressDto.isFavorite !== undefined) {
+      address.isFavorite = updateAddressDto.isFavorite;
+    }
+    // Remove invalid addresses before saving
+    user.addresses = user.addresses.filter(
+      (a: any) => a && typeof a.address === 'string' && a.address.trim() !== '',
+    );
+    await user.save();
+    return address;
+  }
+
+  async deleteAddress(userId: string, addressId: string) {
+    const user = await this.userModel.findOne({ user_id: userId });
+    if (!user) throw new BadRequestException('User not found');
+    const addressIndex = user.addresses.findIndex(
+      (a: any) => a._id?.toString() === addressId,
+    );
+    if (addressIndex === -1) throw new BadRequestException('Address not found');
+    user.addresses.splice(addressIndex, 1);
+    await user.save();
+    return { success: true };
   }
 }
