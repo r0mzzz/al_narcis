@@ -253,6 +253,12 @@ export class UsersService {
     const minioPath = `profile/user-profile/${userId}/photo${fileExtension}`;
     await this.minioService.uploadToPath(file, minioPath);
     user.imagePath = minioPath;
+    // Filter out invalid addresses before saving to avoid validation errors
+    if (Array.isArray(user.addresses)) {
+      user.addresses = user.addresses.filter(
+        (a) => a && typeof a.address === 'string' && a.address.trim() !== '',
+      );
+    }
     await user.save();
     return user.toObject();
   }
