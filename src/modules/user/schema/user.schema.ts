@@ -69,7 +69,7 @@ export class User {
     type: [
       {
         address: { type: String, required: true },
-        isFavorite: { type: Boolean, required: true },
+        isFavorite: { type: Boolean, required: true, default: false },
       },
     ],
     default: [],
