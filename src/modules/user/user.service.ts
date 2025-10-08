@@ -226,14 +226,18 @@ export class UsersService {
     };
   }
 
+  private isValidMinioObjectPath(path: string): boolean {
+    return typeof path === 'string' && !path.includes('://') && !path.includes('?');
+  }
+
   async uploadProfilePicture(
     userId: string,
     file: Express.Multer.File,
   ): Promise<Record<string, any>> {
     const user = await this.userModel.findOne({ user_id: userId });
     if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
-    // Remove previous image if exists
-    if (user.imagePath) {
+    // Remove previous image if exists and is a valid Minio object path
+    if (user.imagePath && this.isValidMinioObjectPath(user.imagePath)) {
       try {
         await this.minioService.removeObject(user.imagePath);
       } catch (e) {
@@ -254,7 +258,7 @@ export class UsersService {
   async deleteProfilePicture(userId: string): Promise<Record<string, any>> {
     const user = await this.userModel.findOne({ user_id: userId });
     if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
-    if (user.imagePath) {
+    if (user.imagePath && this.isValidMinioObjectPath(user.imagePath)) {
       try {
         await this.minioService.removeObject(user.imagePath);
       } catch (e) {
@@ -274,7 +278,13 @@ export class UsersService {
     const updateObj: any = {};
     for (const key in updateUserDto) {
       if (updateUserDto[key] !== undefined) {
-        updateObj[key] = updateUserDto[key];
+        if (key === 'addresses' && Array.isArray(updateUserDto.addresses)) {
+          updateObj.addresses = updateUserDto.addresses.filter(
+            (a) => a && typeof a.address === 'string' && typeof a.isFavorite === 'boolean'
+          );
+        } else {
+          updateObj[key] = updateUserDto[key];
+        }
       }
     }
     // Always use user_id for lookup
