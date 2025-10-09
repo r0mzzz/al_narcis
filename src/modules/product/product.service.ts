@@ -52,7 +52,7 @@ export class ProductService {
     page = 1,
     categories?: string[],
     tag?: string,
-    genderType?: string,
+    gender?: string,
   ): Promise<unknown> {
     const filter: any = {};
     if (productType) filter.productType = productType;
@@ -63,8 +63,8 @@ export class ProductService {
     if (tag) {
       filter.tags = tag;
     }
-    if (genderType) {
-      filter.gender = genderType;
+    if (gender) {
+      filter.gender = gender;
     }
 
     // Only cache unfiltered, unpaginated queries
