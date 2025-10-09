@@ -16,6 +16,7 @@ import { RedisModule } from '../../services/redis.module';
 import { Tag, TagSchema } from './schema/tag.schema';
 import { TagService } from './tag.service';
 import { TagController } from './tag.controller';
+import { GenderService } from './gender.service';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TagController } from './tag.controller';
     IsAllowedCapacityConstraint,
     MinioService,
     TagService,
+    GenderService,
   ],
   exports: [ProductService],
 })

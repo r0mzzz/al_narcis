@@ -23,6 +23,8 @@ import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { CapacityService } from './capacity.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AppError } from '../../common/errors';
+import { GenderService } from './gender.service';
+import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 
 @Controller('products')
 export class ProductController {
@@ -30,6 +32,7 @@ export class ProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly capacityService: CapacityService,
+    private readonly genderService: GenderService,
   ) {}
 
   @UseGuards(AccessTokenGuard)
@@ -55,6 +58,7 @@ export class ProductController {
     @Query('page') page?: string,
     @Query('categories') categories?: string,
     @Query('tag') tag?: string,
+    @Query('genderType') genderType?: string,
   ) {
     // Parse categories as array if provided
     const categoryArr = categories
@@ -70,6 +74,7 @@ export class ProductController {
       page ? parseInt(page, 10) : 1,
       categoryArr,
       tag,
+      genderType,
     );
   }
 
@@ -275,6 +280,31 @@ export class ProductController {
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
     );
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('genders')
+  async addGender(@Body() dto: CreateGenderDto) {
+    return this.genderService.create(dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('genders')
+  async listGenders() {
+    return this.genderService.findAll();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('genders/:id')
+  async updateGender(@Param('id') id: string, @Body() dto: UpdateGenderDto) {
+    return this.genderService.update(id, dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('genders/:id')
+  async deleteGender(@Param('id') id: string) {
+    this.genderService.delete(id);
+    return { statusCode: 200, message: 'Gender deleted' };
   }
 }
 
