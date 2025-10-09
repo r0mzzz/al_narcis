@@ -61,11 +61,12 @@ export class ProductService {
       filter.category = { $in: categories };
     }
     if (tag) {
-      filter.tags =  { $eq: tag };
+      filter.tags = { $eq: tag };
     }
     if (gender) {
-      filter.gender = { $eq: gender };
+      filter.gender = { $eq: gender, $type: 'string' };
     }
+    this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
 
     // Only cache unfiltered, unpaginated queries
     const isCacheable =
@@ -132,6 +133,10 @@ export class ProductService {
           return { ...obj, productImage: presignedImage };
         }),
       );
+      // Defensive: filter in memory as well
+      if (gender) {
+        allProducts = allProducts.filter((p) => p.gender === gender);
+      }
       total = allProducts.length;
     }
 
@@ -173,7 +178,8 @@ export class ProductService {
     if (!categoryName)
       throw new BadRequestException(AppError.CATEGORY_NAME_REQUIRED.az);
     const exists = await this.categoryModel.findOne({ categoryName }).exec();
-    if (exists) throw new BadRequestException(AppError.CATEGORY_ALREADY_EXISTS.az);
+    if (exists)
+      throw new BadRequestException(AppError.CATEGORY_ALREADY_EXISTS.az);
     const created = new this.categoryModel({ categoryName });
     await created.save();
     return { categoryName: created.categoryName };
