@@ -61,10 +61,10 @@ export class ProductService {
       filter.category = { $in: categories };
     }
     if (tag) {
-      filter.tags = tag;
+      filter.tags =  { $eq: tag };
     }
     if (gender) {
-      filter.gender = gender;
+      filter.gender = { $eq: gender };
     }
 
     // Only cache unfiltered, unpaginated queries
