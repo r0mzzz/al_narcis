@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface GenderEntry {
   id: string;
@@ -20,10 +21,10 @@ export class GenderService {
   }
 
   create(dto: CreateGenderDto): GenderEntry {
-    if (this.genders.find(g => g.id === dto.id || g.code === dto.code)) {
-      throw new ConflictException('Gender with this id or code already exists');
+    if (this.genders.find(g => g.code === dto.code)) {
+      throw new ConflictException('Gender with this code already exists');
     }
-    const entry: GenderEntry = { ...dto };
+    const entry: GenderEntry = { id: uuidv4(), ...dto };
     this.genders.push(entry);
     return entry;
   }
@@ -41,4 +42,3 @@ export class GenderService {
     this.genders.splice(idx, 1);
   }
 }
-

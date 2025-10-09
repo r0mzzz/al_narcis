@@ -18,10 +18,6 @@ export class CreateGenderDto {
 
   @IsEnum(GenderCode)
   code: GenderCode;
-
-  @IsString()
-  @IsNotEmpty()
-  id: string;
 }
 
 export class UpdateGenderDto {
@@ -32,9 +28,4 @@ export class UpdateGenderDto {
   @IsOptional()
   @IsEnum(GenderCode)
   code?: GenderCode;
-
-  @IsOptional()
-  @IsString()
-  id?: string;
 }
-
