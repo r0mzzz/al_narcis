@@ -147,6 +147,31 @@ export class ProductController {
 
   // Move all static routes above this
   @UseGuards(AccessTokenGuard)
+  @Post('genders')
+  async addGender(@Body() dto: CreateGenderDto) {
+    return this.genderService.create(dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('genders')
+  async listGenders() {
+    return this.genderService.findAll();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('genders/:id')
+  async updateGender(@Param('id') id: string, @Body() dto: UpdateGenderDto) {
+    return this.genderService.update(id, dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('genders/:id')
+  async deleteGender(@Param('id') id: string) {
+    this.genderService.delete(id);
+    return { statusCode: 200, message: 'Gender deleted' };
+  }
+
+  @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -285,31 +310,6 @@ export class ProductController {
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
     );
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Post('genders')
-  async addGender(@Body() dto: CreateGenderDto) {
-    return this.genderService.create(dto);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Get('genders')
-  async listGenders() {
-    return this.genderService.findAll();
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Patch('genders/:id')
-  async updateGender(@Param('id') id: string, @Body() dto: UpdateGenderDto) {
-    return this.genderService.update(id, dto);
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Delete('genders/:id')
-  async deleteGender(@Param('id') id: string) {
-    this.genderService.delete(id);
-    return { statusCode: 200, message: 'Gender deleted' };
   }
 }
 
