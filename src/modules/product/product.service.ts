@@ -64,13 +64,13 @@ export class ProductService {
       filter.tags = { $eq: tag };
     }
     if (gender) {
-      filter.gender = { $eq: gender, $type: 'string' };
+      filter.gender = gender;
     }
     this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
 
     // Only cache unfiltered, unpaginated queries
     const isCacheable =
-      !productType && !search && (!categories || categories.length === 0);
+      !productType && !search && (!categories || categories.length === 0) && !tag && !gender;
     const version = await this.getProductsCacheVersion();
     const cacheKey = `products:list:v${version}`;
 
