@@ -25,6 +25,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AppError } from '../../common/errors';
 import { GenderService } from './gender.service';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
+import { isValidObjectId } from 'mongoose';
 
 @Controller('products')
 export class ProductController {
@@ -144,9 +145,13 @@ export class ProductController {
     return this.productService.deleteProductType(id);
   }
 
+  // Move all static routes above this
   @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('Invalid product id');
+    }
     return this.productService.findOne(id);
   }
 
