@@ -60,7 +60,10 @@ export class ProductController {
     @Query('categories') categories?: string,
     @Query('tag') tag?: string,
     @Query('gender') gender?: string,
+    @Query('genderType') genderType?: string,
   ) {
+    // Use gender if present, otherwise genderType
+    const genderParam = gender || genderType;
     // Parse categories as array if provided
     const categoryArr = categories
       ? categories
@@ -75,7 +78,7 @@ export class ProductController {
       page ? parseInt(page, 10) : 1,
       categoryArr,
       tag,
-      gender,
+      genderParam,
     );
   }
 
