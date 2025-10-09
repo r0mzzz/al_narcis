@@ -133,9 +133,16 @@ export class ProductService {
           return { ...obj, productImage: presignedImage };
         }),
       );
+      this.logger.debug(`Products from DB: ${allProducts.length}`);
       // Defensive: filter in memory as well
       if (gender) {
-        allProducts = allProducts.filter((p) => p.gender === gender);
+        allProducts = allProducts.filter(
+          (p) => typeof p.gender === 'string' && p.gender === gender
+        );
+        this.logger.debug(`Products after in-memory gender filter: ${allProducts.length}`);
+        if (allProducts.length > 0) {
+          this.logger.debug(`Example gender values: ${allProducts.slice(0, 5).map(p => p.gender).join(', ')}`);
+        }
       }
       total = allProducts.length;
     }
