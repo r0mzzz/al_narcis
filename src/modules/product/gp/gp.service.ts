@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { GetPaymentKeyDto } from './dto/get-payment-key.dto';
 import { firstValueFrom } from 'rxjs';
-import md5 from 'md5';
+import md5 = require('md5');
 
 @Injectable()
 export class GPService {
@@ -21,7 +21,7 @@ export class GPService {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentKey';
       // Set defaults for lang and redirectUrl if not provided
-      const lang = dto.lang ?? 'az';
+      const lang = dto.lang ?? 'lv';
       const redirectUrl = dto.redirectUrl ?? null;
       // Generate hashCode using md5(authKey + merchantName + cardType + amount + description)
       const hashCode = md5(
