@@ -7,11 +7,9 @@ export class GetPaymentKeyDto {
   @IsString()
   cardType: string;
 
+  @IsOptional()
   @IsString()
-  hashCode: string;
-
-  @IsString()
-  lang: string;
+  lang?: string; // Optional, default to 'az' in service
 
   @IsNumberString()
   amount: string;
@@ -20,6 +18,5 @@ export class GetPaymentKeyDto {
   description: string;
 
   @IsOptional()
-  redirectUrl?: string | null;
+  redirectUrl?: string | null; // Optional, default to null in service
 }
-

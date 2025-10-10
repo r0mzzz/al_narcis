@@ -20,6 +20,9 @@ export class GPService {
   async getPaymentKey(dto: GetPaymentKeyDto): Promise<{ paymentKey: string }> {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentKey';
+      // Set defaults for lang and redirectUrl if not provided
+      const lang = dto.lang ?? 'az';
+      const redirectUrl = dto.redirectUrl ?? null;
       // Generate hashCode using md5(authKey + merchantName + cardType + amount + description)
       const hashCode = md5(
         this.authKey +
@@ -29,7 +32,12 @@ export class GPService {
           dto.description,
       );
       const payload = {
-        ...dto,
+        merchantName: dto.merchantName,
+        cardType: dto.cardType,
+        lang,
+        amount: dto.amount,
+        description: dto.description,
+        redirectUrl,
         hashCode,
       };
       const response = await firstValueFrom(
