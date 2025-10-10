@@ -31,6 +31,7 @@ export class GPService {
         dto.amount +
         dto.description;
       const hashCode = CryptoJS.MD5(hashString).toString(CryptoJS.enc.Hex);
+      this.logger.log('Generated hashCode: ' + hashCode);
       const payload = {
         merchantName: dto.merchantName,
         cardType: dto.cardType,
