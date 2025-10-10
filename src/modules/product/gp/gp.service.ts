@@ -25,7 +25,7 @@ export class GPService {
       const url = 'https://rest-pg.goldenpay.az/getPaymentKey';
       // Set defaults for lang and redirectUrl if not provided
       const lang = dto.lang ?? 'az';
-      const redirectUrl = dto.redirectUrl ?? null;
+      const redirectUrl = dto.redirectUrl ?? 'https://www.alnarcis.az';
       // Generate hashCode using MD5(authKey + merchantName + cardType + amount + description)
       const hashString =
         this.authKey +
