@@ -1,19 +1,39 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { GetPaymentKeyDto } from './dto/get-payment-key.dto';
 import { firstValueFrom } from 'rxjs';
+import md5 from 'md5';
 
 @Injectable()
 export class GPService {
   private readonly logger = new Logger(GPService.name);
+  private readonly authKey: string;
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
+    this.authKey = this.configService.get<string>('goldenpay.authKey');
+  }
 
   async getPaymentKey(dto: GetPaymentKeyDto): Promise<{ paymentKey: string }> {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentKey';
+      // Generate hashCode using md5(authKey + merchantName + cardType + amount + description)
+      const hashCode = md5(
+        this.authKey +
+          dto.merchantName +
+          dto.cardType +
+          dto.amount +
+          dto.description,
+      );
+      const payload = {
+        ...dto,
+        hashCode,
+      };
       const response = await firstValueFrom(
-        this.httpService.post(url, dto, {
+        this.httpService.post(url, payload, {
           headers: { 'Content-Type': 'application/json' },
         }),
       );
@@ -38,9 +58,7 @@ export class GPService {
     return 'Hello from GPService!';
   }
 
-  // Example: Add another method for future extension
   async checkPaymentStatus(paymentKey: string): Promise<any> {
-    // Implement actual logic as needed
     return { status: 'NOT_IMPLEMENTED', paymentKey };
   }
 }
