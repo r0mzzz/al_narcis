@@ -18,20 +18,21 @@ export class GPService {
     this.authKey = 'e7ea68e88b504e60b4c4fc7acb7e2990';
   }
 
-  async getPaymentKey(dto: GetPaymentKeyDto): Promise<{ paymentKey: string }> {
+  async getPaymentKey(
+    dto: GetPaymentKeyDto,
+  ): Promise<{ paymentKey: string; paymentUrl: string }> {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentKey';
       // Set defaults for lang and redirectUrl if not provided
       const lang = dto.lang ?? 'az';
       const redirectUrl = dto.redirectUrl ?? null;
-      // Generate hashCode using CryptoJS.MD5(authKey + merchantName + cardType + amount + description)
+      // Generate hashCode using MD5(authKey + merchantName + cardType + amount + description)
       const hashString =
         this.authKey +
         dto.merchantName +
         dto.cardType +
         dto.amount +
         dto.description;
-      // const hashCode = CryptoJS.MD5(hashString).toString(CryptoJS.enc.Hex);
       const hashCode = crypto
         .createHash('md5')
         .update(hashString, 'utf-8')
@@ -52,7 +53,10 @@ export class GPService {
         }),
       );
       if (response.data?.status?.code === 1 && response.data?.paymentKey) {
-        return { paymentKey: response.data.paymentKey };
+        return {
+          paymentKey: response.data.paymentKey,
+          paymentUrl: `https://rest-pg.goldenpay.az/pay/${response.data.paymentKey}`,
+        };
       }
       this.logger.error('GoldenPay error response', response.data);
       // Return the error message and code from GoldenPay to the user with a valid HTTP status
@@ -78,23 +82,5 @@ export class GPService {
 
   async checkPaymentStatus(paymentKey: string): Promise<any> {
     return { status: 'NOT_IMPLEMENTED', paymentKey };
-  }
-
-  async pay(paymentKey: string): Promise<any> {
-    try {
-      const url = `https://rest-pg.goldenpay.az/pay/${paymentKey}`;
-      const response = await firstValueFrom(
-        this.httpService.post(url, {}, {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      this.logger.error('GoldenPay pay request failed', error);
-      throw new HttpException(
-        error?.response?.data || 'GoldenPay pay request failed',
-        error?.response?.status || HttpStatus.BAD_GATEWAY,
-      );
-    }
   }
 }
