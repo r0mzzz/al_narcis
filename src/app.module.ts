@@ -9,6 +9,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { RedisModule } from './services/redis.module';
 import { CashbackModule } from './modules/cashback/cashback.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { GPModule } from './modules/product/gp/gp.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { BrandsModule } from './modules/brands/brands.module';
     CashbackModule,
     RedisModule,
     BrandsModule,
+    GPModule,
   ],
 })
 export class AppModule {}
