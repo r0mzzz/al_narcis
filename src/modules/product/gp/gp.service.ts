@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { GetPaymentKeyDto } from './dto/get-payment-key.dto';
 import { firstValueFrom } from 'rxjs';
-import CryptoJS from 'crypto-js';
+import * as CryptoJS from 'crypto-js';
 
 @Injectable()
 export class GPService {
@@ -30,7 +30,7 @@ export class GPService {
         dto.cardType +
         dto.amount +
         dto.description;
-      const hashCode = CryptoJS.MD5(hashString).toString();
+      const hashCode = CryptoJS.MD5(hashString).toString(CryptoJS.enc.Hex);
       const payload = {
         merchantName: dto.merchantName,
         cardType: dto.cardType,
