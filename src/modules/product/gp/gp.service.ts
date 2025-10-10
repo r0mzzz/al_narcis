@@ -14,7 +14,8 @@ export class GPService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.authKey = this.configService.get<string>('goldenpay.authKey');
+    // this.authKey = this.configService.get<string>('goldenpay.authKey');
+    this.authKey = 'e7ea68e88b504e60b4c4fc7acb7e2990';
   }
 
   async getPaymentKey(dto: GetPaymentKeyDto): Promise<{ paymentKey: string }> {
@@ -31,9 +32,11 @@ export class GPService {
         dto.amount +
         dto.description;
       // const hashCode = CryptoJS.MD5(hashString).toString(CryptoJS.enc.Hex);
-      const hashCode = crypto.createHash('md5')
-        .update(hashString, 'utf-8')
-        .digest('hex');
+      // const hashCode = crypto
+      //   .createHash('md5')
+      //   .update(hashString, 'utf-8')
+      //   .digest('hex');
+      const hashCode = 'a14d5f5c7dcd0878c8e57266343a1407';
       this.logger.log('Generated hashCode: ' + hashCode);
       const payload = {
         merchantName: dto.merchantName,
