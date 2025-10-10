@@ -55,9 +55,13 @@ export class GPService {
         return { paymentKey: response.data.paymentKey };
       }
       this.logger.error('GoldenPay error response', response.data);
+      // Return the error message and code from GoldenPay to the user with a valid HTTP status
       throw new HttpException(
-        response.data || 'GoldenPay request failed',
-        HttpStatus.BAD_GATEWAY,
+        {
+          message: response.data?.status?.message || 'GoldenPay request failed',
+          code: response.data?.status?.code,
+        },
+        HttpStatus.BAD_REQUEST,
       );
     } catch (error) {
       this.logger.error('GoldenPay request failed', error);
