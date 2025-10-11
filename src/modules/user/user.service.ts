@@ -87,8 +87,8 @@ export class UsersService {
 
     // Generate invite link based on referralCode
     const inviteBaseUrl =
-      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
-    userData.inviteLink = `${inviteBaseUrl}?code=${referralCode}`;
+      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite?inviteCode=';
+    userData.inviteLink = `${inviteBaseUrl}${referralCode}`;
     userData.invitedBy = invitedBy;
 
     const createdUser = new this.userModel(userData);
@@ -134,7 +134,7 @@ export class UsersService {
         return {
           ...obj,
           imagePath: presignedImage || undefined,
-          inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+          inviteLink: `${inviteBaseUrl}${obj.referralCode}`,
         };
       }),
     );
@@ -167,7 +167,7 @@ export class UsersService {
     return {
       ...obj,
       imagePath: presignedImage || undefined,
-      inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+      inviteLink: `${inviteBaseUrl}${obj.referralCode}`,
       invites: invites.map((inv) => ({
         first_name: inv.first_name,
         last_name: inv.last_name,
@@ -198,7 +198,7 @@ export class UsersService {
     };
     return {
       ...obj,
-      inviteLink: `${inviteBaseUrl}?code=${obj.referralCode}`,
+      inviteLink: `${inviteBaseUrl}${obj.referralCode}`,
       invites: invites.map((inv) => ({
         first_name: inv.first_name,
         last_name: inv.last_name,
