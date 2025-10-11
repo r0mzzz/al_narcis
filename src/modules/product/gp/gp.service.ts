@@ -83,4 +83,41 @@ export class GPService {
   async checkPaymentStatus(paymentKey: string): Promise<any> {
     return { status: 'NOT_IMPLEMENTED', paymentKey };
   }
+
+  async getPaymentResult(paymentKey: string): Promise<any> {
+    try {
+      const url = 'https://rest-pg.goldenpay.az/getPaymentResult';
+      // Hash: md5(authKey + '_' + paymentKey)
+      const hashString = `${this.authKey}${paymentKey}`;
+      const hashCode = crypto
+        .createHash('md5')
+        .update(hashString, 'utf-8')
+        .digest('hex');
+      this.logger.log(`Generated hashCode for payment result: ${hashCode}`);
+      const params = new URLSearchParams({
+        payment_key: paymentKey,
+        hash_code: hashCode,
+      });
+      const response = await firstValueFrom(
+        this.httpService.get(`${url}?${params.toString()}`),
+      );
+      if (response.data?.status?.code === 1) {
+        return response.data;
+      }
+      this.logger.error('GoldenPay error response', response.data);
+      throw new HttpException(
+        {
+          message: response.data?.status?.message || 'GoldenPay request failed',
+          code: response.data?.status?.code,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    } catch (error) {
+      this.logger.error('GoldenPay request failed', error);
+      throw new HttpException(
+        error?.response?.data || 'GoldenPay request failed',
+        error?.response?.status || HttpStatus.BAD_GATEWAY,
+      );
+    }
+  }
 }
