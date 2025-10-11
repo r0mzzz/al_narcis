@@ -100,22 +100,18 @@ export class GPService {
       const response = await firstValueFrom(
         this.httpService.get(`${url}?${params.toString()}`),
       );
-      if (response.data?.status?.code === 1) {
-        return response.data;
-      }
-      this.logger.error('GoldenPay error response', response.data);
-      throw new HttpException(
-        {
-          message: response.data?.status?.message || 'GoldenPay request failed',
-          code: response.data?.status?.code,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      // Always return the full GoldenPay response, success or error
+      return response.data;
     } catch (error) {
       this.logger.error('GoldenPay request failed', error);
+      // If GoldenPay returned a response, return it (success or error) to the user
+      if (error?.response?.data) {
+        return error.response.data;
+      }
+      // Otherwise, throw a generic error
       throw new HttpException(
-        error?.response?.data || 'GoldenPay request failed',
-        error?.response?.status || HttpStatus.BAD_GATEWAY,
+        'GoldenPay request failed',
+        HttpStatus.BAD_GATEWAY,
       );
     }
   }
