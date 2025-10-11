@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { GetPaymentKeyDto } from './dto/get-payment-key.dto';
@@ -87,8 +87,7 @@ export class GPService {
   async getPaymentResult(paymentKey: string): Promise<any> {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentResult';
-      // Hash: md5(authKey + '_' + paymentKey)
-      const hashString = `${this.authKey}${paymentKey}`;
+      const hashString = this.authKey + paymentKey;
       const hashCode = crypto
         .createHash('md5')
         .update(hashString, 'utf-8')
