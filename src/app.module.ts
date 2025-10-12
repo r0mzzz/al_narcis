@@ -10,6 +10,8 @@ import { RedisModule } from './services/redis.module';
 import { CashbackModule } from './modules/cashback/cashback.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { GPModule } from './modules/product/gp/gp.module';
+import { SwaggerDocumentService } from './common/swagger.provider';
+import { DocsController } from './common/docs.controller';
 
 @Module({
   imports: [
@@ -32,5 +34,7 @@ import { GPModule } from './modules/product/gp/gp.module';
     BrandsModule,
     GPModule,
   ],
+  controllers: [DocsController],
+  providers: [SwaggerDocumentService],
 })
 export class AppModule {}

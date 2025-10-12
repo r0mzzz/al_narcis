@@ -7,6 +7,7 @@ import { useContainer } from 'class-validator';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
+import { SwaggerDocumentService } from './common/swagger.provider';
 
 const bootstrap = async () => {
   try {
@@ -38,6 +39,9 @@ const bootstrap = async () => {
       join(__dirname, '..', 'swagger.json'),
       JSON.stringify(document, null, 2),
     );
+    // Set the Swagger document for the DocsController
+    const swaggerDocumentService = app.get(SwaggerDocumentService);
+    swaggerDocumentService.setDocument(document);
 
     await app.listen(port, '0.0.0.0', () =>
       console.log(`SERVER STARTED ON PORT: ${port}`),
