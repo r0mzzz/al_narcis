@@ -19,7 +19,7 @@ const bootstrap = async () => {
     useContainer(app.select(AppModule), { fallbackOnErrors: true });
     const configService = app.get(ConfigService);
     const port = configService.get('port');
-    app.enableCors();
+    app.enableCors({origin: '*'});
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({
