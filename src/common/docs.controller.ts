@@ -2,11 +2,11 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { SwaggerDocumentService } from './swagger.provider';
 import { Response } from 'express';
 
-@Controller('api/docs')
+@Controller('api')
 export class DocsController {
   constructor(private readonly swaggerService: SwaggerDocumentService) {}
 
-  @Get('swagger.json')
+  @Get('swagger-json')
   getSwaggerJson(@Res() res: Response) {
     const doc = this.swaggerService.getDocument();
     if (!doc) {
@@ -17,4 +17,3 @@ export class DocsController {
     return res.send(doc);
   }
 }
-
