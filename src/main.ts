@@ -6,7 +6,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { useContainer } from 'class-validator';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { join } from 'path';
 import { SwaggerDocumentService } from './common/swagger.provider';
 
 const bootstrap = async () => {
@@ -36,7 +36,7 @@ const bootstrap = async () => {
     SwaggerModule.setup('api/docs', app, document);
     // Write swagger.json to project root folder
     writeFileSync(
-      resolve(process.cwd(), 'swagger.json'),
+      join(__dirname, '../swagger.json'),
       JSON.stringify(document, null, 2),
     );
     // Set the Swagger document for the DocsController
