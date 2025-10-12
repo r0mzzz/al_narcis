@@ -20,9 +20,10 @@ const bootstrap = async () => {
     const configService = app.get(ConfigService);
     const port = configService.get('port');
     app.enableCors({
-      origin: '*',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: '*',
+      origin: true, // Разрешить любой origin, который приходит в запросе
+      credentials: true, // Разрешить передачу cookie / auth-заголовков
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     });
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
