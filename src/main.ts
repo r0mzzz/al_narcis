@@ -6,6 +6,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { useContainer } from 'class-validator';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
+import { join } from 'path';
 
 const bootstrap = async () => {
   try {
@@ -32,8 +33,11 @@ const bootstrap = async () => {
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
-    // Write swagger.json to root folder
-    writeFileSync('swagger.json', JSON.stringify(document, null, 2));
+    // Write swagger.json to project root folder
+    writeFileSync(
+      join(__dirname, '..', 'swagger.json'),
+      JSON.stringify(document, null, 2),
+    );
 
     await app.listen(port, '0.0.0.0', () =>
       console.log(`SERVER STARTED ON PORT: ${port}`),
