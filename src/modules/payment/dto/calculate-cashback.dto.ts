@@ -16,4 +16,9 @@ export class CalculateCashbackDto {
   @IsString({ message: 'paymentKey must be a string' })
   @IsNotEmpty({ message: 'paymentKey is required' })
   paymentKey: string;
+
+  @ApiProperty({ example: '2023-10-10', description: 'Date of the transaction' })
+  @IsString({ message: 'date must be a string' })
+  @IsNotEmpty({ message: 'date is required' })
+  date: string;
 }
