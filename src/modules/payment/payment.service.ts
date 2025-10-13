@@ -14,6 +14,8 @@ import { AccountType } from '../../common/account-type.enum';
 import { HistoryService } from '../history/history.service';
 import { CashbackService } from '../cashback/cashback.service';
 import { CashbackType } from '../cashback/schema/cashback.schema';
+import { OrderService } from '../order/order.service';
+import { CreateOrderDto } from '../order/dto/create-order.dto';
 
 @Injectable()
 export class PaymentService {
@@ -24,6 +26,8 @@ export class PaymentService {
     @Inject(forwardRef(() => HistoryService))
     private historyService: HistoryService,
     private cashbackService: CashbackService,
+    @Inject(forwardRef(() => OrderService))
+    private orderService: OrderService,
   ) {}
 
   /**
@@ -195,5 +199,32 @@ export class PaymentService {
       });
     }
     return cashbackInCoins;
+  }
+
+  async pay(dto: CreateOrderDto) {
+    const [orderResult, cashbackResult, singleCashbackResult] =
+      await Promise.allSettled([
+        this.orderService.addOrder(dto),
+        this.calculateCashback(dto.amount, dto.user_id, dto.paymentKey),
+        this.applySinglePaymentCashback(
+          dto.user_id,
+          dto.amount,
+          dto.paymentKey,
+        ),
+      ]);
+    return {
+      order:
+        orderResult.status === 'fulfilled'
+          ? orderResult.value
+          : { error: orderResult.reason },
+      cashback:
+        cashbackResult.status === 'fulfilled'
+          ? cashbackResult.value
+          : { error: cashbackResult.reason },
+      singlePaymentCashback:
+        singleCashbackResult.status === 'fulfilled'
+          ? singleCashbackResult.value
+          : { error: singleCashbackResult.reason },
+    };
   }
 }

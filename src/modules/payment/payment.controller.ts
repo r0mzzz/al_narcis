@@ -1,6 +1,14 @@
-import { Body, Controller, Logger, Post, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Logger,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CalculateCashbackDto } from './dto/calculate-cashback.dto';
+import { CreateOrderDto } from '../order/dto/create-order.dto';
 
 @Controller('payment')
 export class PaymentController {
@@ -12,9 +20,7 @@ export class PaymentController {
    */
   @Post('cashback')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async calculateCashback(
-    @Body() dto: CalculateCashbackDto,
-  ) {
+  async calculateCashback(@Body() dto: CalculateCashbackDto) {
     const { amount, user_id, paymentKey } = dto;
     let cashbackError = null;
     try {
@@ -28,8 +34,21 @@ export class PaymentController {
       cashbackError = error.message || 'Unknown cashback error';
     }
     return {
-      message: { en: 'Cashback calculated (if eligible)', az: 'Kəşbək hesablandı (əgər uyğundursa)' },
+      message: {
+        en: 'Cashback calculated (if eligible)',
+        az: 'Kəşbək hesablandı (əgər uyğundursa)',
+      },
       ...(cashbackError ? { cashbackError } : {}),
     };
+  }
+
+  /**
+   * Pay for an order.
+   * Body: { orderId: string, paymentMethod: string, ... }
+   */
+  @Post('pay')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async pay(@Body() dto: CreateOrderDto) {
+    return this.paymentService.pay(dto);
   }
 }
