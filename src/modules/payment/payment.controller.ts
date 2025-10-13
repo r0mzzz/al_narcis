@@ -2,14 +2,16 @@ import {
   Body,
   Controller,
   Logger,
-  Post,
+  Post, UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CalculateCashbackDto } from './dto/calculate-cashback.dto';
 import { CreateOrderDto } from '../order/dto/create-order.dto';
+import { AccessTokenGuard } from '../../guards/jwt-guard';
 
+@UseGuards(AccessTokenGuard)
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
