@@ -48,6 +48,7 @@ export class Order extends Document implements GoldenPayPaymentResult {
     type: [
       {
         productId: { type: String, required: true },
+        productName: { type: String, required: true },
         variant: { type: String, required: true },
         count: { type: Number, required: true },
       },
@@ -57,6 +58,7 @@ export class Order extends Document implements GoldenPayPaymentResult {
   })
   products: {
     productId: string;
+    productName: string;
     variant: string;
     count: number;
   }[];

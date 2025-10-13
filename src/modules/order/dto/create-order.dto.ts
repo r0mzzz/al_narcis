@@ -60,6 +60,9 @@ export class ProductOrderDto {
   productId: string;
 
   @IsString()
+  productName: string;
+
+  @IsString()
   variant: string;
 
   @IsNumber()
