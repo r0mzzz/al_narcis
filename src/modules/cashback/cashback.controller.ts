@@ -19,10 +19,14 @@ export class CashbackController {
     @Query('month') month?: string,
     @Query('year') year?: string,
   ) {
+    let pageNum = page ? parseInt(page, 10) : 1;
+    let limitNum = limit ? parseInt(limit, 10) : 10;
+    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+    if (isNaN(limitNum) || limitNum < 1) limitNum = 10;
     return this.cashbackService.findByUser(
       userId,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 10,
+      pageNum,
+      limitNum,
       month ? parseInt(month, 10) : undefined,
       year ? parseInt(year, 10) : undefined,
     );

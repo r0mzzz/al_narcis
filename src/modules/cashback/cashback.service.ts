@@ -51,10 +51,11 @@ export class CashbackService {
       filter.date = { $gte: start, $lt: end };
     }
     const total = await this.cashbackModel.countDocuments(filter);
+    const skip = Math.max((page - 1) * limit, 0);
     const docs = await this.cashbackModel
       .find(filter)
       .sort({ date: -1 })
-      .skip((page - 1) * limit)
+      .skip(skip)
       .limit(limit)
       .exec();
     const totalPages = Math.ceil(total / limit);
