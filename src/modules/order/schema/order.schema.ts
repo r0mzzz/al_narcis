@@ -43,6 +43,23 @@ export class Order extends Document implements GoldenPayPaymentResult {
 
   @Prop({ required: true, enum: OrderStatus, default: OrderStatus.WAITING })
   orderStatus: OrderStatus;
+
+  @Prop({
+    type: [
+      {
+        productId: { type: String, required: true },
+        variant: { type: String, required: true },
+        count: { type: Number, required: true },
+      },
+    ],
+    required: true,
+    default: [],
+  })
+  products: {
+    productId: string;
+    variant: string;
+    count: number;
+  }[];
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

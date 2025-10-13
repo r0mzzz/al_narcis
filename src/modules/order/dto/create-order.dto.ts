@@ -3,7 +3,10 @@ import {
   IsObject,
   IsString,
   IsNumber,
+  ValidateNested,
+  IsArray,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { OrderStatus } from '../order-status.enum';
 
 export class CreateOrderDto {
@@ -45,4 +48,20 @@ export class CreateOrderDto {
 
   @IsEnum(OrderStatus)
   orderStatus: OrderStatus;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductOrderDto)
+  products: ProductOrderDto[];
+}
+
+export class ProductOrderDto {
+  @IsString()
+  productId: string;
+
+  @IsString()
+  variant: string;
+
+  @IsNumber()
+  count: number;
 }
