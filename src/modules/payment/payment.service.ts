@@ -182,7 +182,6 @@ export class PaymentService {
       cashbackInCoins = Math.floor(amount * (config.defaultPercent / 100));
     } else if (milestone && amount >= config.milestoneThreshold) {
       cashbackInCoins = Math.floor(amount * (config.milestonePercent / 100));
-      cashbackType = CashbackType.BONUS;
     }
     if (cashbackInCoins > 0) {
       await this.userModel.updateOne(
