@@ -202,6 +202,7 @@ export class PaymentService {
   }
 
   async pay(dto: CreateOrderDto) {
+    console.log('[PAYMENT] pay() called with DTO:', JSON.stringify(dto));
     const [orderResult, cashbackResult, singleCashbackResult] =
       await Promise.allSettled([
         this.orderService.addOrder(dto),
@@ -212,6 +213,17 @@ export class PaymentService {
           dto.paymentKey,
         ),
       ]);
+    if (orderResult.status === 'rejected') {
+      console.error('[PAYMENT] addOrder failed:', orderResult.reason);
+    } else {
+      console.log('[PAYMENT] addOrder result:', orderResult.value);
+    }
+    if (cashbackResult.status === 'rejected') {
+      console.error('[PAYMENT] calculateCashback failed:', cashbackResult.reason);
+    }
+    if (singleCashbackResult.status === 'rejected') {
+      console.error('[PAYMENT] applySinglePaymentCashback failed:', singleCashbackResult.reason);
+    }
     return {
       order:
         orderResult.status === 'fulfilled'

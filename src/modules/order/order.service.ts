@@ -13,8 +13,16 @@ export class OrderService {
   ) {}
 
   async addOrder(createOrderDto: CreateOrderDto): Promise<Order> {
-    const createdOrder = new this.orderModel(createOrderDto);
-    return createdOrder.save();
+    console.log('[ORDER] addOrder() called with:', JSON.stringify(createOrderDto));
+    try {
+      const createdOrder = new this.orderModel(createOrderDto);
+      const savedOrder = await createdOrder.save();
+      console.log('[ORDER] Order saved successfully:', savedOrder._id);
+      return savedOrder;
+    } catch (error) {
+      console.error('[ORDER] Error saving order:', error);
+      throw error;
+    }
   }
 
   async updateOrder(
