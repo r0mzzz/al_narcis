@@ -38,9 +38,6 @@ export class CashbackService {
     limit: number;
     totalPages: number;
   }> {
-    // Ensure page and limit are always at least 1
-    page = Number.isInteger(page) && page > 0 ? page : 1;
-    limit = Number.isInteger(limit) && limit > 0 ? limit : 10;
     const filter: any = { user_id };
     if (month && year) {
       // Filter by month and year
@@ -54,7 +51,7 @@ export class CashbackService {
       filter.date = { $gte: start, $lt: end };
     }
     const total = await this.cashbackModel.countDocuments(filter);
-    const skip = Math.max((page - 1) * limit, 0);
+    const skip = (page - 1) * limit;
     const docs = await this.cashbackModel
       .find(filter)
       .sort({ date: -1, _id: -1 }) // secondary sort by _id for deterministic order
