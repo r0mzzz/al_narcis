@@ -44,19 +44,37 @@ export class HistoryService {
     return { ...rest, cashback };
   }
 
-  async findAll(): Promise<Record<string, any>[]> {
-    const cacheKey = 'history:all';
-    const cached = await this.redisService.getJson<Record<string, any>[]>(
-      cacheKey,
-    );
-    if (cached) return cached;
+  async findAll(
+    page = 1,
+    limit = 10,
+  ): Promise<{
+    items: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const cacheKey = `history:all:page:${page}:limit:${limit}`;
+    const cached = await this.redisService.getJson<{
+      items: any[];
+      total: number;
+    }>(cacheKey);
+    if (cached) {
+      const totalPages = Math.ceil(cached.total / limit);
+      return { ...cached, page, limit, totalPages };
+    }
+    const total = await this.paymentHistoryModel.countDocuments();
     const docs = await this.paymentHistoryModel
       .find()
       .select('-_id -__v')
+      .sort({ _id: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .exec();
-    const result = docs.map((doc) => doc.toObject());
-    await this.redisService.setJson(cacheKey, result, 3600); // cache for 1 hour
-    return result;
+    const items = docs.map((doc) => doc.toObject());
+    await this.redisService.setJson(cacheKey, { items, total }, 3600);
+    const totalPages = Math.ceil(total / limit);
+    return { items, total, page, limit, totalPages };
   }
 
   async findByUser(userId: string): Promise<Record<string, any>[]> {

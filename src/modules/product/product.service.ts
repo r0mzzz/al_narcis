@@ -170,6 +170,7 @@ export class ProductService {
       total,
       page: parsedPage,
       limit: parsedLimit,
+      totalPages: Math.ceil(total / parsedLimit),
     };
   }
 
