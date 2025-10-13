@@ -32,21 +32,15 @@ export class PaymentService {
 
   /**
    * Calculates and distributes cashback up to 3 levels of referral chain.
-   * @param amount The purchase amount in coins (e.g., 100 coins = 1 unit)
-   * @param buyerUserId The user_id of the buyer
+   * @param dto The CreateOrderDto containing payment details
    */
-  async calculateCashback(
-    amount: number,
-    buyerUserId: string,
-    paymentKey: string,
-    paymentDate: string,
-  ): Promise<void> {
+  async calculateCashback(dto: CreateOrderDto): Promise<void> {
     // Find the buyer by user_id
-    const buyer = await this.userModel.findOne({ user_id: buyerUserId });
+    const buyer = await this.userModel.findOne({ user_id: dto.user_id });
     if (!buyer) throw new NotFoundException('Alıcı tapılmadı');
 
     // Convert coins to units for percentage calculation
-    const amountInUnits = amount / 100;
+    const amountInUnits = dto.amount / 100;
 
     // Fetch cashback config from DB
     const cashbackConfig = await this.cashbackConfigService.getConfig();
@@ -96,13 +90,11 @@ export class PaymentService {
           );
         }
         await this.cashbackService.create({
+          ...dto,
           cashbackType: CashbackType.REFERRAL,
           user_id: inviter.user_id,
           cashbackAmount: cashbackInCoins,
-          date: paymentDate,
-          paymentKey,
           from_user_id: payerUserId,
-          paymentAmount: amount,
         });
       }
       currentUser = inviter;
@@ -150,34 +142,33 @@ export class PaymentService {
    * @returns cashback in coins
    */
   async applySinglePaymentCashback(
-    userId: string,
-    amount: number,
-    paymentKey: string,
-    paymentDate: string,
+    dto: CreateOrderDto,
+    cashbackType: CashbackType = CashbackType.PURCHASE,
+    from_user_id: string | null = null,
   ): Promise<number> {
-    const user = await this.userModel.findOne({ user_id: userId });
+    const user = await this.userModel.findOne({ user_id: dto.user_id });
     if (user.accountType !== AccountType.BUSINESS) return 0;
-    const milestone = await this.checkAndSetCashbackMilestone(userId);
+    const milestone = await this.checkAndSetCashbackMilestone(dto.user_id);
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
-    const cashbackType = CashbackType.PURCHASE;
-    if (!milestone && amount >= config.defaultThreshold) {
-      cashbackInCoins = Math.floor(amount * (config.defaultPercent / 100));
-    } else if (milestone && amount >= config.milestoneThreshold) {
-      cashbackInCoins = Math.floor(amount * (config.milestonePercent / 100));
+    if (!milestone && dto.amount >= config.defaultThreshold) {
+      cashbackInCoins = Math.floor(dto.amount * (config.defaultPercent / 100));
+    } else if (milestone && dto.amount >= config.milestoneThreshold) {
+      cashbackInCoins = Math.floor(
+        dto.amount * (config.milestonePercent / 100),
+      );
     }
     await this.userModel.updateOne(
-      { user_id: userId },
+      { user_id: dto.user_id },
       { $inc: { balance: cashbackInCoins } },
     );
     await this.cashbackService.create({
+      ...dto,
       cashbackType,
       user_id: user.user_id,
       cashbackAmount: cashbackInCoins,
-      date: paymentDate,
-      paymentKey,
-      from_user_id: null, // Not a referral, so set to null
-      paymentAmount: amount,
+      paymentKey: dto.paymentKey,
+      from_user_id,
     });
     return cashbackInCoins;
   }
@@ -186,18 +177,8 @@ export class PaymentService {
     const [orderResult, cashbackResult, singleCashbackResult] =
       await Promise.allSettled([
         this.orderService.addOrder(dto),
-        this.calculateCashback(
-          dto.amount,
-          dto.user_id,
-          dto.paymentKey,
-          dto.paymentDate,
-        ),
-        this.applySinglePaymentCashback(
-          dto.user_id,
-          dto.amount,
-          dto.paymentKey,
-          dto.paymentDate,
-        ),
+        this.calculateCashback(dto),
+        this.applySinglePaymentCashback(dto),
       ]);
     if (orderResult.status === 'rejected') {
       Logger.error(
