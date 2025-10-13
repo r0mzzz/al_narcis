@@ -1,5 +1,5 @@
 export enum OrderStatus {
-  WAITING = 'waiting',
-  RECEIVED = 'received',
+  WAITING = 'WAITING',
+  RECEIVED = 'RECEIVED',
 }
 
