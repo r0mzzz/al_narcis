@@ -50,18 +50,18 @@ export class CashbackService {
       // Filter by month and year
       const start = new Date(year, month - 1, 1);
       const end = new Date(year, month, 1);
-      filter.date = { $gte: start, $lt: end };
+      filter.paymentDate = { $gte: start, $lt: end };
     } else if (year) {
       // Filter by year only
       const start = new Date(year, 0, 1);
       const end = new Date(year + 1, 0, 1);
-      filter.date = { $gte: start, $lt: end };
+      filter.paymentDate = { $gte: start, $lt: end };
     }
     const total = await this.cashbackModel.countDocuments(filter);
     const skip = (page - 1) * limit;
     const docs = await this.cashbackModel
       .find(filter)
-      .sort({ date: -1, _id: -1 }) // secondary sort by _id for deterministic order
+      .sort({ paymentDate: -1, _id: -1 }) // secondary sort by _id for deterministic order
       .skip(skip)
       .limit(limit)
       .exec();
