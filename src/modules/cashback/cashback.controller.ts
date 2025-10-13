@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { CashbackService } from './cashback.service';
 import { CreateCashbackDto } from './dto/create-cashback.dto';
 
@@ -12,7 +12,19 @@ export class CashbackController {
   }
 
   @Get('user/:userId')
-  async findByUser(@Param('userId') userId: string) {
-    return this.cashbackService.findByUser(userId);
+  async findByUser(
+    @Param('userId') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ) {
+    return this.cashbackService.findByUser(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+      month ? parseInt(month, 10) : undefined,
+      year ? parseInt(year, 10) : undefined,
+    );
   }
 }
