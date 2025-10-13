@@ -177,26 +177,24 @@ export class PaymentService {
     const milestone = await this.checkAndSetCashbackMilestone(userId);
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
-    let cashbackType = CashbackType.PURCHASE;
+    const cashbackType = CashbackType.PURCHASE;
     if (!milestone && amount >= config.defaultThreshold) {
       cashbackInCoins = Math.floor(amount * (config.defaultPercent / 100));
     } else if (milestone && amount >= config.milestoneThreshold) {
       cashbackInCoins = Math.floor(amount * (config.milestonePercent / 100));
     }
-    if (cashbackInCoins > 0) {
-      await this.userModel.updateOne(
-        { user_id: userId },
-        { $inc: { balance: cashbackInCoins } },
-      );
-      await this.cashbackService.create({
-        cashbackType,
-        user_id: user.user_id,
-        cashbackAmount: cashbackInCoins,
-        date: new Date(),
-        paymentKey,
-        from_user_id: null, // Not a referral, so set to null
-      });
-    }
+    await this.userModel.updateOne(
+      { user_id: userId },
+      { $inc: { balance: cashbackInCoins } },
+    );
+    await this.cashbackService.create({
+      cashbackType,
+      user_id: user.user_id,
+      cashbackAmount: cashbackInCoins,
+      date: new Date(),
+      paymentKey,
+      from_user_id: null, // Not a referral, so set to null
+    });
     return cashbackInCoins;
   }
 
@@ -218,10 +216,16 @@ export class PaymentService {
       console.log('[PAYMENT] addOrder result:', orderResult.value);
     }
     if (cashbackResult.status === 'rejected') {
-      console.error('[PAYMENT] calculateCashback failed:', cashbackResult.reason);
+      console.error(
+        '[PAYMENT] calculateCashback failed:',
+        cashbackResult.reason,
+      );
     }
     if (singleCashbackResult.status === 'rejected') {
-      console.error('[PAYMENT] applySinglePaymentCashback failed:', singleCashbackResult.reason);
+      console.error(
+        '[PAYMENT] applySinglePaymentCashback failed:',
+        singleCashbackResult.reason,
+      );
     }
     return {
       order:
