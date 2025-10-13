@@ -24,15 +24,9 @@ export class PaymentController {
   @Post('cashback')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async calculateCashback(@Body() dto: CalculateCashbackDto) {
-    const { amount, user_id, paymentKey, date } = dto;
     let cashbackError = null;
     try {
-      await this.paymentService.calculateCashback(
-        amount,
-        user_id,
-        paymentKey,
-        date,
-      );
+      await this.paymentService.calculateCashback(dto);
     } catch (error) {
       Logger.error(
         'Cashback calculation failed',
