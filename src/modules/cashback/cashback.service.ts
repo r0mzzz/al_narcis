@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Cashback, CashbackDocument } from './schema/cashback.schema';
 import { CreateCashbackDto } from './dto/create-cashback.dto';
 
@@ -21,7 +21,14 @@ export class CashbackService {
       );
       return null;
     }
-    const cashback = new this.cashbackModel(createCashbackDto);
+    // Ensure user_id is a Types.ObjectId
+    const cashbackData = {
+      ...createCashbackDto,
+      user_id: Types.ObjectId.isValid(createCashbackDto.user_id)
+        ? new Types.ObjectId(createCashbackDto.user_id)
+        : createCashbackDto.user_id,
+    };
+    const cashback = new this.cashbackModel(cashbackData);
     return cashback.save();
   }
 

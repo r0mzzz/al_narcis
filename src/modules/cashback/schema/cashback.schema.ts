@@ -21,16 +21,19 @@ export class Cashback {
   cashbackAmount: number;
 
   @Prop({ required: true })
-  date: Date;
-
-  @Prop({ required: true })
   paymentKey: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, default: null })
   from_user_id?: Types.ObjectId | null;
 
-  @Prop({ required: true })
-  paymentAmount: number;
+  // Add any other fields you want to persist from CreateOrderDto, with correct types
+  @Prop()
+  amount: number;
+
+  @Prop()
+  paymentDate: string;
+
+  // ...add more fields as needed
 }
 
 export const CashbackSchema = SchemaFactory.createForClass(Cashback);
