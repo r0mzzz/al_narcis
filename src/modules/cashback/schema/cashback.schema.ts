@@ -50,8 +50,8 @@ export class Cashback {
   @Prop()
   checkCount: number;
 
-  @Prop()
-  paymentDate: string;
+  @Prop({ type: Date, required: true })
+  paymentDate: Date;
 
   @Prop()
   cardNumber: string;

@@ -27,6 +27,7 @@ export class CashbackService {
       user_id: Types.ObjectId.isValid(createCashbackDto.user_id)
         ? new Types.ObjectId(createCashbackDto.user_id)
         : createCashbackDto.user_id,
+      paymentDate: new Date(createCashbackDto.paymentDate), // Ensure Date type
     };
     const cashback = new this.cashbackModel(cashbackData);
     return cashback.save();
