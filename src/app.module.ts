@@ -12,6 +12,7 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { GPModule } from './modules/product/gp/gp.module';
 import { SwaggerDocumentService } from './common/swagger.provider';
 import { DocsController } from './common/docs.controller';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DocsController } from './common/docs.controller';
     RedisModule,
     BrandsModule,
     GPModule,
+    OrderModule,
   ],
   controllers: [DocsController],
   providers: [SwaggerDocumentService],

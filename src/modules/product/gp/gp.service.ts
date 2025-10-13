@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { GetPaymentKeyDto } from './dto/get-payment-key.dto';
 import { firstValueFrom } from 'rxjs';
 import * as crypto from 'crypto';
+import { GoldenPayPaymentResult } from './interfaces/goldenpay-payment-result.interface';
 
 @Injectable()
 export class GPService {
@@ -84,7 +85,7 @@ export class GPService {
     return { status: 'NOT_IMPLEMENTED', paymentKey };
   }
 
-  async getPaymentResult(paymentKey: string): Promise<any> {
+  async getPaymentResult(paymentKey: string): Promise<GoldenPayPaymentResult> {
     try {
       const url = 'https://rest-pg.goldenpay.az/getPaymentResult';
       const hashString = this.authKey + paymentKey;
@@ -100,15 +101,14 @@ export class GPService {
       const response = await firstValueFrom(
         this.httpService.get(`${url}?${params.toString()}`),
       );
-      // Always return the full GoldenPay response, success or error
-      return response.data;
+      // Cast response to GoldenPayPaymentResult for type safety
+      return response.data as GoldenPayPaymentResult;
     } catch (error) {
       this.logger.error('GoldenPay request failed', error);
-      // If GoldenPay returned a response, return it (success or error) to the user
       if (error?.response?.data) {
-        return error.response.data;
+        // Cast error response to GoldenPayPaymentResult for type safety
+        return error.response.data as GoldenPayPaymentResult;
       }
-      // Otherwise, throw a generic error
       throw new HttpException(
         'GoldenPay request failed',
         HttpStatus.BAD_GATEWAY,
