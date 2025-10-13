@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min, IsOptional } from 'class-validator';
 
 export class CreatePaymentHistoryDto {
   @ApiProperty({ example: 100, description: 'Payment amount' })
@@ -27,4 +27,9 @@ export class CreatePaymentHistoryDto {
   @IsNotEmpty({ message: 'Məhsul adı tələb olunur' })
   @IsString({ message: 'Məhsul adı sətir olmalıdır' })
   productName: string;
+
+  @ApiProperty({ example: '2023-10-10', description: 'Payment date' })
+  @IsString({ message: 'Tarix sətir olmalıdır' })
+  @IsOptional()
+  date?: string;
 }

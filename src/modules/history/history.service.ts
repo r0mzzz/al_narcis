@@ -28,7 +28,7 @@ export class HistoryService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, __v, ...rest } = obj;
     // Always apply cashback using the new logic
-    let cashback = 0;
+    const cashback = 0;
     // if (rest.userId && rest.amount && rest.paymentKey) {
     //   cashback = await this.paymentService.applySinglePaymentCashback(
     //     rest.userId,

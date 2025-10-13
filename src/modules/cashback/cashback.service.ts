@@ -25,7 +25,39 @@ export class CashbackService {
     return cashback.save();
   }
 
-  async findByUser(user_id: string) {
-    return this.cashbackModel.find({ user_id }).exec();
+  async findByUser(
+    user_id: string,
+    page = 1,
+    limit = 10,
+    month?: number,
+    year?: number,
+  ): Promise<{
+    items: Cashback[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const filter: any = { user_id };
+    if (month && year) {
+      // Filter by month and year
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 1);
+      filter.date = { $gte: start, $lt: end };
+    } else if (year) {
+      // Filter by year only
+      const start = new Date(year, 0, 1);
+      const end = new Date(year + 1, 0, 1);
+      filter.date = { $gte: start, $lt: end };
+    }
+    const total = await this.cashbackModel.countDocuments(filter);
+    const docs = await this.cashbackModel
+      .find(filter)
+      .sort({ date: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+    const totalPages = Math.ceil(total / limit);
+    return { items: docs, total, page, limit, totalPages };
   }
 }
