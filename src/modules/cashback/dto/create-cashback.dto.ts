@@ -29,7 +29,7 @@ export class CreateCashbackDto {
     description: 'Date of cashback',
   })
   @IsNotEmpty()
-  date: Date;
+  date: String;
 
   @ApiProperty({
     example: 'e93585e2-426d-440a-ae54-67bd20d362be',
@@ -44,4 +44,8 @@ export class CreateCashbackDto {
   })
   @IsMongoId()
   from_user_id: string;
+
+  @ApiProperty({ example: 1000, description: 'Original payment amount' })
+  @IsNumber()
+  paymentAmount: number;
 }

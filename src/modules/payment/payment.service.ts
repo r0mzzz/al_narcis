@@ -39,6 +39,7 @@ export class PaymentService {
     amount: number,
     buyerUserId: string,
     paymentKey: string,
+    paymentDate: string,
   ): Promise<void> {
     // Find the buyer by user_id
     const buyer = await this.userModel.findOne({ user_id: buyerUserId });
@@ -93,15 +94,16 @@ export class PaymentService {
             { user_id: inviter.user_id },
             { $inc: { balanceFromReferrals: cashbackInCoins } },
           );
-          await this.cashbackService.create({
-            cashbackType: CashbackType.REFERRAL,
-            user_id: inviter.user_id,
-            cashbackAmount: cashbackInCoins,
-            date: new Date(),
-            paymentKey,
-            from_user_id: payerUserId,
-          });
         }
+        await this.cashbackService.create({
+          cashbackType: CashbackType.REFERRAL,
+          user_id: inviter.user_id,
+          cashbackAmount: cashbackInCoins,
+          date: paymentDate,
+          paymentKey,
+          from_user_id: payerUserId,
+          paymentAmount: amount,
+        });
       }
       currentUser = inviter;
     }
@@ -151,28 +153,9 @@ export class PaymentService {
     userId: string,
     amount: number,
     paymentKey: string,
+    paymentDate: string,
   ): Promise<number> {
     const user = await this.userModel.findOne({ user_id: userId });
-    if (!user) {
-      Logger.error(
-        `User with user_id ${userId} not found in applySinglePaymentCashback`,
-        '',
-        'PaymentService',
-      );
-      throw new NotFoundException(
-        `User with user_id ${userId} not found in applySinglePaymentCashback`,
-      );
-    }
-    if (!user.user_id) {
-      Logger.error(
-        `User found but user_id is missing: ${JSON.stringify(user)}`,
-        '',
-        'PaymentService',
-      );
-      throw new NotFoundException(
-        'User is missing user_id in applySinglePaymentCashback',
-      );
-    }
     if (user.accountType !== AccountType.BUSINESS) return 0;
     const milestone = await this.checkAndSetCashbackMilestone(userId);
     const config = await this.mainCashbackConfigService.getConfig();
@@ -191,40 +174,55 @@ export class PaymentService {
       cashbackType,
       user_id: user.user_id,
       cashbackAmount: cashbackInCoins,
-      date: new Date(),
+      date: paymentDate,
       paymentKey,
       from_user_id: null, // Not a referral, so set to null
+      paymentAmount: amount,
     });
     return cashbackInCoins;
   }
 
   async pay(dto: CreateOrderDto) {
-    console.log('[PAYMENT] pay() called with DTO:', JSON.stringify(dto));
     const [orderResult, cashbackResult, singleCashbackResult] =
       await Promise.allSettled([
         this.orderService.addOrder(dto),
-        this.calculateCashback(dto.amount, dto.user_id, dto.paymentKey),
+        this.calculateCashback(
+          dto.amount,
+          dto.user_id,
+          dto.paymentKey,
+          dto.paymentDate,
+        ),
         this.applySinglePaymentCashback(
           dto.user_id,
           dto.amount,
           dto.paymentKey,
+          dto.paymentDate,
         ),
       ]);
     if (orderResult.status === 'rejected') {
-      console.error('[PAYMENT] addOrder failed:', orderResult.reason);
+      Logger.error(
+        `[PAYMENT] addOrder failed: ${orderResult.reason}`,
+        '',
+        'PaymentService',
+      );
     } else {
-      console.log('[PAYMENT] addOrder result:', orderResult.value);
+      Logger.log(
+        `[PAYMENT] addOrder result: ${JSON.stringify(orderResult.value)}`,
+        'PaymentService',
+      );
     }
     if (cashbackResult.status === 'rejected') {
-      console.error(
-        '[PAYMENT] calculateCashback failed:',
-        cashbackResult.reason,
+      Logger.error(
+        `[PAYMENT] calculateCashback failed: ${cashbackResult.reason}`,
+        '',
+        'PaymentService',
       );
     }
     if (singleCashbackResult.status === 'rejected') {
-      console.error(
-        '[PAYMENT] applySinglePaymentCashback failed:',
-        singleCashbackResult.reason,
+      Logger.error(
+        `[PAYMENT] applySinglePaymentCashback failed: ${singleCashbackResult.reason}`,
+        '',
+        'PaymentService',
       );
     }
     return {

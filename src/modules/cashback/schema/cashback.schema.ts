@@ -28,6 +28,9 @@ export class Cashback {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, default: null })
   from_user_id?: Types.ObjectId | null;
+
+  @Prop({ required: true })
+  paymentAmount: number;
 }
 
 export const CashbackSchema = SchemaFactory.createForClass(Cashback);
