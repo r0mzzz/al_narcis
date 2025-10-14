@@ -70,4 +70,40 @@ export class CashbackService {
     const totalPages = Math.ceil(total / limit);
     return { items: docs, total, page, limit, totalPages };
   }
+
+  async findAll(
+    page = 1,
+    limit = 10,
+    fromDate?: string,
+    toDate?: string,
+  ): Promise<{
+    items: Cashback[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const filter: any = {};
+    if (fromDate || toDate) {
+      filter.paymentDate = {};
+      if (fromDate) {
+        filter.paymentDate.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        filter.paymentDate.$lte = to;
+      }
+    }
+    const total = await this.cashbackModel.countDocuments(filter);
+    const skip = (page - 1) * limit;
+    const docs = await this.cashbackModel
+      .find(filter)
+      .sort({ paymentDate: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+    const totalPages = Math.ceil(total / limit);
+    return { items: docs, total, page, limit, totalPages };
+  }
 }

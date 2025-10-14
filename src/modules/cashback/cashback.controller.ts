@@ -27,4 +27,17 @@ export class CashbackController {
       query.toDate,
     );
   }
+
+  @Get()
+  async findAll(
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: FindCashbackByUserQueryDto,
+  ) {
+    return this.cashbackService.findAll(
+      query.page,
+      query.limit,
+      query.fromDate,
+      query.toDate,
+    );
+  }
 }
