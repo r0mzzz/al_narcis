@@ -44,6 +44,9 @@ export class Order extends Document implements GoldenPayPaymentResult {
   @Prop({ required: true, enum: OrderStatus, default: OrderStatus.WAITING })
   orderStatus: OrderStatus;
 
+  @Prop({ required: true })
+  deliveryAddress: string;
+
   @Prop({
     type: [
       {

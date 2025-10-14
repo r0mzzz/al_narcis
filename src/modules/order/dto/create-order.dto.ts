@@ -53,6 +53,9 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => ProductOrderDto)
   products: ProductOrderDto[];
+
+  @IsString()
+  deliveryAddress: string;
 }
 
 export class ProductOrderDto {
