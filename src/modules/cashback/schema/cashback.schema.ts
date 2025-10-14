@@ -73,6 +73,9 @@ export class Cashback {
 
   @Prop({ type: [Object] })
   products: ProductOrderDto[];
+
+  @Prop({ required: true })
+  deliveryAddress: string;
 }
 
 export const CashbackSchema = SchemaFactory.createForClass(Cashback);

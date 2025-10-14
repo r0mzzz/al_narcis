@@ -169,6 +169,7 @@ export class PaymentService {
       cashbackAmount: cashbackInCoins,
       paymentKey: dto.paymentKey,
       from_user_id,
+      deliveryAddress: dto.deliveryAddress,
     });
     return cashbackInCoins;
   }
