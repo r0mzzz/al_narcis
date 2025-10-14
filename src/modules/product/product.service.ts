@@ -276,7 +276,7 @@ export class ProductService {
     }
     const createdProduct = new this.productModel({
       ...createProductDto,
-      brand: brandStr,
+      brand: createProductDto.brand,
       brand_id: brandStr,
       productImage: '',
       productId: uuidv4(),
