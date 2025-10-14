@@ -37,8 +37,8 @@ export class CashbackService {
     user_id: string,
     page = 1,
     limit = 10,
-    month?: number,
-    year?: number,
+    fromDate?: string,
+    toDate?: string,
   ): Promise<{
     items: Cashback[];
     total: number;
@@ -47,16 +47,17 @@ export class CashbackService {
     totalPages: number;
   }> {
     const filter: any = { user_id };
-    if (month && year) {
-      // Filter by month and year
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 1);
-      filter.paymentDate = { $gte: start, $lt: end };
-    } else if (year) {
-      // Filter by year only
-      const start = new Date(year, 0, 1);
-      const end = new Date(year + 1, 0, 1);
-      filter.paymentDate = { $gte: start, $lt: end };
+    if (fromDate || toDate) {
+      filter.paymentDate = {};
+      if (fromDate) {
+        filter.paymentDate.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        // Set to end of day for inclusivity
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        filter.paymentDate.$lte = to;
+      }
     }
     const total = await this.cashbackModel.countDocuments(filter);
     const skip = (page - 1) * limit;

@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { CashbackService } from './cashback.service';
 import { CreateCashbackDto } from './dto/create-cashback.dto';
+import { FindCashbackByUserQueryDto } from './dto/find-cashback-by-user-query.dto';
+import { ValidationPipe } from '@nestjs/common';
 
 @Controller('cashback')
 export class CashbackController {
@@ -14,20 +16,15 @@ export class CashbackController {
   @Get('user/:userId')
   async findByUser(
     @Param('userId') userId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('month') month?: string,
-    @Query('year') year?: string,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: FindCashbackByUserQueryDto,
   ) {
-    // Parse page and limit as numbers, default to 1 and 10
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.cashbackService.findByUser(
       userId,
-      pageNum,
-      limitNum,
-      month ? parseInt(month, 10) : undefined,
-      year ? parseInt(year, 10) : undefined,
+      query.page,
+      query.limit,
+      query.fromDate,
+      query.toDate,
     );
   }
 }
