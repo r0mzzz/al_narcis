@@ -15,6 +15,8 @@ export class CreateCashbackDto extends CreateOrderDto {
   @ApiProperty({
     example: '60d21b4667d0d8992e610c86',
     description: 'Referrer user ID (MongoDB ObjectId)',
+    required: false,
+    nullable: true,
   })
   @IsString()
   @IsOptional()

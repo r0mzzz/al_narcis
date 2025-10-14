@@ -12,9 +12,17 @@ export class LoginUserDto {
   @IsString()
   password: string;
 
-  @ApiProperty({ example: 'access_token_value', required: false, description: 'Access token' })
+  @ApiProperty({
+    example: 'access_token_value',
+    required: false,
+    description: 'Access token',
+  })
   access_token?: string;
 
-  @ApiProperty({ example: 'refresh_token_value', required: false, description: 'Refresh token' })
+  @ApiProperty({
+    example: 'refresh_token_value',
+    required: false,
+    description: 'Refresh token',
+  })
   refresh_token?: string;
 }
