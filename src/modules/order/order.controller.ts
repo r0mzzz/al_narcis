@@ -26,6 +26,7 @@ export class OrderController {
     @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
     createOrderDto: CreateOrderDto,
   ) {
+    console.log('[ORDER CONTROLLER] Incoming body:', JSON.stringify(createOrderDto));
     return this.orderService.addOrder(createOrderDto);
   }
 
