@@ -14,6 +14,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
+import { ValidationPipe } from '@nestjs/common';
 
 @UseGuards(AccessTokenGuard)
 @Controller('orders')
@@ -21,7 +22,10 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
-  async addOrder(@Body() createOrderDto: CreateOrderDto) {
+  async addOrder(
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    createOrderDto: CreateOrderDto,
+  ) {
     return this.orderService.addOrder(createOrderDto);
   }
 
