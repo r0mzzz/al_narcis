@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { plainToInstance } from 'class-transformer';
@@ -7,6 +11,16 @@ export interface GenderEntry {
   id: string;
   type: string;
   code: string;
+  name?: string; // optional, only for response
+}
+
+const GenderNameMap: Record<string, string> = {
+  M: 'Kişi',
+  W: 'Qadın',
+  U: 'Unisex',
+};
+function addNameField(entry: GenderEntry): GenderEntry {
+  return { ...entry, name: GenderNameMap[entry.code] || '' };
 }
 
 @Injectable()
@@ -17,28 +31,28 @@ export class GenderService {
     { id: '3', type: 'UNISEX', code: 'U' },
   ];
 
-  findAll(): CreateGenderDto[] {
-    return plainToInstance(CreateGenderDto, this.genders);
+  findAll(): GenderEntry[] {
+    return this.genders.map(addNameField);
   }
 
-  create(dto: CreateGenderDto): CreateGenderDto {
-    if (this.genders.find(g => g.code === dto.code)) {
+  create(dto: CreateGenderDto): GenderEntry {
+    if (this.genders.find((g) => g.code === dto.code)) {
       throw new ConflictException('Gender with this code already exists');
     }
-    const entry: GenderEntry = { id: uuidv4(), ...dto };
+    const entry: GenderEntry = { id: uuidv4(), type: dto.type, code: dto.code };
     this.genders.push(entry);
-    return plainToInstance(CreateGenderDto, entry);
+    return addNameField(entry);
   }
 
-  update(id: string, dto: UpdateGenderDto): UpdateGenderDto {
-    const idx = this.genders.findIndex(g => g.id === id);
+  update(id: string, dto: UpdateGenderDto): GenderEntry {
+    const idx = this.genders.findIndex((g) => g.id === id);
     if (idx === -1) throw new NotFoundException('Gender not found');
     this.genders[idx] = { ...this.genders[idx], ...dto };
-    return plainToInstance(UpdateGenderDto, this.genders[idx]);
+    return addNameField(this.genders[idx]);
   }
 
   delete(id: string): void {
-    const idx = this.genders.findIndex(g => g.id === id);
+    const idx = this.genders.findIndex((g) => g.id === id);
     if (idx === -1) throw new NotFoundException('Gender not found');
     this.genders.splice(idx, 1);
   }
