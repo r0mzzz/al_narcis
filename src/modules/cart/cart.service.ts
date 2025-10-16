@@ -35,90 +35,60 @@ export class CartService {
         );
         throw new BadRequestException('Missing required field: product');
       }
-      this.logger.log(
-        `Adding to cart for user_id=${dto.user_id}, productId=${dto.product.productId}`,
-      );
+      const { productId, variants } = dto.product;
+      if (!variants || !Array.isArray(variants) || variants.length === 0) {
+        throw new BadRequestException('Missing variants');
+      }
       let cart = await this.cartModel.findOne({ user_id: dto.user_id });
-      const {
-        productId,
-        productName,
-        productDesc,
-        productImage,
-        productType,
-        category,
-        gender,
-        brand,
-        variants,
-      } = dto.product;
-
-      // Find if product with same productId exists
-      const productIdx = cart?.products.findIndex(
+      if (!cart) {
+        cart = new this.cartModel({
+          user_id: dto.user_id,
+          products: [],
+        });
+      }
+      // Check if product with same productId exists
+      const productIdx = cart.products.findIndex(
         (p) => p.productId === productId,
       );
-      if (cart && productIdx > -1) {
-        // Product exists, update variants
-        let updatedVariants = [...cart.products[productIdx].variants];
-        variants.forEach((incomingVariant) => {
-          const variantIdx = updatedVariants.findIndex(
-            (v) => v.capacity === incomingVariant.capacity
+      if (productIdx > -1) {
+        // Product exists, check for matching variant
+        let updated = false;
+        const cartProduct = cart.products[productIdx];
+        for (const incomingVariant of variants) {
+          const variantIdx = cartProduct.variants.findIndex(
+            (v) => v.capacity === incomingVariant.capacity,
           );
           if (variantIdx > -1) {
             // Variant exists, increase count
-            updatedVariants[variantIdx] = {
-              ...updatedVariants[variantIdx],
-              count:
-                (updatedVariants[variantIdx].count ?? 0) +
-                (incomingVariant.count ?? 1),
-            };
+            cartProduct.variants[variantIdx].count =
+              (cartProduct.variants[variantIdx].count ?? 0) +
+              (incomingVariant.count ?? 1);
+            updated = true;
           } else {
             // New variant, add to variants array
-            updatedVariants.push({ ...incomingVariant });
+            cartProduct.variants.push({ ...incomingVariant });
+            updated = true;
           }
-        });
-        cart.products[productIdx] = {
-          ...cart.products[productIdx],
-          productName,
-          productDesc,
-          productImage,
-          productType,
-          category,
-          gender,
-          brand,
-          variants: updatedVariants,
-        };
+        }
+        if (updated) {
+          cart.products[productIdx] = {
+            ...cartProduct,
+            // Optionally update other product fields from dto.product
+          };
+        }
         this.logger.log(
-          `Updated product variants in cart for user_id=${dto.user_id}, productId=${productId}`,
+          `Updated product/variant in cart for user_id=${dto.user_id}, productId=${productId}`,
         );
       } else {
         // Product does not exist, add as new
         const productToAdd = {
-          productId,
-          productName,
-          productDesc,
-          productImage,
-          productType,
-          category,
-          gender,
-          brand,
-          variants: variants.map((v) => ({ ...v })),
+          ...dto.product,
           user_id: dto.user_id,
         };
-        if (!cart) {
-          cart = new this.cartModel({
-            user_id: dto.user_id,
-            products: [productToAdd],
-          });
-          this.logger.log(
-            `Cart did not exist. Created new cart with product: ${JSON.stringify(
-              productToAdd,
-            )}`,
-          );
-        } else {
-          cart.products.push(productToAdd);
-          this.logger.log(
-            `Added new product to cart: ${JSON.stringify(productToAdd)}`,
-          );
-        }
+        cart.products.push(productToAdd);
+        this.logger.log(
+          `Added new product to cart for user_id=${dto.user_id}, productId=${productId}`,
+        );
       }
       await cart.save();
       return this.getCart(dto.user_id);
