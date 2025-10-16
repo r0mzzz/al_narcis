@@ -138,9 +138,12 @@ export class CartService {
     if (!cart) return { items: [] };
     const products = cart.products || [];
     const totalPrice = products.reduce((cartSum, product) => {
-      return cartSum + (product.variants || []).reduce(
-        (sum, v) => sum + v.price * (v.count ?? 1),
-        0,
+      return (
+        cartSum +
+        (product.variants || []).reduce(
+          (sum, v) => sum + v.price * (v.count ?? 1),
+          0,
+        )
       );
     }, 0);
     return {
