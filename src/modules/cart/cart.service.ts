@@ -51,49 +51,66 @@ export class CartService {
         variants,
       } = dto.product;
 
-      const productToAdd = {
-        productId,
-        productName,
-        productDesc,
-        productImage,
-        productType,
-        category,
-        gender,
-        brand,
-        variants,
-        count: dto.product.count ?? 1,
-        user_id: dto.user_id, // ensure user_id is included in each product
-      };
-      if (!cart) {
-        cart = new this.cartModel({
-          user_id: dto.user_id,
-          products: [productToAdd],
+      // Find if product with same productId exists
+      const productIdx = cart?.products.findIndex(
+        (p) => p.productId === productId,
+      );
+      if (cart && productIdx > -1) {
+        // Product exists, update variants
+        const cartProduct = cart.products[productIdx];
+        variants.forEach((incomingVariant) => {
+          const variantIdx = cartProduct.variants.findIndex(
+            (v) =>
+              v.capacity === incomingVariant.capacity &&
+              v.price === incomingVariant.price &&
+              (!v._id || !incomingVariant._id || v._id === incomingVariant._id),
+          );
+          if (variantIdx > -1) {
+            // Variant exists, increase count
+            cartProduct.variants[variantIdx].count =
+              (cartProduct.variants[variantIdx].count ?? 0) +
+              (incomingVariant.count ?? 1);
+          } else {
+            // New variant, add to variants array
+            cartProduct.variants.push({ ...incomingVariant });
+          }
         });
+        // Update other product fields if needed
+        cart.products[productIdx] = {
+          ...cartProduct,
+          productName,
+          productDesc,
+          productImage,
+          productType,
+          category,
+          gender,
+          brand,
+        };
         this.logger.log(
-          `Cart did not exist. Created new cart with product: ${JSON.stringify(
-            productToAdd,
-          )}`,
+          `Updated product variants in cart for user_id=${dto.user_id}, productId=${productId}`,
         );
       } else {
-        this.logger.log(`Cart before add: ${JSON.stringify(cart.products)}`);
-        // Check for same productId and variants (deep equality)
-        const idx = cart.products.findIndex((i) => {
-          const match =
-            i.productId === productToAdd.productId &&
-            deepEqualVariants(i.variants, productToAdd.variants);
+        // Product does not exist, add as new
+        const productToAdd = {
+          productId,
+          productName,
+          productDesc,
+          productImage,
+          productType,
+          category,
+          gender,
+          brand,
+          variants: variants.map((v) => ({ ...v })),
+          user_id: dto.user_id,
+        };
+        if (!cart) {
+          cart = new this.cartModel({
+            user_id: dto.user_id,
+            products: [productToAdd],
+          });
           this.logger.log(
-            `Comparing to cart product: ${JSON.stringify(i)}. Match: ${match}`,
-          );
-          return match;
-        });
-        this.logger.log(`Index found: ${idx}`);
-        if (idx > -1) {
-          // Increase count if already exists
-          cart.products[idx].count =
-            (cart.products[idx].count ?? 1) + (dto.product.count ?? 1);
-          this.logger.log(
-            `Increased count for existing product: ${JSON.stringify(
-              cart.products[idx],
+            `Cart did not exist. Created new cart with product: ${JSON.stringify(
+              productToAdd,
             )}`,
           );
         } else {
@@ -102,7 +119,6 @@ export class CartService {
             `Added new product to cart: ${JSON.stringify(productToAdd)}`,
           );
         }
-        this.logger.log(`Cart after add: ${JSON.stringify(cart.products)}`);
       }
       await cart.save();
       return this.getCart(dto.user_id);

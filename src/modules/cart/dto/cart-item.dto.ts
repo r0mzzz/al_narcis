@@ -9,6 +9,16 @@ export class ProductVariantDto {
   @ApiProperty()
   @IsNumber()
   price: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  count?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  _id?: string;
 }
 
 export class CartItemDto {
