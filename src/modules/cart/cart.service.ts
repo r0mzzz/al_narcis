@@ -139,7 +139,16 @@ export class CartService {
     return {
       items: [
         {
-          products: cart.products,
+          products: cart.products.map((product) => {
+            const totalPrice = (product.variants || []).reduce(
+              (sum, v) => sum + v.price * (v.count ?? 1),
+              0,
+            );
+            return {
+              ...product,
+              totalPrice,
+            };
+          }),
           user_id: cart.user_id,
         },
       ],
