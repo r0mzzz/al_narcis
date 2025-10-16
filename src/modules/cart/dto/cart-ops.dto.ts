@@ -60,20 +60,3 @@ export class RemoveFromCartDto {
   variants: any[];
 }
 
-export class UpdateCartItemDto {
-  @ApiProperty()
-  @IsString()
-  user_id: string;
-
-  @ApiProperty()
-  @IsString()
-  productId: string;
-
-  @ApiProperty({ type: [Object], required: true })
-  @IsArray()
-  variants: any[];
-
-  @ApiProperty({ required: true })
-  @IsNumber()
-  quantity: number;
-}

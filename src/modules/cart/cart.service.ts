@@ -1,12 +1,8 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
-import { AddToCartDto } from './dto/cart-ops.dto';
+import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 
 function deepEqualVariants(a: any[], b: any[]): boolean {
   if (a === b) return true;
@@ -133,5 +129,42 @@ export class CartService {
         },
       ],
     };
+  }
+
+  async deleteCart(user_id: string) {
+    const result = await this.cartModel.deleteOne({ user_id });
+    if (result.deletedCount === 0) {
+      this.logger.warn(`No cart found to delete for user_id=${user_id}`);
+      return { success: false, message: 'Cart not found' };
+    }
+    this.logger.log(`Deleted cart for user_id=${user_id}`);
+    return { success: true };
+  }
+
+  async removeItemFromCart(dto: RemoveFromCartDto) {
+    const cart = await this.cartModel.findOne({ user_id: dto.user_id });
+    if (!cart) {
+      this.logger.warn(`No cart found for user_id=${dto.user_id}`);
+      return { success: false, message: 'Cart not found' };
+    }
+    const initialLength = cart.products.length;
+    cart.products = cart.products.filter(
+      (item) =>
+        !(
+          item.productId === dto.productId &&
+          deepEqualVariants(item.variants, dto.variants)
+        ),
+    );
+    if (cart.products.length === initialLength) {
+      this.logger.warn(
+        `No matching product found to remove for user_id=${dto.user_id}, _id=${dto.productId}`,
+      );
+      return { success: false, message: 'Product not found in cart' };
+    }
+    await cart.save();
+    this.logger.log(
+      `Removed product _id=${dto.productId} from cart for user_id=${dto.user_id}`,
+    );
+    return this.getCart(dto.user_id);
   }
 }
