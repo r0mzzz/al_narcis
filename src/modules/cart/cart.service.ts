@@ -134,21 +134,18 @@ export class CartService {
   }
 
   async getCart(user_id: string) {
-    const cart = await this.cartModel.findOne({ user_id });
+    const cart = await this.cartModel.findOne({ user_id }).lean();
     if (!cart) return { items: [] };
     return {
       items: [
         {
-          products: cart.products.map((product) => {
-            const totalPrice = (product.variants || []).reduce(
+          products: (cart.products || []).map((product) => ({
+            ...product,
+            totalPrice: (product.variants || []).reduce(
               (sum, v) => sum + v.price * (v.count ?? 1),
               0,
-            );
-            return {
-              ...product,
-              totalPrice,
-            };
-          }),
+            ),
+          })),
           user_id: cart.user_id,
         },
       ],
