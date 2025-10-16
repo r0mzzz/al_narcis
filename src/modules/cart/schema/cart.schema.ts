@@ -8,8 +8,7 @@ export class Cart extends Document {
   user_id: string;
 
   @Prop({ type: Array, default: [] })
-  items: CartItemDto[];
+  products: CartItemDto[];
 }
 
 export const CartSchema = SchemaFactory.createForClass(Cart);
-

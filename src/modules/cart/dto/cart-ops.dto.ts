@@ -11,19 +11,7 @@ export class AddToCartDto {
   @ApiProperty({ type: CartItemDto })
   @ValidateNested()
   @Type(() => CartItemDto)
-  item: CartItemDto;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  size?: string;
-
-  @ApiProperty({ required: false })
-  @IsArray()
-  variants?: any[];
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  count?: number;
+  product: CartItemDto;
 }
 
 export class UpdateCartDto {
@@ -35,7 +23,21 @@ export class UpdateCartDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CartItemDto)
-  items: CartItemDto[];
+  products: CartItemDto[];
+}
+
+export class CartResponseDto {
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        products: { type: 'array', items: { $ref: '#/components/schemas/CartItemDto' } },
+        user_id: { type: 'string' },
+      },
+    },
+  })
+  items: { products: CartItemDto[]; user_id: string }[];
 }
 
 export class DeleteCartDto {
@@ -53,9 +55,9 @@ export class RemoveFromCartDto {
   @IsString()
   productId: string;
 
-  @ApiProperty({ required: false })
-  @IsString()
-  size?: string;
+  @ApiProperty({ type: [Object], required: true })
+  @IsArray()
+  variants: any[];
 }
 
 export class UpdateCartItemDto {
@@ -67,11 +69,11 @@ export class UpdateCartItemDto {
   @IsString()
   productId: string;
 
-  @ApiProperty({ required: false })
-  @IsString()
-  size?: string;
+  @ApiProperty({ type: [Object], required: true })
+  @IsArray()
+  variants: any[];
 
-  @ApiProperty()
+  @ApiProperty({ required: true })
   @IsNumber()
-  count: number;
+  quantity: number;
 }
