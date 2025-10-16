@@ -21,14 +21,42 @@ export class BrandsService {
     const brand = await created.save();
     // Step 2: If image, upload and update imagePath
     if (image) {
-      brand.imagePath = await this.minioService.uploadFile(image, 'brands', brand._id.toString());
+      brand.imagePath = await this.minioService.uploadFile(
+        image,
+        'brands',
+        brand._id.toString(),
+      );
       await brand.save();
     }
     return brand;
   }
 
-  async findAll(): Promise<Brand[]> {
-    return this.brandModel.find().exec();
+  async findAll({
+    page,
+    limit,
+    search,
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+  }) {
+    const skip = (page - 1) * limit;
+    const filter: any = {};
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' };
+    }
+    const [items, total] = await Promise.all([
+      this.brandModel.find(filter).skip(skip).limit(limit).exec(),
+      this.brandModel.countDocuments(filter).exec(),
+    ]);
+    const totalPages = Math.ceil(total / limit) || 1;
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async findById(id: string): Promise<Brand> {

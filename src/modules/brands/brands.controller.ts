@@ -10,10 +10,13 @@ import {
   UseInterceptors,
   HttpCode,
   HttpStatus,
+  Query,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, UpdateBrandDto } from './dto/brand.dto';
+import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
 
 function mapBrandResponse(brand: any, presignedUrl?: string) {
   return {
@@ -43,10 +46,14 @@ export class BrandsController {
   }
 
   @Get()
-  async findAll() {
-    const brands = await this.brandsService.findAll();
-    return Promise.all(
-      brands.map(async (brand) => {
+  async findAll(
+    @Query(new ValidationPipe({ transform: true })) query: FindBrandsQueryDto,
+  ) {
+    const { page = 1, limit = 10, search } = query;
+    const result = await this.brandsService.findAll({ page, limit, search });
+    // Map presigned URLs for each brand
+    const items = await Promise.all(
+      result.items.map(async (brand) => {
         let presignedUrl = null;
         if (brand.imagePath) {
           presignedUrl = await this.brandsService.getPresignedImageUrl(
@@ -56,6 +63,13 @@ export class BrandsController {
         return mapBrandResponse(brand, presignedUrl);
       }),
     );
+    return {
+      items,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   @Get(':id')
