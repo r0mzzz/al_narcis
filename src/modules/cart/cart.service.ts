@@ -63,15 +63,19 @@ export class CartService {
               (v._id ? v._id === incomingVariant._id : true)
             );
           });
+          this.logger.log(`Incoming variant: ${JSON.stringify(incomingVariant)}`);
           if (variantIdx > -1) {
+            this.logger.log(`Found existing variant at index ${variantIdx}: ${JSON.stringify(cartProduct.variants[variantIdx])}`);
             // Variant exists, increase count
             cartProduct.variants[variantIdx].count =
               (cartProduct.variants[variantIdx].count ?? 0) +
               (incomingVariant.count ?? 1);
+            this.logger.log(`Updated count: ${cartProduct.variants[variantIdx].count}`);
             updated = true;
           } else {
             // New variant, add to variants array
             cartProduct.variants.push({ ...incomingVariant });
+            this.logger.log(`Added new variant: ${JSON.stringify(incomingVariant)}`);
             updated = true;
           }
         }
