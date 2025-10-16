@@ -59,4 +59,3 @@ export class RemoveFromCartDto {
   @IsArray()
   variants: any[];
 }
-

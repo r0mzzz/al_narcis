@@ -14,10 +14,6 @@ export class ProductVariantDto {
 export class CartItemDto {
   @ApiProperty()
   @IsString()
-  _id: string;
-
-  @ApiProperty()
-  @IsString()
   productId: string;
 
   @ApiProperty({ type: [ProductVariantDto] })

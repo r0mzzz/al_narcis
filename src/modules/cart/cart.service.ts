@@ -40,7 +40,6 @@ export class CartService {
       );
       let cart = await this.cartModel.findOne({ user_id: dto.user_id });
       const {
-        _id, // include _id if required by CartItemDto
         productId,
         productName,
         productDesc,
@@ -53,7 +52,6 @@ export class CartService {
       } = dto.product;
 
       const productToAdd = {
-        _id,
         productId,
         productName,
         productDesc,
