@@ -1,8 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
+import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
 
 function deepEqualVariants(a: any[], b: any[]): boolean {
   if (a === b) return true;
@@ -191,6 +192,39 @@ export class CartService {
     this.logger.log(
       `Removed product _id=${dto.productId} from cart for user_id=${dto.user_id}`,
     );
+    return this.getCart(dto.user_id);
+  }
+
+  async updateCartItemCount(dto: UpdateCartItemCountDto) {
+    const cart = await this.cartModel.findOne({ user_id: dto.user_id });
+    if (!cart) throw new NotFoundException('Cart not found');
+
+    const product = cart.products.find(p => p.productId === dto.productId);
+    if (!product) throw new NotFoundException('Product not found in cart');
+
+    const variantIdx = product.variants.findIndex(v =>
+      v.capacity === dto.capacity &&
+      v.price === dto.price &&
+      (dto._id ? v._id === dto._id : true)
+    );
+    if (variantIdx === -1) throw new NotFoundException('Variant not found in cart');
+
+    const variant = product.variants[variantIdx];
+    const delta = dto.delta ?? 1;
+    if (dto.operation === 'increment') {
+      variant.count = (variant.count ?? 1) + delta;
+    } else if (dto.operation === 'decrement') {
+      variant.count = (variant.count ?? 1) - delta;
+      if (variant.count <= 0) {
+        // Remove variant
+        product.variants.splice(variantIdx, 1);
+        // Optionally remove product if no variants left
+        if (product.variants.length === 0) {
+          cart.products = cart.products.filter(p => p.productId !== dto.productId);
+        }
+      }
+    }
+    await cart.save();
     return this.getCart(dto.user_id);
   }
 }
