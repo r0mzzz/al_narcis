@@ -13,6 +13,7 @@ import { GPModule } from './modules/product/gp/gp.module';
 import { SwaggerDocumentService } from './common/swagger.provider';
 import { DocsController } from './common/docs.controller';
 import { OrderModule } from './modules/order/order.module';
+import { CartModule } from './modules/cart/cart.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { OrderModule } from './modules/order/order.module';
     BrandsModule,
     GPModule,
     OrderModule,
+    CartModule,
   ],
   controllers: [DocsController],
   providers: [SwaggerDocumentService],
