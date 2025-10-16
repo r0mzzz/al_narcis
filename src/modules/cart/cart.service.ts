@@ -103,7 +103,7 @@ export class CartService {
   }
 
   async getCart(user_id: string) {
-    const cart = await this.cartModel.findOne({ user_id });
+    const cart = await this.cartModel.find({ user_id });
     if (!cart) return { items: [] };
     return {
       items: [
