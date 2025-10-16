@@ -51,13 +51,18 @@ export class CartService {
         (p) => p.productId === productId,
       );
       if (productIdx > -1) {
-        // Product exists, check for matching variant
+        // Product exists, check for matching variant (by all relevant fields)
         let updated = false;
         const cartProduct = cart.products[productIdx];
         for (const incomingVariant of variants) {
-          const variantIdx = cartProduct.variants.findIndex(
-            (v) => v.capacity === incomingVariant.capacity,
-          );
+          // Match by all relevant fields (capacity, price, _id if present)
+          const variantIdx = cartProduct.variants.findIndex((v) => {
+            return (
+              v.capacity === incomingVariant.capacity &&
+              v.price === incomingVariant.price &&
+              (v._id ? v._id === incomingVariant._id : true)
+            );
+          });
           if (variantIdx > -1) {
             // Variant exists, increase count
             cartProduct.variants[variantIdx].count =
@@ -73,7 +78,6 @@ export class CartService {
         if (updated) {
           cart.products[productIdx] = {
             ...cartProduct,
-            // Optionally update other product fields from dto.product
           };
         }
         this.logger.log(
@@ -91,6 +95,7 @@ export class CartService {
         );
       }
       await cart.save();
+      // Reload cart to ensure latest data is returned
       return this.getCart(dto.user_id);
     } catch (error) {
       this.logger.error(
@@ -103,7 +108,7 @@ export class CartService {
   }
 
   async getCart(user_id: string) {
-    const cart = await this.cartModel.find({ user_id });
+    const cart = await this.cartModel.findOne({ user_id });
     if (!cart) return { items: [] };
     return {
       items: [
