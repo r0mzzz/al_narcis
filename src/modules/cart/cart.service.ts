@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
@@ -30,6 +30,10 @@ export class CartService {
 
   async addToCart(dto: AddToCartDto) {
     try {
+      if (!dto.product) {
+        this.logger.error(`addToCart called without product. user_id=${dto.user_id}`);
+        throw new BadRequestException('Missing required field: product');
+      }
       this.logger.log(`Adding to cart for user_id=${dto.user_id}, productId=${dto.product.productId}`);
       let cart = await this.cartModel.findOne({ user_id: dto.user_id });
       const productToAdd = {
@@ -59,7 +63,7 @@ export class CartService {
       await cart.save();
       return this.getCart(dto.user_id);
     } catch (error) {
-      this.logger.error(`Failed to add to cart for user_id=${dto.user_id}, productId=${dto.product.productId}: ${error?.message || error}`);
+      this.logger.error(`Failed to add to cart for user_id=${dto.user_id}, productId=${dto.product?.productId}: ${error?.message || error}`);
       throw error;
     }
   }
