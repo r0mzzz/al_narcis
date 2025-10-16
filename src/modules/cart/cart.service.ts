@@ -55,6 +55,13 @@ export class CartService {
         let updated = false;
         const cartProduct = cart.products[productIdx];
         for (const incomingVariant of variants) {
+          // Determine increment: prefer variant.count, then product.count, then 1
+          const increment =
+            typeof incomingVariant.count === 'number'
+              ? incomingVariant.count
+              : typeof dto.product.count === 'number'
+              ? dto.product.count
+              : 1;
           // Match by all relevant fields (capacity, price, _id if present)
           const variantIdx = cartProduct.variants.findIndex((v) => {
             return (
@@ -64,7 +71,9 @@ export class CartService {
             );
           });
           this.logger.log(
-            `Incoming variant: ${JSON.stringify(incomingVariant)}`,
+            `Incoming variant: ${JSON.stringify(
+              incomingVariant,
+            )}, increment: ${increment}`,
           );
           if (variantIdx > -1) {
             this.logger.log(
@@ -74,17 +83,19 @@ export class CartService {
             );
             // Variant exists, increase count
             cartProduct.variants[variantIdx].count =
-              (cartProduct.variants[variantIdx].count ?? 0) +
-              (incomingVariant.count ?? 1);
+              (cartProduct.variants[variantIdx].count ?? 0) + increment;
             this.logger.log(
               `Updated count: ${cartProduct.variants[variantIdx].count}`,
             );
             updated = true;
           } else {
             // New variant, add to variants array
-            cartProduct.variants.push({ ...incomingVariant });
+            cartProduct.variants.push({ ...incomingVariant, count: increment });
             this.logger.log(
-              `Added new variant: ${JSON.stringify(incomingVariant)}`,
+              `Added new variant: ${JSON.stringify({
+                ...incomingVariant,
+                count: increment,
+              })}`,
             );
             updated = true;
           }
