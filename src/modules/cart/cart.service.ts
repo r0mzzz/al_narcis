@@ -8,7 +8,6 @@ import {
   UpdateCartDto,
   UpdateCartItemDto,
 } from './dto/cart-ops.dto';
-import { CartItemDto } from './dto/cart-item.dto';
 
 function deepEqualVariants(a: any[], b: any[]): boolean {
   if (a === b) return true;
@@ -35,7 +34,10 @@ export class CartService {
       variants: dto.product.variants,
     };
     if (!cart) {
-      cart = new this.cartModel({ user_id: dto.user_id, products: [productToAdd] });
+      cart = new this.cartModel({
+        user_id: dto.user_id,
+        products: [productToAdd],
+      });
     } else {
       // Check for same productId and variants (deep equality)
       const idx = cart.products.findIndex(
@@ -70,7 +72,10 @@ export class CartService {
   async updateCart(dto: UpdateCartDto) {
     let cart = await this.cartModel.findOne({ user_id: dto.user_id });
     if (!cart) {
-      cart = new this.cartModel({ user_id: dto.user_id, products: dto.products });
+      cart = new this.cartModel({
+        user_id: dto.user_id,
+        products: dto.products,
+      });
     } else {
       cart.products = dto.products;
     }
