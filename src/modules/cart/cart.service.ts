@@ -57,27 +57,26 @@ export class CartService {
       );
       if (cart && productIdx > -1) {
         // Product exists, update variants
-        const cartProduct = cart.products[productIdx];
+        let updatedVariants = [...cart.products[productIdx].variants];
         variants.forEach((incomingVariant) => {
-          const variantIdx = cartProduct.variants.findIndex(
-            (v) =>
-              v.capacity === incomingVariant.capacity &&
-              v.price === incomingVariant.price &&
-              (!v._id || !incomingVariant._id || v._id === incomingVariant._id),
+          const variantIdx = updatedVariants.findIndex(
+            (v) => v.capacity === incomingVariant.capacity
           );
           if (variantIdx > -1) {
             // Variant exists, increase count
-            cartProduct.variants[variantIdx].count =
-              (cartProduct.variants[variantIdx].count ?? 0) +
-              (incomingVariant.count ?? 1);
+            updatedVariants[variantIdx] = {
+              ...updatedVariants[variantIdx],
+              count:
+                (updatedVariants[variantIdx].count ?? 0) +
+                (incomingVariant.count ?? 1),
+            };
           } else {
             // New variant, add to variants array
-            cartProduct.variants.push({ ...incomingVariant });
+            updatedVariants.push({ ...incomingVariant });
           }
         });
-        // Update other product fields if needed
         cart.products[productIdx] = {
-          ...cartProduct,
+          ...cart.products[productIdx],
           productName,
           productDesc,
           productImage,
@@ -85,6 +84,7 @@ export class CartService {
           category,
           gender,
           brand,
+          variants: updatedVariants,
         };
         this.logger.log(
           `Updated product variants in cart for user_id=${dto.user_id}, productId=${productId}`,
