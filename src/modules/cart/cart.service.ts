@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
@@ -174,23 +179,41 @@ export class CartService {
       this.logger.warn(`No cart found for user_id=${dto.user_id}`);
       return { success: false, message: 'Cart not found' };
     }
-    const initialLength = cart.products.length;
-    cart.products = cart.products.filter(
-      (item) =>
-        !(
-          item.productId === dto.productId &&
-          deepEqualVariants(item.variants, dto.variants)
-        ),
-    );
-    if (cart.products.length === initialLength) {
-      this.logger.warn(
-        `No matching product found to remove for user_id=${dto.user_id}, _id=${dto.productId}`,
+    let found = false;
+    cart.products = cart.products.reduce((acc, item) => {
+      if (item.productId !== dto.productId) {
+        acc.push(item);
+        return acc;
+      }
+      // Remove only the specified variants
+      const originalVariantsLength = item.variants.length;
+      item.variants = item.variants.filter(
+        (variant) =>
+          !dto.variants.some(
+            (v) =>
+              v.capacity === variant.capacity &&
+              v.price === variant.price &&
+              (v._id ? v._id === variant._id : true)
+          )
       );
-      return { success: false, message: 'Product not found in cart' };
+      if (item.variants.length < originalVariantsLength) {
+        found = true;
+      }
+      // Only keep the product if it still has variants
+      if (item.variants.length > 0) {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+    if (!found) {
+      this.logger.warn(
+        `No matching product/variant found to remove for user_id=${dto.user_id}, productId=${dto.productId}`,
+      );
+      return { success: false, message: 'Product or variant not found in cart' };
     }
     await cart.save();
     this.logger.log(
-      `Removed product _id=${dto.productId} from cart for user_id=${dto.user_id}`,
+      `Removed product/variant from cart for user_id=${dto.user_id}, productId=${dto.productId}`,
     );
     return this.getCart(dto.user_id);
   }
@@ -199,15 +222,17 @@ export class CartService {
     const cart = await this.cartModel.findOne({ user_id: dto.user_id });
     if (!cart) throw new NotFoundException('Cart not found');
 
-    const product = cart.products.find(p => p.productId === dto.productId);
+    const product = cart.products.find((p) => p.productId === dto.productId);
     if (!product) throw new NotFoundException('Product not found in cart');
 
-    const variantIdx = product.variants.findIndex(v =>
-      v.capacity === dto.capacity &&
-      v.price === dto.price &&
-      (dto._id ? v._id === dto._id : true)
+    const variantIdx = product.variants.findIndex(
+      (v) =>
+        v.capacity === dto.capacity &&
+        v.price === dto.price &&
+        (dto._id ? v._id === dto._id : true),
     );
-    if (variantIdx === -1) throw new NotFoundException('Variant not found in cart');
+    if (variantIdx === -1)
+      throw new NotFoundException('Variant not found in cart');
 
     const variant = product.variants[variantIdx];
     const delta = dto.delta ?? 1;
@@ -220,7 +245,9 @@ export class CartService {
         product.variants.splice(variantIdx, 1);
         // Optionally remove product if no variants left
         if (product.variants.length === 0) {
-          cart.products = cart.products.filter(p => p.productId !== dto.productId);
+          cart.products = cart.products.filter(
+            (p) => p.productId !== dto.productId,
+          );
         }
       }
     }
