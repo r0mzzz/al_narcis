@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
@@ -25,35 +25,43 @@ function deepEqualVariants(a: any[], b: any[]): boolean {
 
 @Injectable()
 export class CartService {
+  private readonly logger = new Logger(CartService.name);
   constructor(@InjectModel(Cart.name) private cartModel: Model<Cart>) {}
 
   async addToCart(dto: AddToCartDto) {
-    let cart = await this.cartModel.findOne({ user_id: dto.user_id });
-    const productToAdd = {
-      ...dto.product,
-      variants: dto.product.variants,
-    };
-    if (!cart) {
-      cart = new this.cartModel({
-        user_id: dto.user_id,
-        products: [productToAdd],
-      });
-    } else {
-      // Check for same productId and variants (deep equality)
-      const idx = cart.products.findIndex(
-        (i) =>
-          i.productId === productToAdd.productId &&
-          deepEqualVariants(i.variants, productToAdd.variants),
-      );
-      if (idx > -1) {
-        // If you want to update quantity, you can add logic here
-        // For now, do nothing or update as needed
+    try {
+      this.logger.log(`Adding to cart for user_id=${dto.user_id}, productId=${dto.product.productId}`);
+      let cart = await this.cartModel.findOne({ user_id: dto.user_id });
+      const productToAdd = {
+        ...dto.product,
+        variants: dto.product.variants,
+        quantity: dto.product.quantity ?? 1,
+      };
+      if (!cart) {
+        cart = new this.cartModel({
+          user_id: dto.user_id,
+          products: [productToAdd],
+        });
       } else {
-        cart.products.push(productToAdd);
+        // Check for same productId and variants (deep equality)
+        const idx = cart.products.findIndex(
+          (i) =>
+            i.productId === productToAdd.productId &&
+            deepEqualVariants(i.variants, productToAdd.variants),
+        );
+        if (idx > -1) {
+          // Increase quantity if already exists
+          cart.products[idx].quantity = (cart.products[idx].quantity ?? 1) + (dto.product.quantity ?? 1);
+        } else {
+          cart.products.push(productToAdd);
+        }
       }
+      await cart.save();
+      return this.getCart(dto.user_id);
+    } catch (error) {
+      this.logger.error(`Failed to add to cart for user_id=${dto.user_id}, productId=${dto.product.productId}: ${error?.message || error}`);
+      throw error;
     }
-    await cart.save();
-    return this.getCart(dto.user_id);
   }
 
   async getCart(user_id: string) {
