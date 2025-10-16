@@ -76,12 +76,12 @@ export class CartItemDto {
   @IsString()
   productImage?: string;
 
-  @ApiProperty()
-  @IsString()
-  user_id: string;
-
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   size?: string; // selected variant/capacity
+
+  @ApiProperty()
+  @IsString()
+  user_id: string;
 }

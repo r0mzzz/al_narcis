@@ -1,25 +1,28 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
-import {
-  AddToCartDto,
-  RemoveFromCartDto,
-  UpdateCartDto,
-  UpdateCartItemDto,
-} from './dto/cart-ops.dto';
+import { AddToCartDto } from './dto/cart-ops.dto';
 
 function deepEqualVariants(a: any[], b: any[]): boolean {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
   if (a.length !== b.length) return false;
-  // Compare each variant object
-  return a.every((variantA, idx) => {
-    const variantB = b[idx];
+  // Sort arrays by a stable key (e.g., _id or capacity+price)
+  const sortFn = (v: any) =>
+    `${v._id || ''}_${v.capacity || ''}_${v.price || ''}`;
+  const aSorted = [...a].sort((v1, v2) => sortFn(v1).localeCompare(sortFn(v2)));
+  const bSorted = [...b].sort((v1, v2) => sortFn(v1).localeCompare(sortFn(v2)));
+  return aSorted.every((variantA, idx) => {
+    const variantB = bSorted[idx];
     const keysA = Object.keys(variantA);
     const keysB = Object.keys(variantB);
     if (keysA.length !== keysB.length) return false;
-    return keysA.every(key => variantA[key] === variantB[key]);
+    return keysA.every((key) => variantA[key] === variantB[key]);
   });
 }
 
@@ -31,39 +34,90 @@ export class CartService {
   async addToCart(dto: AddToCartDto) {
     try {
       if (!dto.product) {
-        this.logger.error(`addToCart called without product. user_id=${dto.user_id}`);
+        this.logger.error(
+          `addToCart called without product. user_id=${dto.user_id}`,
+        );
         throw new BadRequestException('Missing required field: product');
       }
-      this.logger.log(`Adding to cart for user_id=${dto.user_id}, productId=${dto.product.productId}`);
+      this.logger.log(
+        `Adding to cart for user_id=${dto.user_id}, productId=${dto.product.productId}`,
+      );
       let cart = await this.cartModel.findOne({ user_id: dto.user_id });
+      const {
+        _id, // include _id if required by CartItemDto
+        productId,
+        productName,
+        productDesc,
+        productImage,
+        productType,
+        category,
+        gender,
+        brand,
+        variants,
+      } = dto.product;
+
       const productToAdd = {
-        ...dto.product,
-        variants: dto.product.variants,
-        quantity: dto.product.quantity ?? 1,
+        _id,
+        productId,
+        productName,
+        productDesc,
+        productImage,
+        productType,
+        category,
+        gender,
+        brand,
+        variants,
+        count: dto.product.count ?? 1,
+        user_id: dto.user_id, // ensure user_id is included in each product
       };
       if (!cart) {
         cart = new this.cartModel({
           user_id: dto.user_id,
           products: [productToAdd],
         });
-      } else {
-        // Check for same productId and variants (deep equality)
-        const idx = cart.products.findIndex(
-          (i) =>
-            i.productId === productToAdd.productId &&
-            deepEqualVariants(i.variants, productToAdd.variants),
+        this.logger.log(
+          `Cart did not exist. Created new cart with product: ${JSON.stringify(
+            productToAdd,
+          )}`,
         );
+      } else {
+        this.logger.log(`Cart before add: ${JSON.stringify(cart.products)}`);
+        // Check for same productId and variants (deep equality)
+        const idx = cart.products.findIndex((i) => {
+          const match =
+            i.productId === productToAdd.productId &&
+            deepEqualVariants(i.variants, productToAdd.variants);
+          this.logger.log(
+            `Comparing to cart product: ${JSON.stringify(i)}. Match: ${match}`,
+          );
+          return match;
+        });
+        this.logger.log(`Index found: ${idx}`);
         if (idx > -1) {
-          // Increase quantity if already exists
-          cart.products[idx].quantity = (cart.products[idx].quantity ?? 1) + (dto.product.quantity ?? 1);
+          // Increase count if already exists
+          cart.products[idx].count =
+            (cart.products[idx].count ?? 1) + (dto.product.count ?? 1);
+          this.logger.log(
+            `Increased count for existing product: ${JSON.stringify(
+              cart.products[idx],
+            )}`,
+          );
         } else {
           cart.products.push(productToAdd);
+          this.logger.log(
+            `Added new product to cart: ${JSON.stringify(productToAdd)}`,
+          );
         }
+        this.logger.log(`Cart after add: ${JSON.stringify(cart.products)}`);
       }
       await cart.save();
       return this.getCart(dto.user_id);
     } catch (error) {
-      this.logger.error(`Failed to add to cart for user_id=${dto.user_id}, productId=${dto.product?.productId}: ${error?.message || error}`);
+      this.logger.error(
+        `Failed to add to cart for user_id=${dto.user_id}, productId=${
+          dto.product?.productId
+        }: ${error?.message || error}`,
+      );
       throw error;
     }
   }
@@ -79,56 +133,5 @@ export class CartService {
         },
       ],
     };
-  }
-
-  async updateCart(dto: UpdateCartDto) {
-    let cart = await this.cartModel.findOne({ user_id: dto.user_id });
-    if (!cart) {
-      cart = new this.cartModel({
-        user_id: dto.user_id,
-        products: dto.products,
-      });
-    } else {
-      cart.products = dto.products;
-    }
-    await cart.save();
-    return this.getCart(dto.user_id);
-  }
-
-  async updateCartItem(dto: UpdateCartItemDto) {
-    const cart = await this.cartModel.findOne({ user_id: dto.user_id });
-    if (!cart) throw new NotFoundException('Cart not found');
-    const idx = cart.products.findIndex(
-      (i) =>
-        i.productId === dto.productId &&
-        deepEqualVariants(i.variants, dto.variants),
-    );
-    if (idx === -1) throw new NotFoundException('Cart item not found');
-    // Update quantity
-    cart.products[idx].quantity = dto.quantity;
-    await cart.save();
-    return this.getCart(dto.user_id);
-  }
-
-  async removeItemFromCart(dto: RemoveFromCartDto) {
-    const cart = await this.cartModel.findOne({ user_id: dto.user_id });
-    if (!cart) throw new NotFoundException('Cart not found');
-    const before = cart.products.length;
-    cart.products = cart.products.filter(
-      (i) =>
-        !(
-          i.productId === dto.productId &&
-          deepEqualVariants(i.variants, dto.variants)
-        ),
-    );
-    if (cart.products.length === before)
-      throw new NotFoundException('Cart item not found');
-    await cart.save();
-    return this.getCart(dto.user_id);
-  }
-
-  async deleteCart(user_id: string) {
-    await this.cartModel.deleteOne({ user_id });
-    return { success: true };
   }
 }
