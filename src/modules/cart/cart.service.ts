@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
+import { MinioService } from '../../services/minio.service';
 
 function deepEqualVariants(a: any[], b: any[]): boolean {
   if (a === b) return true;
@@ -31,7 +32,27 @@ function deepEqualVariants(a: any[], b: any[]): boolean {
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
-  constructor(@InjectModel(Cart.name) private cartModel: Model<Cart>) {}
+  // In-memory cache for presigned image URLs
+  private static imageUrlCache: Map<string, { url: string; expiresAt: number }> = new Map();
+  private static PRESIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+  constructor(
+    @InjectModel(Cart.name) private cartModel: Model<Cart>,
+    private readonly minioService: MinioService,
+  ) {}
+
+  private async getCachedPresignedUrl(imagePath: string): Promise<string> {
+    const cacheEntry = CartService.imageUrlCache.get(imagePath);
+    const now = Date.now();
+    if (cacheEntry && cacheEntry.expiresAt > now) {
+      return cacheEntry.url;
+    }
+    // Generate new presigned URL
+    const url = await this.minioService.getPresignedUrl(imagePath);
+    const expiresAt = now + CartService.PRESIGNED_URL_TTL_MS;
+    CartService.imageUrlCache.set(imagePath, { url, expiresAt });
+    return url;
+  }
 
   async addToCart(dto: AddToCartDto) {
     try {
@@ -143,7 +164,20 @@ export class CartService {
     const cart = await this.cartModel.findOne({ user_id }).lean();
     if (!cart) return { items: [] };
     const products = cart.products || [];
-    const totalPrice = products.reduce((cartSum, product) => {
+    // Use cached presigned URLs for product images
+    const productsWithImages = await Promise.all(
+      products.map(async (product) => {
+        let imageUrl = null;
+        if (product.productImage) {
+          imageUrl = await this.getCachedPresignedUrl(product.productImage);
+        }
+        return {
+          ...product,
+          imageUrl,
+        };
+      })
+    );
+    const totalPrice = productsWithImages.reduce((cartSum, product) => {
       return (
         cartSum +
         (product.variants || []).reduce(
@@ -155,7 +189,7 @@ export class CartService {
     return {
       items: [
         {
-          products,
+          products: productsWithImages,
           user_id: cart.user_id,
           totalPrice,
         },
