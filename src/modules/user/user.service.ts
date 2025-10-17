@@ -87,7 +87,8 @@ export class UsersService {
 
     // Generate invite link based on referralCode
     const inviteBaseUrl =
-      process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite?inviteCode=';
+      process.env.INVITE_BASE_URL ||
+      'https://yourdomain.com/invite?inviteCode=';
     userData.inviteLink = `${inviteBaseUrl}${referralCode}`;
     userData.invitedBy = invitedBy;
 
