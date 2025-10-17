@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Banner, BannerDocument } from './schema/banner.schema';
@@ -40,7 +40,7 @@ export class BannerService {
         if (b.imagePath) {
           imageUrl = await this.getPresignedImageUrl(b.imagePath);
         }
-        return { imageUrl };
+        return { imageUrl, _id: b._id };
       }),
     );
   }
@@ -79,7 +79,10 @@ export class BannerService {
       try {
         await this.minioService.removeObject(banner.imagePath);
       } catch (err) {
-        this.logger.error('Failed to remove banner image during delete', String(err));
+        this.logger.error(
+          'Failed to remove banner image during delete',
+          String(err),
+        );
       }
     }
     await this.bannerModel.deleteOne({ _id: id });
@@ -94,7 +97,10 @@ export class BannerService {
     try {
       return await this.minioService.getPresignedUrl(objectPath, expirySeconds);
     } catch (err) {
-      this.logger.error('Failed to get presigned url for ' + String(objectPath), String(err));
+      this.logger.error(
+        'Failed to get presigned url for ' + String(objectPath),
+        String(err),
+      );
       return null;
     }
   }

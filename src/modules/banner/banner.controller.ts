@@ -38,7 +38,7 @@ export class BannerController {
   async findAll() {
     const banners = await this.bannerService.findAll();
     // Return array of objects with at least imageUrl as requested
-    return banners.map((b) => ({ imageUrl: b.imageUrl }));
+    return banners.map((b) => ({ imageUrl: b.imageUrl, id: b._id }));
   }
 
   @UseGuards(AccessTokenGuard)
