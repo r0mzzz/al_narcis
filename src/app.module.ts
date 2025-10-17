@@ -14,6 +14,7 @@ import { SwaggerDocumentService } from './common/swagger.provider';
 import { DocsController } from './common/docs.controller';
 import { OrderModule } from './modules/order/order.module';
 import { CartModule } from './modules/cart/cart.module';
+import { BannerModule } from './modules/banner/banner.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CartModule } from './modules/cart/cart.module';
     GPModule,
     OrderModule,
     CartModule,
+    BannerModule,
   ],
   controllers: [DocsController],
   providers: [SwaggerDocumentService],
