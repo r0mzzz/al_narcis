@@ -19,6 +19,7 @@ import { CreateDiscountDto } from './dto/create-discount.dto';
 
 @Injectable()
 export class CartService {
+  private static readonly DEFAULT_MIN_DISCOUNT_AMOUNT = 200; // AZN
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(Discount.name) private discountModel: Model<DiscountDocument>,
@@ -134,10 +135,11 @@ export class CartService {
       }),
     );
 
-    // Determine applicable discount: priority -> cart.discount, user-specific active discount, highest active global discount
+    // Determine applicable discount: only consider discounts when subtotal >= DEFAULT_MIN_DISCOUNT_AMOUNT
     const applicable = await this.getApplicableDiscount(
       cart.user_id,
       cart.discount,
+      subtotal,
     );
     const discountPercent = applicable?.discount ?? 0;
     const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2);
@@ -254,34 +256,47 @@ export class CartService {
   }
 
   // Resolve applicable discount for a given user_id. If cartDiscount provided (number), it has highest priority.
+  // Discounts are only applied when subtotal meets minimum threshold (default 200 AZN) or discount.minAmount.
   private async getApplicableDiscount(
     user_id: string,
     cartDiscount?: number | null,
+    subtotal = 0,
   ) {
+    // If subtotal is less than global threshold, no discounts apply
+    if (subtotal < CartService.DEFAULT_MIN_DISCOUNT_AMOUNT) return null;
+
+    // Cart-level discount applies when subtotal meets the default threshold
     if (typeof cartDiscount === 'number' && !Number.isNaN(cartDiscount)) {
       return { source: 'cart', discount: cartDiscount };
     }
-    // Look for active user-specific discount
+
     try {
+      // Look for active user-specific discount that meets its minAmount (if any)
       const userDiscount = await this.discountModel
         .findOne({ type: DiscountType.USER, user_id, active: true })
         .lean()
         .exec();
-      if (userDiscount && typeof userDiscount.discount === 'number') {
+      if (
+        userDiscount &&
+        typeof userDiscount.discount === 'number' &&
+        (typeof userDiscount.minAmount !== 'number' || subtotal >= userDiscount.minAmount)
+      ) {
         return { source: 'user', discount: userDiscount.discount };
       }
-      // Otherwise look for active global discounts and pick the highest percentage
+
+      // Otherwise look for active global discounts that meet minAmount and pick the highest percentage
       const globalDiscounts = await this.discountModel
         .find({ type: DiscountType.GLOBAL, active: true })
         .lean()
         .exec();
       if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
-        const max = globalDiscounts.reduce((acc, d) => {
-          return typeof d.discount === 'number' && d.discount > acc
-            ? d.discount
-            : acc;
-        }, 0);
-        if (max > 0) return { source: 'global', discount: max };
+        const eligible = globalDiscounts.filter((d) => {
+          return typeof d.discount === 'number' && (typeof d.minAmount !== 'number' || subtotal >= d.minAmount);
+        });
+        if (eligible.length > 0) {
+          const max = eligible.reduce((acc, d) => (d.discount > acc ? d.discount : acc), 0);
+          if (max > 0) return { source: 'global', discount: max };
+        }
       }
     } catch (err) {
       // ignore errors and fallback to no discount
@@ -295,6 +310,7 @@ export class CartService {
       type: dto.type,
       user_id: dto.user_id,
       discount: dto.discount,
+      minAmount: typeof dto.minAmount === 'number' ? dto.minAmount : CartService.DEFAULT_MIN_DISCOUNT_AMOUNT,
       active: dto.active ?? true,
     });
     await created.save();
@@ -317,6 +333,7 @@ export class CartService {
     if (dto.type !== undefined) discount.type = dto.type as any;
     if (dto.user_id !== undefined) discount.user_id = dto.user_id;
     if (typeof dto.discount === 'number') discount.discount = dto.discount;
+    if (typeof dto.minAmount === 'number') discount.minAmount = dto.minAmount;
     if (dto.active !== undefined) discount.active = dto.active;
     await discount.save();
     return discount.toObject();
