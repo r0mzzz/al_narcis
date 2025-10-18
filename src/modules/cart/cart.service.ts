@@ -118,7 +118,8 @@ export class CartService {
       products.map(async (product) => {
         let imageUrl = null;
         if (product.productImage) {
-          imageUrl = await this.getCachedPresignedUrl(product.productImage);
+          // Do not use cached presigned URLs for cart responses — generate fresh presigned URL
+          imageUrl = await this.minioService.getPresignedUrl(product.productImage);
         }
         return {
           ...product,
@@ -332,5 +333,16 @@ export class CartService {
     const res = await this.discountModel.findByIdAndDelete(id).exec();
     if (!res) throw new NotFoundException('Discount not found');
     return { success: true };
+  }
+
+  async updateDiscount(id: string, dto: Partial<CreateDiscountDto>) {
+    const discount = await this.discountModel.findById(id).exec();
+    if (!discount) throw new NotFoundException('Discount not found');
+    if (dto.type !== undefined) discount.type = dto.type as any;
+    if (dto.user_id !== undefined) discount.user_id = dto.user_id;
+    if (typeof dto.discount === 'number') discount.discount = dto.discount;
+    if (dto.active !== undefined) discount.active = dto.active;
+    await discount.save();
+    return discount.toObject();
   }
 }
