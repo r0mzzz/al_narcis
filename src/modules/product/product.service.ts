@@ -70,7 +70,11 @@ export class ProductService {
 
     // Only cache unfiltered, unpaginated queries
     const isCacheable =
-      !productType && !search && (!categories || categories.length === 0) && !tag && !gender;
+      !productType &&
+      !search &&
+      (!categories || categories.length === 0) &&
+      !tag &&
+      !gender;
     const version = await this.getProductsCacheVersion();
     const cacheKey = `products:list:v${version}`;
 
@@ -180,6 +184,26 @@ export class ProductService {
       .select('-_id -__v')
       .exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND.az);
+    const obj = product.toObject();
+    let presignedImage = '';
+    if (obj.productImage) {
+      presignedImage = await this.minioService.getPresignedUrl(
+        obj.productImage,
+      );
+    }
+    delete obj.images;
+    return { ...obj, productImage: presignedImage };
+  }
+
+  // Find product by unique productId field (not Mongo _id)
+  async findByProductId(
+    productId: string,
+  ): Promise<Record<string, any> | null> {
+    const product = await this.productModel
+      .findOne({ productId })
+      .select('-_id -__v')
+      .exec();
+    if (!product) return null;
     const obj = product.toObject();
     let presignedImage = '';
     if (obj.productImage) {

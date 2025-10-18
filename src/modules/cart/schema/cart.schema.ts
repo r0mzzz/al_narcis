@@ -52,6 +52,9 @@ export class Cart extends Document {
 
   @Prop({ type: [CartProductSchema], default: [] })
   products: CartProduct[];
+
+  @Prop({ required: false })
+  discount?: number; // percentage discount (e.g., 20 means 20%)
 }
 
 export const CartSchema = SchemaFactory.createForClass(Cart);

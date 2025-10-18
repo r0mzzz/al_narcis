@@ -2,6 +2,7 @@ import { Controller, Post, Get, Patch, Delete, Body, Query, UseGuards } from '@n
 import { CartService } from './cart.service';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
+import { SetDiscountDto } from './dto/set-discount.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 
 @Controller('cart')
@@ -34,5 +35,10 @@ export class CartController {
   @Patch('item/count')
   async updateCartItemCount(@Body() dto: UpdateCartItemCountDto) {
     return this.cartService.updateCartItemCount(dto);
+  }
+
+  @Patch('discount')
+  async setDiscount(@Body() dto: SetDiscountDto) {
+    return this.cartService.setDiscount(dto.user_id, dto.discount);
   }
 }

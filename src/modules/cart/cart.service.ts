@@ -6,9 +6,12 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
+import { Discount, DiscountDocument, DiscountType } from './schema/discount.schema';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
 import { MinioService } from '../../services/minio.service';
+import { ProductService } from '../product/product.service';
+import { CreateDiscountDto } from './dto/create-discount.dto';
 
 @Injectable()
 export class CartService {
@@ -20,7 +23,9 @@ export class CartService {
 
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
+    @InjectModel(Discount.name) private discountModel: Model<DiscountDocument>,
     private readonly minioService: MinioService,
+    private readonly productService: ProductService,
   ) {}
 
   private async getCachedPresignedUrl(imagePath: string): Promise<string> {
@@ -117,21 +122,52 @@ export class CartService {
         };
       }),
     );
-    const totalPrice = productsWithImages.reduce((cartSum, product) => {
-      return (
-        cartSum +
-        (product.variants || []).reduce(
-          (sum, v) => sum + v.price * (v.count ?? 1),
-          0,
-        )
-      );
-    }, 0);
+    // Calculate subtotal by looking up authoritative product prices where possible
+    let subtotal = 0;
+    const detailedProducts = await Promise.all(
+      productsWithImages.map(async (cartProduct) => {
+        // Try to load product from products collection by productId
+        const productInfo = await this.productService.findByProductId(
+          cartProduct.productId,
+        );
+        const variants = await Promise.all(
+          (cartProduct.variants || []).map(async (v) => {
+            // Determine price: prefer authoritative product data if available and variant match found
+            let unitPrice = v.price;
+            if (productInfo && Array.isArray(productInfo.variants)) {
+              // Match variant by capacity (authoritative source of truth for variant prices)
+              const matched = productInfo.variants.find(
+                (pv: any) => pv.capacity === v.capacity,
+              );
+              if (matched && typeof matched.price === 'number') {
+                unitPrice = matched.price;
+              }
+            }
+            const count = v.count ?? 1;
+            const lineTotal = unitPrice * count;
+            subtotal += lineTotal;
+            return { ...v, unitPrice, lineTotal };
+          }),
+        );
+        return { ...cartProduct, variants };
+      }),
+    );
+
+    // Determine applicable discount: priority -> cart.discount, user-specific active discount, highest active global discount
+    const applicable = await this.getApplicableDiscount(cart.user_id, cart.discount);
+    const discountPercent = applicable?.discount ?? 0;
+    const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2);
+    const total = +(subtotal - discountAmount).toFixed(2);
+
     return {
       items: [
         {
-          products: productsWithImages,
+          products: detailedProducts,
           user_id: cart.user_id,
-          totalPrice,
+          subTotal: +subtotal.toFixed(2),
+          discount: discountPercent,
+          discountAmount,
+          total,
         },
       ],
     };
@@ -218,5 +254,71 @@ export class CartService {
     }
     await cart.save();
     return this.getCart(dto.user_id);
+  }
+
+  async setDiscount(user_id: string, discount: number) {
+    if (typeof discount !== 'number' || discount < 0 || discount > 100) {
+      throw new BadRequestException('Invalid discount value');
+    }
+    const cart = await this.cartModel.findOne({ user_id });
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+    cart.discount = discount;
+    await cart.save();
+    return this.getCart(user_id);
+  }
+
+  // Resolve applicable discount for a given user_id. If cartDiscount provided (number), it has highest priority.
+  private async getApplicableDiscount(user_id: string, cartDiscount?: number | null) {
+    if (typeof cartDiscount === 'number' && !Number.isNaN(cartDiscount)) {
+      return { source: 'cart', discount: cartDiscount };
+    }
+    // Look for active user-specific discount
+    try {
+      const userDiscount = await this.discountModel
+        .findOne({ type: DiscountType.USER, user_id, active: true })
+        .lean()
+        .exec();
+      if (userDiscount && typeof userDiscount.discount === 'number') {
+        return { source: 'user', discount: userDiscount.discount };
+      }
+      // Otherwise look for active global discounts and pick the highest percentage
+      const globalDiscounts = await this.discountModel
+        .find({ type: DiscountType.GLOBAL, active: true })
+        .lean()
+        .exec();
+      if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
+        const max = globalDiscounts.reduce((acc, d) => {
+          return typeof d.discount === 'number' && d.discount > acc ? d.discount : acc;
+        }, 0);
+        if (max > 0) return { source: 'global', discount: max };
+      }
+    } catch (err) {
+      // ignore errors and fallback to no discount
+    }
+    return null;
+  }
+
+  // Admin API: create a discount entry (global or user)
+  async createDiscount(dto: CreateDiscountDto) {
+    const created = new this.discountModel({
+      type: dto.type,
+      user_id: dto.user_id,
+      discount: dto.discount,
+      active: dto.active ?? true,
+    });
+    await created.save();
+    return created.toObject();
+  }
+
+  async listDiscounts() {
+    return await this.discountModel.find().lean().exec();
+  }
+
+  async deleteDiscount(id: string) {
+    const res = await this.discountModel.findByIdAndDelete(id).exec();
+    if (!res) throw new NotFoundException('Discount not found');
+    return { success: true };
   }
 }
