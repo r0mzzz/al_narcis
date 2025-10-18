@@ -43,6 +43,11 @@ export class UsersController {
     return this.usersService.getUserProfileData(id);
   }
 
+  @Get('gradations')
+  async listGradations() {
+    return this.usersService.listGradations();
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.usersService.findById(id);
@@ -76,11 +81,6 @@ export class UsersController {
   async deleteProfilePicture(@Req() req: Request) {
     const userId = req.user['sub'];
     return this.usersService.deleteProfilePicture(userId);
-  }
-
-  @Get('gradations')
-  async listGradations() {
-    return this.usersService.listGradations();
   }
 
   @UseGuards(AccessTokenGuard)
