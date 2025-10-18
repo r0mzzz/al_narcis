@@ -101,7 +101,8 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Remove addresses from user creation
-    const { addresses, ...restDto } = createUserDto as any;
+    const restDto = { ...(createUserDto as any) };
+    delete restDto.addresses;
     // Generate a secure, unique referralCode
     const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
@@ -464,8 +465,7 @@ export class UsersService {
   async updateGradation(id: string, dto: UpdateGradationDto) {
     const grad = await this.gradationModel.findById(id).exec();
     if (!grad) throw new BadRequestException('Gradation not found');
-    if (dto.minReferrals !== undefined)
-      grad.minReferrals = dto.minReferrals;
+    if (dto.minReferrals !== undefined) grad.minReferrals = dto.minReferrals;
     if (dto.discountPercent !== undefined)
       grad.discountPercent = dto.discountPercent;
     if (dto.durationDays !== undefined)

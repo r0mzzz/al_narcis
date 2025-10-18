@@ -42,10 +42,10 @@ export class User {
 
   @Prop({
     type: String,
-    enum: ['bronze', 'silver', 'gold', 'brilliant', 'platinum'],
-    default: 'bronze',
+    enum: ['bronze', 'silver', 'gold', 'brilliant', 'platinum', null],
+    default: null,
   })
-  gradation: string;
+  gradation: string | null;
 
   @Prop()
   gradationReachedAt?: Date;
