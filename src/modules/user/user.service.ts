@@ -49,7 +49,9 @@ export class UsersService {
 
   // Determine gradation by consulting DB-configured gradation documents.
   // Returns gradation name (string) — falls back to 'bronze' if none matched.
-  private async determineGradation(referralCount: number): Promise<string> {
+  private async determineGradation(
+    referralCount: number,
+  ): Promise<string | null> {
     // Get all active gradations sorted by minReferrals descending
     const grads = await this.gradationModel
       .find({ active: true })
@@ -59,7 +61,8 @@ export class UsersService {
     for (const g of grads) {
       if (referralCount >= g.minReferrals) return g.name;
     }
-    return 'bronze';
+    // If no gradation matches the referral count, return null to indicate no level reached
+    return null;
   }
 
   // Returns active gradation discount for a user if within duration; otherwise null
@@ -68,7 +71,9 @@ export class UsersService {
   ): Promise<{ discount: number; expiresAt: Date | null } | null> {
     const user = await this.userModel.findOne({ user_id }).lean();
     if (!user) return null;
-    const gradName = user.gradation || 'bronze';
+    // If user has no gradation assigned, do not return any gradation discount
+    if (!user.gradation) return null;
+    const gradName = user.gradation as string;
     const grad = await this.gradationModel
       .findOne({ name: gradName, active: true })
       .lean()
@@ -96,7 +101,8 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Remove addresses from user creation
-    const { addresses: _addresses, ...restDto } = createUserDto as any;
+    const restDto = { ...(createUserDto as any) };
+    delete restDto.addresses;
     // Generate a secure, unique referralCode
     const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
@@ -107,7 +113,8 @@ export class UsersService {
       businessCashbackBalance:
         restDto.accountType === AccountType.BUSINESS ? 0 : null,
       referralCount: 0,
-      gradation: 'bronze',
+      // No gradation by default until user reaches configured levels
+      gradation: null,
     };
 
     // Only handle referral logic if referralCode is a non-empty string
@@ -332,7 +339,8 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
   ): Promise<Record<string, any> | null> {
     // Remove addresses from update
-    const { addresses: _addresses, ...restDto } = updateUserDto as any;
+    const restDto = { ...(updateUserDto as any) };
+    delete restDto.addresses;
     // Build update object dynamically to allow updating any field except addresses
     const updateObj: any = { ...restDto };
     // Always use user_id for lookup
@@ -451,7 +459,7 @@ export class UsersService {
   }
 
   async listGradations() {
-    return await this.gradationModel.find().lean().exec();
+    return this.gradationModel.find().lean().exec();
   }
 
   async updateGradation(id: string, dto: UpdateGradationDto) {
