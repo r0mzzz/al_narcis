@@ -69,25 +69,50 @@ export class UsersService {
   async getActiveGradationDiscount(
     user_id: string,
   ): Promise<{ discount: number; expiresAt: Date | null } | null> {
+    // Load user (plain object)
     const user = await this.userModel.findOne({ user_id }).lean();
     if (!user) return null;
-    // If user has no gradation assigned, do not return any gradation discount
-    if (!user.gradation) return null;
-    const gradName = user.gradation as string;
+
+    // Re-evaluate current gradation from referralCount and update user record if changed.
+    // determineGradation returns string|null
+    const currentGrad = await this.determineGradation(user.referralCount || 0);
+    let gradName: string | null;
+    if (currentGrad !== user.gradation) {
+      // Persist change: set gradation to currentGrad and update gradationReachedAt when reaching a level
+      const update: any = { gradation: currentGrad };
+      if (currentGrad) {
+        update.gradationReachedAt = new Date();
+      } else {
+        update.gradationReachedAt = null;
+      }
+      try {
+        await this.userModel.findOneAndUpdate({ user_id }, update).exec();
+      } catch (e) {
+        // ignore update errors and continue with the previously loaded user
+      }
+      gradName = currentGrad;
+    } else {
+      gradName = user.gradation as string | null;
+    }
+    // If user currently does not belong to any gradation, no discount
+    if (!gradName) return null;
     const grad = await this.gradationModel
       .findOne({ name: gradName, active: true })
       .lean()
       .exec();
     if (!grad || typeof grad.discountPercent !== 'number') return null;
     // If durationDays not provided or <=0 treat as permanent
+    // Use the up-to-date reached timestamp. If we updated the user above, reload it; otherwise use existing.
+    const userToCheck = await this.userModel.findOne({ user_id }).lean();
+    if (!userToCheck) return null;
     if (
-      !user.gradationReachedAt ||
+      !userToCheck.gradationReachedAt ||
       !grad.durationDays ||
       grad.durationDays <= 0
     ) {
       return { discount: grad.discountPercent, expiresAt: null };
     }
-    const reached = new Date(user.gradationReachedAt).getTime();
+    const reached = new Date(userToCheck.gradationReachedAt).getTime();
     const now = Date.now();
     const ms = grad.durationDays * 24 * 60 * 60 * 1000;
     if (now - reached <= ms) {
