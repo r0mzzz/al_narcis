@@ -23,6 +23,11 @@ export class CreateDiscountDto {
   discount: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minAmount?: number; // minimum cart subtotal required for this discount (AZN)
+
+  @IsOptional()
   @IsBoolean()
   active?: boolean;
 }

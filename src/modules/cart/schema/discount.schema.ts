@@ -19,9 +19,11 @@ export class Discount {
   @Prop({ required: true })
   discount: number; // percentage 0-100
 
+  @Prop({ required: false, default: 200 })
+  minAmount?: number; // minimum cart subtotal required for this discount (AZN)
+
   @Prop({ default: true })
   active?: boolean;
 }
 
 export const DiscountSchema = SchemaFactory.createForClass(Discount);
-
