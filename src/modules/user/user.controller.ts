@@ -19,6 +19,7 @@ import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AddAddressDto } from './dto/add-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { CreateGradationDto, UpdateGradationDto } from './dto/gradation.dto';
 
 @Controller('/users')
 export class UsersController {
@@ -75,6 +76,33 @@ export class UsersController {
   async deleteProfilePicture(@Req() req: Request) {
     const userId = req.user['sub'];
     return this.usersService.deleteProfilePicture(userId);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('gradations')
+  async listGradations() {
+    return this.usersService.listGradations();
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('gradations')
+  async createGradation(@Body() dto: CreateGradationDto) {
+    return this.usersService.createGradation(dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('gradations/:id')
+  async updateGradation(
+    @Param('id') id: string,
+    @Body() dto: UpdateGradationDto,
+  ) {
+    return this.usersService.updateGradation(id, dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('gradations/:id')
+  async deleteGradation(@Param('id') id: string) {
+    return this.usersService.deleteGradation(id);
   }
 
   @UseGuards(AccessTokenGuard)

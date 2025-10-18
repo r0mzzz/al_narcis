@@ -10,6 +10,7 @@ import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
 import { MinioService } from '../../services/minio.service';
 import { AddAddressDto } from './dto/add-address.dto';
+import { CreateGradationDto, UpdateGradationDto } from './dto/gradation.dto';
 import { Gradation, GradationDocument } from './schema/gradation.schema';
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -95,7 +96,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Remove addresses from user creation
-    const { addresses, ...restDto } = createUserDto as any;
+    const { addresses: _addresses, ...restDto } = createUserDto as any;
     // Generate a secure, unique referralCode
     const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
@@ -331,7 +332,7 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
   ): Promise<Record<string, any> | null> {
     // Remove addresses from update
-    const { addresses, ...restDto } = updateUserDto as any;
+    const { addresses: _addresses, ...restDto } = updateUserDto as any;
     // Build update object dynamically to allow updating any field except addresses
     const updateObj: any = { ...restDto };
     // Always use user_id for lookup
@@ -432,6 +433,44 @@ export class UsersService {
     if (addressIndex === -1) throw new BadRequestException('Address not found');
     user.addresses.splice(addressIndex, 1);
     await user.save();
+    return { success: true };
+  }
+
+  // Gradation management: create / list / update / delete
+  async createGradation(dto: CreateGradationDto) {
+    const created = new this.gradationModel({
+      name: dto.name,
+      minReferrals: dto.minReferrals,
+      discountPercent: dto.discountPercent,
+      durationDays:
+        typeof dto.durationDays === 'number' ? dto.durationDays : null,
+      active: dto.active ?? true,
+    });
+    await created.save();
+    return created.toObject();
+  }
+
+  async listGradations() {
+    return await this.gradationModel.find().lean().exec();
+  }
+
+  async updateGradation(id: string, dto: UpdateGradationDto) {
+    const grad = await this.gradationModel.findById(id).exec();
+    if (!grad) throw new BadRequestException('Gradation not found');
+    if (dto.minReferrals !== undefined)
+      grad.minReferrals = dto.minReferrals;
+    if (dto.discountPercent !== undefined)
+      grad.discountPercent = dto.discountPercent;
+    if (dto.durationDays !== undefined)
+      grad.durationDays = dto.durationDays as any;
+    if (dto.active !== undefined) grad.active = dto.active;
+    await grad.save();
+    return grad.toObject();
+  }
+
+  async deleteGradation(id: string) {
+    const res = await this.gradationModel.findByIdAndDelete(id).exec();
+    if (!res) throw new BadRequestException('Gradation not found');
     return { success: true };
   }
 }
