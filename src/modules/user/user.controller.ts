@@ -78,7 +78,6 @@ export class UsersController {
     return this.usersService.deleteProfilePicture(userId);
   }
 
-  @UseGuards(AccessTokenGuard)
   @Get('gradations')
   async listGradations() {
     return this.usersService.listGradations();
