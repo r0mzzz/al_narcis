@@ -6,7 +6,11 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart } from './schema/cart.schema';
-import { Discount, DiscountDocument, DiscountType } from './schema/discount.schema';
+import {
+  Discount,
+  DiscountDocument,
+  DiscountType,
+} from './schema/discount.schema';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
 import { MinioService } from '../../services/minio.service';
@@ -154,7 +158,10 @@ export class CartService {
     );
 
     // Determine applicable discount: priority -> cart.discount, user-specific active discount, highest active global discount
-    const applicable = await this.getApplicableDiscount(cart.user_id, cart.discount);
+    const applicable = await this.getApplicableDiscount(
+      cart.user_id,
+      cart.discount,
+    );
     const discountPercent = applicable?.discount ?? 0;
     const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2);
     const total = +(subtotal - discountAmount).toFixed(2);
@@ -270,7 +277,10 @@ export class CartService {
   }
 
   // Resolve applicable discount for a given user_id. If cartDiscount provided (number), it has highest priority.
-  private async getApplicableDiscount(user_id: string, cartDiscount?: number | null) {
+  private async getApplicableDiscount(
+    user_id: string,
+    cartDiscount?: number | null,
+  ) {
     if (typeof cartDiscount === 'number' && !Number.isNaN(cartDiscount)) {
       return { source: 'cart', discount: cartDiscount };
     }
@@ -290,7 +300,9 @@ export class CartService {
         .exec();
       if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
         const max = globalDiscounts.reduce((acc, d) => {
-          return typeof d.discount === 'number' && d.discount > acc ? d.discount : acc;
+          return typeof d.discount === 'number' && d.discount > acc
+            ? d.discount
+            : acc;
         }, 0);
         if (max > 0) return { source: 'global', discount: max };
       }
