@@ -119,7 +119,9 @@ export class CartService {
         let imageUrl = null;
         if (product.productImage) {
           // Do not use cached presigned URLs for cart responses — generate fresh presigned URL
-          imageUrl = await this.minioService.getPresignedUrl(product.productImage);
+          imageUrl = await this.minioService.getPresignedUrl(
+            product.productImage,
+          );
         }
         return {
           ...product,
