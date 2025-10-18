@@ -9,4 +9,3 @@ export class SetDiscountDto {
   @Max(100)
   discount: number; // percentage 0-100
 }
-

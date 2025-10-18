@@ -19,12 +19,6 @@ import { CreateDiscountDto } from './dto/create-discount.dto';
 
 @Injectable()
 export class CartService {
-  private static imageUrlCache: Map<
-    string,
-    { url: string; expiresAt: number }
-  > = new Map();
-  private static PRESIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 hour
-
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(Discount.name) private discountModel: Model<DiscountDocument>,
@@ -32,81 +26,61 @@ export class CartService {
     private readonly productService: ProductService,
   ) {}
 
-  private async getCachedPresignedUrl(imagePath: string): Promise<string> {
-    const cacheEntry = CartService.imageUrlCache.get(imagePath);
-    const now = Date.now();
-    if (cacheEntry && cacheEntry.expiresAt > now) {
-      return cacheEntry.url;
-    }
-    // Generate new presigned URL
-    const url = await this.minioService.getPresignedUrl(imagePath);
-    const expiresAt = now + CartService.PRESIGNED_URL_TTL_MS;
-    CartService.imageUrlCache.set(imagePath, { url, expiresAt });
-    return url;
-  }
-
   async addToCart(dto: AddToCartDto) {
-    try {
-      if (!dto.product) {
-        throw new BadRequestException('Missing required field: product');
-      }
-      const { productId, variants } = dto.product;
-      if (!variants || !Array.isArray(variants) || variants.length === 0) {
-        throw new BadRequestException('Missing variants');
-      }
-      let cart = await this.cartModel.findOne({ user_id: dto.user_id });
-      if (!cart) {
-        cart = new this.cartModel({
-          user_id: dto.user_id,
-          products: [],
-        });
-      }
-      // Check if product with same productId exists
-      const productIdx = cart.products.findIndex(
-        (p) => p.productId === productId,
-      );
-      if (productIdx > -1) {
-        // Product exists, check for matching variant (by all relevant fields)
-        let updated = false;
-        const cartProduct = cart.products[productIdx];
-        for (const incomingVariant of variants) {
-          // Determine increment: prefer variant.count, then product.count, then 1
-          const increment =
-            typeof incomingVariant.count === 'number'
-              ? incomingVariant.count
-              : typeof dto.product.count === 'number'
-              ? dto.product.count
-              : 1;
-          // Match by all relevant fields (capacity, price, _id if present)
-          const variantIdx = cartProduct.variants.findIndex((v) => {
-            return (
-              v.capacity === incomingVariant.capacity &&
-              v.price === incomingVariant.price &&
-              (v._id ? v._id === incomingVariant._id : true)
-            );
-          });
-          if (variantIdx > -1) {
-            cartProduct.variants[variantIdx].count =
-              (cartProduct.variants[variantIdx].count ?? 0) + increment;
-            updated = true;
-          } else {
-            cartProduct.variants.push({ ...incomingVariant, count: increment });
-            updated = true;
-          }
-        }
-      } else {
-        const productToAdd = {
-          ...dto.product,
-          user_id: dto.user_id,
-        };
-        cart.products.push(productToAdd);
-      }
-      await cart.save();
-      // Reload cart to ensure latest data is returned
-      return this.getCart(dto.user_id);
-    } catch (error) {
-      throw error;
+    if (!dto.product) {
+      throw new BadRequestException('Missing required field: product');
     }
+    const { productId, variants } = dto.product;
+    if (!variants || !Array.isArray(variants) || variants.length === 0) {
+      throw new BadRequestException('Missing variants');
+    }
+    let cart = await this.cartModel.findOne({ user_id: dto.user_id });
+    if (!cart) {
+      cart = new this.cartModel({
+        user_id: dto.user_id,
+        products: [],
+      });
+    }
+    // Check if product with same productId exists
+    const productIdx = cart.products.findIndex(
+      (p) => p.productId === productId,
+    );
+    if (productIdx > -1) {
+      // Product exists, check for matching variant (by all relevant fields)
+      const cartProduct = cart.products[productIdx];
+      for (const incomingVariant of variants) {
+        // Determine increment: prefer variant.count, then product.count, then 1
+        const increment =
+          typeof incomingVariant.count === 'number'
+            ? incomingVariant.count
+            : typeof dto.product.count === 'number'
+            ? dto.product.count
+            : 1;
+        // Match by all relevant fields (capacity, price, _id if present)
+        const variantIdx = cartProduct.variants.findIndex((v) => {
+          return (
+            v.capacity === incomingVariant.capacity &&
+            v.price === incomingVariant.price &&
+            (v._id ? v._id === incomingVariant._id : true)
+          );
+        });
+        if (variantIdx > -1) {
+          cartProduct.variants[variantIdx].count =
+            (cartProduct.variants[variantIdx].count ?? 0) + increment;
+        } else {
+          cartProduct.variants.push({ ...incomingVariant, count: increment });
+        }
+      }
+    } else {
+      const productToAdd = {
+        ...dto.product,
+        user_id: dto.user_id,
+      };
+      cart.products.push(productToAdd);
+    }
+    await cart.save();
+    // Reload cart to ensure latest data is returned
+    return this.getCart(dto.user_id);
   }
 
   async getCart(user_id: string) {
@@ -184,7 +158,7 @@ export class CartService {
   }
 
   async deleteCart(user_id: string) {
-    const result = await this.cartModel.deleteOne({ user_id });
+    await this.cartModel.deleteOne({ user_id });
     return { success: true };
   }
 
