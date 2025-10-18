@@ -6,6 +6,7 @@ import { CartService } from './cart.service';
 import { CartController } from './cart.controller';
 import { MinioModule } from '../../services/minio.module';
 import { ProductModule } from '../product/product.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ProductModule } from '../product/product.module';
     ]),
     MinioModule,
     ProductModule,
+    UserModule,
   ],
   controllers: [CartController],
   providers: [CartService],

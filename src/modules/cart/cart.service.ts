@@ -15,6 +15,7 @@ import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
 import { MinioService } from '../../services/minio.service';
 import { ProductService } from '../product/product.service';
+import { UsersService } from '../user/user.service';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 
 @Injectable()
@@ -25,6 +26,7 @@ export class CartService {
     @InjectModel(Discount.name) private discountModel: Model<DiscountDocument>,
     private readonly minioService: MinioService,
     private readonly productService: ProductService,
+    private readonly usersService: UsersService,
   ) {}
 
   async addToCart(dto: AddToCartDto) {
@@ -135,13 +137,20 @@ export class CartService {
       }),
     );
 
-    // Determine applicable discount: only consider discounts when subtotal >= DEFAULT_MIN_DISCOUNT_AMOUNT
-    const applicable = await this.getApplicableDiscount(
+    // Get gradation-based discount (may apply regardless of subtotal)
+    const gradationDiscount =
+      await this.usersService.getActiveGradationDiscount(cart.user_id);
+    const gradPercent = gradationDiscount?.discount ?? 0;
+    // Get model-based discount (cart/user/global) — these require subtotal thresholds
+    const modelApplicable = await this.getApplicableDiscount(
       cart.user_id,
       cart.discount,
       subtotal,
     );
-    const discountPercent = applicable?.discount ?? 0;
+    const modelPercent = modelApplicable?.discount ?? 0;
+    // Combine discounts (gradation + model). Cap at 100%.
+    let discountPercent = +(gradPercent + modelPercent);
+    if (discountPercent > 100) discountPercent = 100;
     const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2);
     const total = +(subtotal - discountAmount).toFixed(2);
 
@@ -264,12 +273,13 @@ export class CartService {
   ) {
     // If subtotal is less than global threshold, no discounts apply
     if (subtotal < CartService.DEFAULT_MIN_DISCOUNT_AMOUNT) return null;
-
-    // Cart-level discount applies when subtotal meets the default threshold
-    if (typeof cartDiscount === 'number' && !Number.isNaN(cartDiscount)) {
+    // Cart-level and user/global discounts require the default threshold, but gradation discounts
+    // should be evaluated regardless of subtotal. Do not early-return here.
+    // Cart-level discount and user-specific/global discounts will be checked only when subtotal >= DEFAULT.
+    // Cart-level discount (highest priority)
+    if (typeof cartDiscount === 'number') {
       return { source: 'cart', discount: cartDiscount };
     }
-
     try {
       // Look for active user-specific discount that meets its minAmount (if any)
       const userDiscount = await this.discountModel
@@ -279,7 +289,8 @@ export class CartService {
       if (
         userDiscount &&
         typeof userDiscount.discount === 'number' &&
-        (typeof userDiscount.minAmount !== 'number' || subtotal >= userDiscount.minAmount)
+        (typeof userDiscount.minAmount !== 'number' ||
+          subtotal >= userDiscount.minAmount)
       ) {
         return { source: 'user', discount: userDiscount.discount };
       }
@@ -291,10 +302,16 @@ export class CartService {
         .exec();
       if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
         const eligible = globalDiscounts.filter((d) => {
-          return typeof d.discount === 'number' && (typeof d.minAmount !== 'number' || subtotal >= d.minAmount);
+          return (
+            typeof d.discount === 'number' &&
+            (typeof d.minAmount !== 'number' || subtotal >= d.minAmount)
+          );
         });
         if (eligible.length > 0) {
-          const max = eligible.reduce((acc, d) => (d.discount > acc ? d.discount : acc), 0);
+          const max = eligible.reduce(
+            (acc, d) => (d.discount > acc ? d.discount : acc),
+            0,
+          );
           if (max > 0) return { source: 'global', discount: max };
         }
       }
@@ -310,7 +327,10 @@ export class CartService {
       type: dto.type,
       user_id: dto.user_id,
       discount: dto.discount,
-      minAmount: typeof dto.minAmount === 'number' ? dto.minAmount : CartService.DEFAULT_MIN_DISCOUNT_AMOUNT,
+      minAmount:
+        typeof dto.minAmount === 'number'
+          ? dto.minAmount
+          : CartService.DEFAULT_MIN_DISCOUNT_AMOUNT,
       active: dto.active ?? true,
     });
     await created.save();

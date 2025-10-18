@@ -48,6 +48,9 @@ export class User {
   gradation: string;
 
   @Prop()
+  gradationReachedAt?: Date;
+
+  @Prop()
   inviteLink?: string;
 
   @Prop()

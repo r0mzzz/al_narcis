@@ -10,6 +10,7 @@ import { Messages } from '../../common/messages';
 import { AppError } from '../../common/errors';
 import { MinioService } from '../../services/minio.service';
 import { AddAddressDto } from './dto/add-address.dto';
+import { Gradation, GradationDocument } from './schema/gradation.schema';
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
@@ -40,16 +41,56 @@ async function generateUniqueReferralCode(
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Gradation.name)
+    private gradationModel: Model<GradationDocument>,
     private readonly minioService: MinioService,
   ) {}
 
-  // Helper to determine gradation
-  private getGradation(referralCount: number): string {
-    if (referralCount >= 50) return 'platinum';
-    if (referralCount >= 35) return 'brilliant';
-    if (referralCount >= 20) return 'gold';
-    if (referralCount >= 10) return 'silver';
+  // Determine gradation by consulting DB-configured gradation documents.
+  // Returns gradation name (string) — falls back to 'bronze' if none matched.
+  private async determineGradation(referralCount: number): Promise<string> {
+    // Get all active gradations sorted by minReferrals descending
+    const grads = await this.gradationModel
+      .find({ active: true })
+      .sort({ minReferrals: -1 })
+      .lean()
+      .exec();
+    for (const g of grads) {
+      if (referralCount >= g.minReferrals) return g.name;
+    }
     return 'bronze';
+  }
+
+  // Returns active gradation discount for a user if within duration; otherwise null
+  async getActiveGradationDiscount(
+    user_id: string,
+  ): Promise<{ discount: number; expiresAt: Date | null } | null> {
+    const user = await this.userModel.findOne({ user_id }).lean();
+    if (!user) return null;
+    const gradName = user.gradation || 'bronze';
+    const grad = await this.gradationModel
+      .findOne({ name: gradName, active: true })
+      .lean()
+      .exec();
+    if (!grad || typeof grad.discountPercent !== 'number') return null;
+    // If durationDays not provided or <=0 treat as permanent
+    if (
+      !user.gradationReachedAt ||
+      !grad.durationDays ||
+      grad.durationDays <= 0
+    ) {
+      return { discount: grad.discountPercent, expiresAt: null };
+    }
+    const reached = new Date(user.gradationReachedAt).getTime();
+    const now = Date.now();
+    const ms = grad.durationDays * 24 * 60 * 60 * 1000;
+    if (now - reached <= ms) {
+      return {
+        discount: grad.discountPercent,
+        expiresAt: new Date(reached + ms),
+      };
+    }
+    return null;
   }
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
@@ -80,7 +121,11 @@ export class UsersService {
       });
       if (referrer) {
         referrer.referralCount = (referrer.referralCount || 0) + 1;
-        referrer.gradation = this.getGradation(referrer.referralCount);
+        const newGrad = await this.determineGradation(referrer.referralCount);
+        if (newGrad !== referrer.gradation) {
+          referrer.gradation = newGrad;
+          referrer.gradationReachedAt = new Date();
+        }
         invitedBy = referrer.user_id;
       }
     }
