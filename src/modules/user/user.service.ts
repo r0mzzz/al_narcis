@@ -101,8 +101,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<Record<string, any>> {
     // Remove addresses from user creation
-    const restDto = { ...(createUserDto as any) };
-    delete restDto.addresses;
+    const { addresses, ...restDto } = createUserDto as any;
     // Generate a secure, unique referralCode
     const referralCode = await generateUniqueReferralCode(this.userModel);
     const userData: any = {
