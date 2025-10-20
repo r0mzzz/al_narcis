@@ -32,16 +32,15 @@ export class MinioService {
     }
   }
 
-  async upload(
-    file: Express.Multer.File,
-    productId: string,
-  ): Promise<string> {
+  async upload(file: Express.Multer.File, productId: string): Promise<string> {
     const fileExtension = this.getFileExtension(file.originalname);
     const fileName = `products/${productId}${fileExtension}`;
     const metaData = {
       'Content-Type': file.mimetype,
     };
-    this.logger.log(`Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`);
+    this.logger.log(
+      `Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`,
+    );
     try {
       await this.minioClient.putObject(
         this.bucket,
@@ -69,7 +68,9 @@ export class MinioService {
     const metaData = {
       'Content-Type': file.mimetype,
     };
-    this.logger.log(`Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`);
+    this.logger.log(
+      `Preparing to upload file to Minio: bucket=${this.bucket}, fileName=${fileName}, size=${file.size}, mimetype=${file.mimetype}`,
+    );
     try {
       await this.minioClient.putObject(
         this.bucket,
@@ -91,7 +92,7 @@ export class MinioService {
       'Content-Type': file.mimetype,
     };
     this.logger.log(
-      `Uploading file to Minio: bucket=${this.bucket}, path=${path}, size=${file.size}, mimetype=${file.mimetype}`
+      `Uploading file to Minio: bucket=${this.bucket}, path=${path}, size=${file.size}, mimetype=${file.mimetype}`,
     );
     try {
       await this.minioClient.putObject(
@@ -137,9 +138,15 @@ export class MinioService {
 
   async getPresignedUrl(objectName: string, expiry = 60 * 60): Promise<string> {
     try {
-      return await this.minioClient.presignedGetObject(this.bucket, objectName, expiry);
+      return await this.minioClient.presignedGetObject(
+        this.bucket,
+        objectName,
+        expiry,
+      );
     } catch (error) {
-      this.logger.error(`Failed to generate presigned URL for ${objectName}: ${error}`);
+      this.logger.error(
+        `Failed to generate presigned URL for ${objectName}: ${error}`,
+      );
       throw error;
     }
   }
