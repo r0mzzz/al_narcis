@@ -161,6 +161,8 @@ export class PaymentService {
    * Checks and sets the cashback milestone for a user (3 months with >= 20,000 coins, total >= 60,000 coins)
    * @returns true if milestone is reached, false otherwise
    */
+  // Milestone logic disabled per request. Preserve implementation here commented out for future reference.
+  /*
   async checkAndSetCashbackMilestone(userId: string): Promise<boolean> {
     const user = await this.userModel.findOne({ user_id: userId });
     if (!user || user.accountType !== AccountType.BUSINESS) return false;
@@ -190,6 +192,7 @@ export class PaymentService {
     }
     return false;
   }
+  */
 
   /**
    * Applies cashback for a single payment based on milestone status.
@@ -209,19 +212,13 @@ export class PaymentService {
     const amountInUnits = dto.amount / 100;
 
     // Determine discounts similar to CartService
-    let gradPercent = 0;
+    let gradPercent: number;
     try {
-      if (
-        user &&
-        user.accountType === AccountType.BUSINESS &&
-        amountInUnits >= 200
-      ) {
-        const grad = await this.usersService.getActiveGradationDiscount(
-          user.user_id,
-          amountInUnits,
-        );
-        gradPercent = grad?.discount ?? 0;
-      }
+      // Always check active gradation discount for the user (UsersService enforces BUSINESS account internally)
+      const grad = await this.usersService.getActiveGradationDiscount(
+        user.user_id,
+      );
+      gradPercent = grad?.discount ?? 0;
     } catch (e) {
       gradPercent = 0;
     }
@@ -246,36 +243,85 @@ export class PaymentService {
       dto.amount * (1 - totalDiscountPercent / 100),
     );
 
-    const milestone = await this.checkAndSetCashbackMilestone(dto.user_id);
+    // Milestone checks removed. Use default cashback threshold/percent only.
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
-    if (!milestone && discountedAmountCoins >= config.defaultThreshold) {
+    if (discountedAmountCoins >= config.defaultThreshold) {
       cashbackInCoins = Math.floor(
         discountedAmountCoins * (config.defaultPercent / 100),
       );
-    } else if (
-      milestone &&
-      discountedAmountCoins >= config.milestoneThreshold
-    ) {
-      cashbackInCoins = Math.floor(
-        discountedAmountCoins * (config.milestonePercent / 100),
-      );
     }
 
-    await this.userModel.updateOne(
-      { user_id: dto.user_id },
-      { $inc: { balance: cashbackInCoins } },
-    );
-    await this.cashbackService.create({
-      ...dto,
-      cashbackType,
-      user_id: user.user_id,
-      cashbackAmount: cashbackInCoins,
-      paymentKey: dto.paymentKey,
-      from_user_id,
-      deliveryAddress: dto.deliveryAddress,
-    });
-    return cashbackInCoins;
+    // --- New: if there is an active global discount applicable, grant extra cashback equal to that global percent of the original paid amount ---
+    let extraGlobalCashback = 0;
+    try {
+      if (user && user.accountType === AccountType.BUSINESS) {
+        const amountInUnits = dto.amount / 100; // original paid amount in AZN
+        const globalDiscounts = await this.discountModel
+          .find({ type: 'global', active: true })
+          .lean()
+          .exec();
+        if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
+          const eligible = globalDiscounts.filter((d) => {
+            return (
+              typeof d.discount === 'number' &&
+              (typeof d.minAmount !== 'number' || amountInUnits >= d.minAmount)
+            );
+          });
+          if (eligible.length > 0) {
+            const maxGlobal = eligible.reduce(
+              (acc, d) => (d.discount > acc ? d.discount : acc),
+              0,
+            );
+            if (maxGlobal > 0) {
+              extraGlobalCashback = Math.floor(dto.amount * (maxGlobal / 100));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Logger.error(
+        `Failed to evaluate global discounts: ${e}`,
+        '',
+        'PaymentService',
+      );
+      extraGlobalCashback = 0;
+    }
+
+    // --- New: grant extra cashback equal to gradation discount percent of original paid amount ---
+    let extraGradationCashback = 0;
+    try {
+      if (gradPercent && gradPercent > 0) {
+        extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
+      }
+    } catch (e) {
+      extraGradationCashback = 0;
+    }
+
+    const totalCashbackToGrant =
+      (cashbackInCoins || 0) +
+      (extraGlobalCashback || 0) +
+      (extraGradationCashback || 0);
+
+    if (totalCashbackToGrant > 0) {
+      await this.userModel.updateOne(
+        { user_id: dto.user_id },
+        { $inc: { balance: totalCashbackToGrant } },
+      );
+
+      // Create single cashback record summarizing the granted amount
+      await this.cashbackService.create({
+        ...dto,
+        cashbackType,
+        user_id: user.user_id,
+        cashbackAmount: totalCashbackToGrant,
+        paymentKey: dto.paymentKey,
+        from_user_id,
+        deliveryAddress: dto.deliveryAddress,
+      });
+    }
+
+    return totalCashbackToGrant;
   }
 
   async pay(dto: CreateOrderDto) {
