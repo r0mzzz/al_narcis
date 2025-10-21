@@ -38,6 +38,35 @@ export class CartService {
     if (!variants || !Array.isArray(variants) || variants.length === 0) {
       throw new BadRequestException('Missing variants');
     }
+    // Normalize incoming productImage to object path (not full presigned URL)
+    const normalizeImagePath = (image?: string): string | undefined => {
+      if (!image) return undefined;
+      try {
+        const url = new URL(image);
+        // Prefer path starting from '/products/...'
+        const idx = url.pathname.indexOf('/products/');
+        if (idx >= 0) {
+          return url.pathname.slice(idx + 1); // remove leading '/'
+        }
+        // If not found, strip leading slash
+        if (url.pathname.startsWith('/')) {
+          return url.pathname.slice(1);
+        }
+        return url.pathname;
+      } catch (e) {
+        // Not a full URL — assume already an object path
+        // If contains query string, strip it
+        const qIdx = image.indexOf('?');
+        const raw = qIdx >= 0 ? image.slice(0, qIdx) : image;
+        // If it contains '/products/' return from there
+        const pIdx = raw.indexOf('/products/');
+        if (pIdx >= 0) {
+          return raw.slice(pIdx + 1);
+        }
+        return raw;
+      }
+    };
+
     let cart = await this.cartModel.findOne({ user_id: dto.user_id });
     if (!cart) {
       cart = new this.cartModel({
@@ -79,6 +108,7 @@ export class CartService {
       const productToAdd = {
         ...dto.product,
         user_id: dto.user_id,
+        productImage: normalizeImagePath(dto.product.productImage) ?? undefined,
       };
       cart.products.push(productToAdd);
     }
@@ -95,11 +125,16 @@ export class CartService {
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
         let imageUrl = null;
+        // product.productImage should be stored as object path like 'products/xxx.png'
         if (product.productImage) {
-          // Do not use cached presigned URLs for cart responses — generate fresh presigned URL
-          imageUrl = await this.minioService.getPresignedUrl(
-            product.productImage,
-          );
+          // Generate fresh presigned URL for each cart response
+          try {
+            imageUrl = await this.minioService.getPresignedUrl(
+              product.productImage,
+            );
+          } catch (e) {
+            imageUrl = null;
+          }
         }
         return {
           ...product,
@@ -148,8 +183,7 @@ export class CartService {
         user.accountType === AccountType.BUSINESS &&
         subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
       ) {
-        const gradationDiscount =
-          await this.usersService.getActiveGradationDiscount(cart.user_id);
+        const gradationDiscount = await this.usersService.getActiveGradationDiscount(cart.user_id, subtotal);
         gradPercent = gradationDiscount?.discount ?? 0;
       }
     } catch (e) {
