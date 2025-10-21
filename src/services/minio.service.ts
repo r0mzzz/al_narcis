@@ -8,6 +8,9 @@ export class MinioService {
   private readonly minioClient: Client;
   private readonly bucket: string;
   private readonly logger = new Logger(MinioService.name);
+  // Simple in-memory cache: objectName -> { url, expiresAt }
+  private presignedCache: Map<string, { url: string; expiresAt: number }> =
+    new Map();
 
   constructor(private readonly configService: ConfigService) {
     const minioConfig = this.configService.get('minio');
@@ -146,6 +149,42 @@ export class MinioService {
     } catch (error) {
       this.logger.error(
         `Failed to generate presigned URL for ${objectName}: ${error}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Returns a presigned URL, but uses an in-memory cache to avoid regenerating
+   * a new URL on every request. If the cached URL will expire within
+   * refreshBufferSeconds, a new URL is generated and cached.
+   *
+   * Note: in-memory cache is per-process and will be lost on restart. If you
+   * need cross-process caching, use Redis or another external cache.
+   */
+  async getCachedPresignedUrl(
+    objectName: string,
+    expiry = 60 * 60,
+    refreshBufferSeconds = 120,
+  ): Promise<string> {
+    if (!objectName) return null;
+    const now = Date.now();
+    const cached = this.presignedCache.get(objectName);
+    if (cached) {
+      // If cached URL still valid and not within the refresh buffer, return it
+      if (cached.expiresAt - now > refreshBufferSeconds * 1000) {
+        return cached.url;
+      }
+    }
+    // Generate new presigned URL and cache it
+    try {
+      const url = await this.getPresignedUrl(objectName, expiry);
+      const expiresAt = Date.now() + expiry * 1000;
+      this.presignedCache.set(objectName, { url, expiresAt });
+      return url;
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate cached presigned URL for ${objectName}: ${error}`,
       );
       throw error;
     }

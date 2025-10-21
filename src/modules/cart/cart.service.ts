@@ -129,8 +129,10 @@ export class CartService {
         let presigned: string | null = null;
         if (product.productImage) {
           try {
-            presigned = await this.minioService.getPresignedUrl(
+            presigned = await this.minioService.getCachedPresignedUrl(
               product.productImage,
+              undefined,
+              120,
             );
           } catch (e) {
             presigned = null;
