@@ -120,14 +120,14 @@ export class CartService {
   async getCart(user_id: string) {
     const cart = await this.cartModel.findOne({ user_id }).lean();
     if (!cart) return { items: [] };
+
     const products = cart.products || [];
-    // Use cached presigned URLs for product images
+
+    // Generate fresh presigned URLs for product images (return in productImage)
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
-        let presigned = null;
-        // product.productImage should be stored as object path like 'products/xxx.png'
+        let presigned: string | null = null;
         if (product.productImage) {
-          // Generate fresh presigned URL for each cart response and place it into productImage
           try {
             presigned = await this.minioService.getPresignedUrl(
               product.productImage,
@@ -136,27 +136,21 @@ export class CartService {
             presigned = null;
           }
         }
-        return {
-          ...product,
-          // return presigned URL in productImage field as requested
-          productImage: presigned,
-        };
+        return { ...product, productImage: presigned };
       }),
     );
+
     // Calculate subtotal by looking up authoritative product prices where possible
     let subtotal = 0;
     const detailedProducts = await Promise.all(
       productsWithImages.map(async (cartProduct) => {
-        // Try to load product from products collection by productId
         const productInfo = await this.productService.findByProductId(
           cartProduct.productId,
         );
         const variants = await Promise.all(
           (cartProduct.variants || []).map(async (v) => {
-            // Determine price: prefer authoritative product data if available and variant match found
             let unitPrice = v.price;
             if (productInfo && Array.isArray(productInfo.variants)) {
-              // Match variant by capacity (authoritative source of truth for variant prices)
               const matched = productInfo.variants.find(
                 (pv: any) => pv.capacity === v.capacity,
               );
@@ -174,32 +168,39 @@ export class CartService {
       }),
     );
 
-    // Get gradation-based discount only for BUSINESS users and when subtotal
-    // meets the minimum threshold for discounts (DEFAULT_MIN_DISCOUNT_AMOUNT)
-    let gradPercent = 0;
+    // Load user once (used for discounts)
+    let user = null;
     try {
-      const user = await this.usersService.findByUserId(cart.user_id);
-      if (
-        user &&
-        user.accountType === AccountType.BUSINESS &&
-        subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
-      ) {
+      user = await this.usersService.findByUserId(cart.user_id);
+    } catch (err) {
+      user = null;
+    }
+
+    // Gradation discount (only BUSINESS users and when subtotal threshold met)
+    let gradPercent = 0;
+    if (
+      user &&
+      user.accountType === AccountType.BUSINESS &&
+      subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
+    ) {
+      try {
         const gradationDiscount =
           await this.usersService.getActiveGradationDiscount(
             cart.user_id,
             subtotal,
           );
         gradPercent = gradationDiscount?.discount ?? 0;
+      } catch (err) {
+        gradPercent = 0;
       }
-    } catch (e) {
-      // ignore and treat as no gradation discount
-      gradPercent = 0;
     }
+
     // Get model-based discount (cart/user/global) — these require subtotal thresholds
     const modelApplicable = await this.getApplicableDiscount(
       cart.user_id,
       cart.discount,
       subtotal,
+      user?.accountType,
     );
     const modelPercent = modelApplicable?.discount ?? 0;
     // Combine discounts (gradation + model). Cap at 100%.
@@ -324,6 +325,7 @@ export class CartService {
     user_id: string,
     cartDiscount?: number | null,
     subtotal = 0,
+    accountType?: AccountType | null,
   ) {
     // If subtotal is less than global threshold, no discounts apply
     if (subtotal < CartService.DEFAULT_MIN_DISCOUNT_AMOUNT) return null;
@@ -349,24 +351,26 @@ export class CartService {
         return { source: 'user', discount: userDiscount.discount };
       }
 
-      // Otherwise look for active global discounts that meet minAmount and pick the highest percentage
-      const globalDiscounts = await this.discountModel
-        .find({ type: DiscountType.GLOBAL, active: true })
-        .lean()
-        .exec();
-      if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
-        const eligible = globalDiscounts.filter((d) => {
-          return (
-            typeof d.discount === 'number' &&
-            (typeof d.minAmount !== 'number' || subtotal >= d.minAmount)
-          );
-        });
-        if (eligible.length > 0) {
-          const max = eligible.reduce(
-            (acc, d) => (d.discount > acc ? d.discount : acc),
-            0,
-          );
-          if (max > 0) return { source: 'global', discount: max };
+      // BUSINESS users only: Otherwise look for active global discounts that meet minAmount and pick the highest percentage
+      if (accountType === AccountType.BUSINESS) {
+        const globalDiscounts = await this.discountModel
+          .find({ type: DiscountType.GLOBAL, active: true })
+          .lean()
+          .exec();
+        if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
+          const eligible = globalDiscounts.filter((d) => {
+            return (
+              typeof d.discount === 'number' &&
+              (typeof d.minAmount !== 'number' || subtotal >= d.minAmount)
+            );
+          });
+          if (eligible.length > 0) {
+            const max = eligible.reduce(
+              (acc, d) => (d.discount > acc ? d.discount : acc),
+              0,
+            );
+            if (max > 0) return { source: 'global', discount: max };
+          }
         }
       }
     } catch (err) {
