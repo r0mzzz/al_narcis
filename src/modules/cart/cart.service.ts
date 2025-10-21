@@ -209,7 +209,7 @@ export class CartService {
     let discountPercent = +(gradPercent + modelPercent);
     if (discountPercent > 100) discountPercent = 100;
     const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2);
-    const total = +(subtotal - discountAmount).toFixed(2);
+    const total = +subtotal.toFixed(2);
 
     return {
       items: [
