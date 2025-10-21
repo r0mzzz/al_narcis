@@ -169,7 +169,7 @@ export class CartService {
     );
 
     // Load user once (used for discounts)
-    let user = null;
+    let user;
     try {
       user = await this.usersService.findByUserId(cart.user_id);
     } catch (err) {
