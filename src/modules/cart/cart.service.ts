@@ -183,7 +183,11 @@ export class CartService {
         user.accountType === AccountType.BUSINESS &&
         subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
       ) {
-        const gradationDiscount = await this.usersService.getActiveGradationDiscount(cart.user_id, subtotal);
+        const gradationDiscount =
+          await this.usersService.getActiveGradationDiscount(
+            cart.user_id,
+            subtotal,
+          );
         gradPercent = gradationDiscount?.discount ?? 0;
       }
     } catch (e) {
