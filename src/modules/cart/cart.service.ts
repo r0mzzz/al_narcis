@@ -17,6 +17,7 @@ import { MinioService } from '../../services/minio.service';
 import { ProductService } from '../product/product.service';
 import { UsersService } from '../user/user.service';
 import { CreateDiscountDto } from './dto/create-discount.dto';
+import { AccountType } from '../../common/account-type.enum';
 
 @Injectable()
 export class CartService {
@@ -137,10 +138,24 @@ export class CartService {
       }),
     );
 
-    // Get gradation-based discount (may apply regardless of subtotal)
-    const gradationDiscount =
-      await this.usersService.getActiveGradationDiscount(cart.user_id);
-    const gradPercent = gradationDiscount?.discount ?? 0;
+    // Get gradation-based discount only for BUSINESS users and when subtotal
+    // meets the minimum threshold for discounts (DEFAULT_MIN_DISCOUNT_AMOUNT)
+    let gradPercent = 0;
+    try {
+      const user = await this.usersService.findByUserId(cart.user_id);
+      if (
+        user &&
+        user.accountType === AccountType.BUSINESS &&
+        subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
+      ) {
+        const gradationDiscount =
+          await this.usersService.getActiveGradationDiscount(cart.user_id);
+        gradPercent = gradationDiscount?.discount ?? 0;
+      }
+    } catch (e) {
+      // ignore and treat as no gradation discount
+      gradPercent = 0;
+    }
     // Get model-based discount (cart/user/global) — these require subtotal thresholds
     const modelApplicable = await this.getApplicableDiscount(
       cart.user_id,

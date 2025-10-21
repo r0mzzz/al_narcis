@@ -66,12 +66,21 @@ export class UsersService {
   }
 
   // Returns active gradation discount for a user if within duration; otherwise null
+  // Only applicable for BUSINESS account users and when subtotal (if provided)
+  // is >= DEFAULT_MIN_DISCOUNT_AMOUNT (200 AZN).
   async getActiveGradationDiscount(
     user_id: string,
+    subtotal?: number,
   ): Promise<{ discount: number; expiresAt: Date | null } | null> {
+    const DEFAULT_MIN_DISCOUNT_AMOUNT = 200;
     // Load user (plain object)
     const user = await this.userModel.findOne({ user_id }).lean();
     if (!user) return null;
+    // Enforce BUSINESS account type
+    if (user.accountType !== AccountType.BUSINESS) return null;
+    // If subtotal provided and below threshold, no gradation discount
+    if (typeof subtotal === 'number' && subtotal < DEFAULT_MIN_DISCOUNT_AMOUNT)
+      return null;
 
     // Re-evaluate current gradation from referralCount and update user record if changed.
     // determineGradation returns string|null
