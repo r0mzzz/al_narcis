@@ -16,19 +16,75 @@ import { CashbackService } from '../cashback/cashback.service';
 import { CashbackType } from '../cashback/schema/cashback.schema';
 import { OrderService } from '../order/order.service';
 import { CreateOrderDto } from '../order/dto/create-order.dto';
+import { UsersService } from '../user/user.service';
+import { Discount, DiscountDocument } from '../cart/schema/discount.schema';
 
 @Injectable()
 export class PaymentService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Discount.name) private discountModel: Model<DiscountDocument>,
     private cashbackConfigService: CashbackConfigService,
     private mainCashbackConfigService: MainCashbackConfigService,
     @Inject(forwardRef(() => HistoryService))
     private historyService: HistoryService,
     private cashbackService: CashbackService,
+    private usersService: UsersService,
     @Inject(forwardRef(() => OrderService))
     private orderService: OrderService,
   ) {}
+
+  // Resolve applicable discount for a given user_id. Mirrors CartService.getApplicableDiscount
+  private async getApplicableDiscount(
+    user_id: string,
+    subtotal = 0,
+    accountType?: AccountType | null,
+  ): Promise<{ source: string; discount: number } | null> {
+    const DEFAULT_MIN = 200; // AZN
+    if (subtotal < DEFAULT_MIN) return null;
+    // Cart-level discount not applicable here (no cart-level discount available)
+    try {
+      // Look for active user-specific discount
+      const userDiscount = await this.discountModel
+        .findOne({ type: 'user', user_id, active: true })
+        .lean()
+        .exec();
+      if (
+        userDiscount &&
+        typeof userDiscount.discount === 'number' &&
+        (typeof userDiscount.minAmount !== 'number' ||
+          subtotal >= userDiscount.minAmount)
+      ) {
+        return { source: 'user', discount: userDiscount.discount };
+      }
+
+      // Global discounts only for BUSINESS users
+      if (accountType === AccountType.BUSINESS) {
+        const globalDiscounts = await this.discountModel
+          .find({ type: 'global', active: true })
+          .lean()
+          .exec();
+        if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
+          const eligible = globalDiscounts.filter((d) => {
+            return (
+              typeof d.discount === 'number' &&
+              (typeof d.minAmount !== 'number' || subtotal >= d.minAmount)
+            );
+          });
+          if (eligible.length > 0) {
+            const max = eligible.reduce(
+              (acc, d) => (d.discount > acc ? d.discount : acc),
+              0,
+            );
+            if (max > 0) return { source: 'global', discount: max };
+          }
+        }
+      }
+    } catch (err) {
+      // ignore errors and fallback to no discount
+    }
+    return null;
+  }
 
   /**
    * Calculates and distributes cashback up to 3 levels of referral chain.
@@ -147,17 +203,65 @@ export class PaymentService {
     from_user_id: string | null = null,
   ): Promise<number> {
     const user = await this.userModel.findOne({ user_id: dto.user_id });
-    if (user.accountType !== AccountType.BUSINESS) return 0;
+    if (!user || user.accountType !== AccountType.BUSINESS) return 0;
+
+    // Convert coins to units (AZN) to reuse discount logic which expects AZN
+    const amountInUnits = dto.amount / 100;
+
+    // Determine discounts similar to CartService
+    let gradPercent = 0;
+    try {
+      if (
+        user &&
+        user.accountType === AccountType.BUSINESS &&
+        amountInUnits >= 200
+      ) {
+        const grad = await this.usersService.getActiveGradationDiscount(
+          user.user_id,
+          amountInUnits,
+        );
+        gradPercent = grad?.discount ?? 0;
+      }
+    } catch (e) {
+      gradPercent = 0;
+    }
+
+    let modelPercent;
+    try {
+      const modelApplicable = await this.getApplicableDiscount(
+        user.user_id,
+        amountInUnits,
+        user.accountType,
+      );
+      modelPercent = modelApplicable?.discount ?? 0;
+    } catch (e) {
+      modelPercent = 0;
+    }
+
+    let totalDiscountPercent = +(gradPercent + modelPercent);
+    if (totalDiscountPercent > 100) totalDiscountPercent = 100;
+
+    // Apply discounts to the payment amount to compute effective amount for cashback
+    const discountedAmountCoins = Math.floor(
+      dto.amount * (1 - totalDiscountPercent / 100),
+    );
+
     const milestone = await this.checkAndSetCashbackMilestone(dto.user_id);
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
-    if (!milestone && dto.amount >= config.defaultThreshold) {
-      cashbackInCoins = Math.floor(dto.amount * (config.defaultPercent / 100));
-    } else if (milestone && dto.amount >= config.milestoneThreshold) {
+    if (!milestone && discountedAmountCoins >= config.defaultThreshold) {
       cashbackInCoins = Math.floor(
-        dto.amount * (config.milestonePercent / 100),
+        discountedAmountCoins * (config.defaultPercent / 100),
+      );
+    } else if (
+      milestone &&
+      discountedAmountCoins >= config.milestoneThreshold
+    ) {
+      cashbackInCoins = Math.floor(
+        discountedAmountCoins * (config.milestonePercent / 100),
       );
     }
+
     await this.userModel.updateOne(
       { user_id: dto.user_id },
       { $inc: { balance: cashbackInCoins } },
