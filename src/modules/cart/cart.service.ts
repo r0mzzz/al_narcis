@@ -124,21 +124,22 @@ export class CartService {
     // Use cached presigned URLs for product images
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
-        let imageUrl = null;
+        let presigned = null;
         // product.productImage should be stored as object path like 'products/xxx.png'
         if (product.productImage) {
-          // Generate fresh presigned URL for each cart response
+          // Generate fresh presigned URL for each cart response and place it into productImage
           try {
-            imageUrl = await this.minioService.getPresignedUrl(
+            presigned = await this.minioService.getPresignedUrl(
               product.productImage,
             );
           } catch (e) {
-            imageUrl = null;
+            presigned = null;
           }
         }
         return {
           ...product,
-          imageUrl,
+          // return presigned URL in productImage field as requested
+          productImage: presigned,
         };
       }),
     );
