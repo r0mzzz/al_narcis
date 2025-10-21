@@ -53,6 +53,9 @@ export class Product {
 
   @Prop({ required: false })
   brand_id?: string;
+
+  @Prop({ type: Number, enum: [0, 1], default: 1 })
+  visible: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

@@ -54,7 +54,7 @@ export class ProductService {
     tag?: string,
     gender?: string,
   ): Promise<unknown> {
-    const filter: any = {};
+    const filter: any = { visible: 1 };
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
     if (categories && categories.length > 0) {
@@ -92,7 +92,7 @@ export class ProductService {
         total = cached.total;
       } else {
         const products = await this.productModel
-          .find({})
+          .find({ visible: 1 })
           .select('-__v')
           .sort({ _id: -1 })
           .exec();
@@ -463,7 +463,7 @@ export class ProductService {
   }
 
   async findByBrand(brandId: string, limit = 10, page = 1) {
-    const filter = { brand_id: brandId };
+    const filter: any = { brand_id: brandId, visible: 1 };
     const products = await this.productModel
       .find(filter)
       .select('-__v')
@@ -491,7 +491,7 @@ export class ProductService {
   }
 
   async findByTag(tag: string, limit = 10, page = 1) {
-    const filter = { tags: tag };
+    const filter: any = { tags: tag, visible: 1 };
     const products = await this.productModel
       .find(filter)
       .select('-__v')
@@ -519,7 +519,7 @@ export class ProductService {
   }
 
   async searchByProductName(query: string, limit = 10, page = 1) {
-    const filter = { productName: { $regex: query, $options: 'i' } };
+    const filter: any = { productName: { $regex: query, $options: 'i' }, visible: 1 };
     const products = await this.productModel
       .find(filter)
       .select('-__v')
@@ -550,7 +550,7 @@ export class ProductService {
   private async refreshProductsCache() {
     try {
       const products = await this.productModel
-        .find({})
+        .find({ visible: 1 })
         .select('-__v')
         .sort({ _id: -1 })
         .exec();
