@@ -26,6 +26,10 @@ export class CreateGradationDto {
   durationDays?: number | null;
 
   @IsOptional()
+  @IsString()
+  note?: string;
+
+  @IsOptional()
   @IsBoolean()
   active?: boolean;
 }
@@ -46,6 +50,10 @@ export class UpdateGradationDto {
   @IsNumber()
   @Min(0)
   durationDays?: number | null;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
 
   @IsOptional()
   @IsBoolean()

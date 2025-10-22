@@ -486,6 +486,7 @@ export class UsersService {
       discountPercent: dto.discountPercent,
       durationDays:
         typeof dto.durationDays === 'number' ? dto.durationDays : null,
+      note: typeof dto.note === 'string' ? dto.note : undefined,
       active: dto.active ?? true,
     });
     await created.save();
@@ -504,6 +505,7 @@ export class UsersService {
       grad.discountPercent = dto.discountPercent;
     if (dto.durationDays !== undefined)
       grad.durationDays = dto.durationDays as any;
+    if (dto.note !== undefined) grad.note = dto.note;
     if (dto.active !== undefined) grad.active = dto.active;
     await grad.save();
     return grad.toObject();

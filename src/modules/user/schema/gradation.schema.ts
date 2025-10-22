@@ -17,6 +17,9 @@ export class Gradation {
   @Prop({ required: false })
   durationDays?: number | null; // number of days discount is valid after reaching gradation; null or 0 for permanent
 
+  @Prop({ required: false })
+  note?: string; // optional admin note about this gradation
+
   @Prop({ default: true })
   active?: boolean;
 }
