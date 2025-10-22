@@ -219,7 +219,31 @@ export class PaymentService {
     from_user_id: string | null = null,
   ): Promise<number> {
     const user = await this.userModel.findOne({ user_id: dto.user_id });
-    if (!user || user.accountType !== AccountType.BUSINESS) return 0;
+    // If user not found, nothing to do
+    if (!user) return 0;
+
+    // If user is not BUSINESS (e.g. PERSONAL) still create a cashback record with 0 amount
+    // and return 0. Keep all other business logic unchanged for BUSINESS users.
+    if (user.accountType !== AccountType.BUSINESS) {
+      try {
+        await this.cashbackService.create({
+          ...dto,
+          cashbackType,
+          user_id: user.user_id,
+          cashbackAmount: 0,
+          paymentKey: dto.paymentKey,
+          from_user_id,
+          deliveryAddress: dto.deliveryAddress,
+        });
+      } catch (e) {
+        Logger.error(
+          `Failed to create cashback record for personal user: ${e}`,
+          '',
+          'PaymentService',
+        );
+      }
+      return 0;
+    }
 
     // Convert coins to units (AZN) to reuse discount logic which expects AZN
     const amountInUnits = dto.amount / 100;
