@@ -213,39 +213,28 @@ export class PaymentService {
 
     // Determine discounts similar to CartService
     let gradPercent: number;
+    let gradObj: any = null;
     try {
       // Always check active gradation discount for the user (UsersService enforces BUSINESS account internally)
       const grad = await this.usersService.getActiveGradationDiscount(
         user.user_id,
       );
       gradPercent = grad?.discount ?? 0;
+      gradObj = grad ?? null;
     } catch (e) {
       gradPercent = 0;
     }
 
-    // Explicitly resolve user-specific and global discounts so we can control precedence
-    let userSpecificPercent = 0;
+    // Only consider active global discounts for payment; ignore per-user discounts in payment flow
     let globalPercent = 0;
+    let fetchedGlobalDiscounts: any[] = [];
     try {
-      // user-specific discount
-      const userDiscount = await this.discountModel
-        .findOne({ type: 'user', user_id: user.user_id, active: true })
-        .lean()
-        .exec();
-      if (
-        userDiscount &&
-        typeof userDiscount.discount === 'number' &&
-        (typeof userDiscount.minAmount !== 'number' ||
-          amountInUnits >= userDiscount.minAmount)
-      ) {
-        userSpecificPercent = userDiscount.discount;
-      }
-      // global discount (pick max among active eligible globals)
       if (user.accountType === AccountType.BUSINESS) {
         const globalDiscounts = await this.discountModel
           .find({ type: 'global', active: true })
           .lean()
           .exec();
+        fetchedGlobalDiscounts = globalDiscounts || [];
         if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
           const eligibleGlobals = globalDiscounts.filter((d) => {
             return (
@@ -262,24 +251,26 @@ export class PaymentService {
         }
       }
     } catch (e) {
-      userSpecificPercent = 0;
       globalPercent = 0;
     }
 
-    // Determine modelPercent precedence:
-    // if active global exists -> use globalPercent
-    // else if gradPercent exists -> prefer gradPercent
-    // else fall back to userSpecificPercent
-    let modelPercent = 0;
-    if (globalPercent && globalPercent > 0) {
-      modelPercent = globalPercent;
-    } else if (gradPercent && gradPercent > 0) {
-      modelPercent = gradPercent;
-    } else {
-      modelPercent = userSpecificPercent || 0;
-    }
+    // Log fetched discount objects to help debug mismatches between cart and payment behavior
+    Logger.log(
+      `Fetched global discounts: ${JSON.stringify(fetchedGlobalDiscounts)}`,
+      'PaymentService',
+    );
+    Logger.log(
+      `Gradation object from usersService.getActiveGradationDiscount: ${JSON.stringify(
+        gradObj,
+      )}`,
+      'PaymentService',
+    );
 
-    let totalDiscountPercent = +(gradPercent + modelPercent);
+    // modelPercent is only globalPercent for payment (we ignore user-specific discounts here)
+    const modelPercent = globalPercent && globalPercent > 0 ? globalPercent : 0;
+
+    // totalDiscountPercent used to compute discounted amount for base cashback should NOT include gradPercent
+    let totalDiscountPercent = modelPercent;
     if (totalDiscountPercent > 100) totalDiscountPercent = 100;
 
     // Apply discounts to the payment amount to compute effective amount for cashback
@@ -289,44 +280,54 @@ export class PaymentService {
 
     // Debug log to trace discount resolution
     Logger.log(
-      `Cashback calc: user=${user.user_id} amountCoins=${dto.amount} gradPercent=${gradPercent} userSpecificPercent=${userSpecificPercent} globalPercent=${globalPercent} modelPercent=${modelPercent} totalDiscountPercent=${totalDiscountPercent} discountedAmountCoins=${discountedAmountCoins}`,
+      `Cashback calc: user=${user.user_id} amountCoins=${dto.amount} gradPercent=${gradPercent} globalPercent=${globalPercent} modelPercent=${modelPercent} totalDiscountPercent=${totalDiscountPercent} discountedAmountCoins=${discountedAmountCoins}`,
       'PaymentService',
     );
 
     // Milestone checks removed. Use default cashback threshold/percent only.
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
-    if (discountedAmountCoins >= config.defaultThreshold) {
-      cashbackInCoins = Math.floor(
-        discountedAmountCoins * (config.defaultPercent / 100),
-      );
+
+    // If there is a model discount (global or user-specific), compute base cashback on discounted amount
+    if (modelPercent > 0) {
+      if (discountedAmountCoins >= config.defaultThreshold) {
+        cashbackInCoins = Math.floor(
+          discountedAmountCoins * (config.defaultPercent / 100),
+        );
+      }
+    } else {
+      // No model discount: if gradation exists, user expects only gradation cashback (no base cashback)
+      if (!gradPercent || gradPercent <= 0) {
+        // No discounts at all -> apply base cashback on full amount
+        if (dto.amount >= config.defaultThreshold) {
+          cashbackInCoins = Math.floor(
+            dto.amount * (config.defaultPercent / 100),
+          );
+        }
+      } else {
+        // gradPercent > 0 and no model discount -> do not set base cashback (user wants only gradation extra)
+        cashbackInCoins = 0;
+      }
     }
 
-    // --- New: extra cashback logic based on precedence ---
+    // Extra cashback precedence:
+    // - if active global exists -> only extraGlobal
+    // - else if gradation exists -> only extraGradation
     let extraGlobalCashback = 0;
     let extraGradationCashback = 0;
-    let extraUserSpecificCashback = 0;
     if (globalPercent && globalPercent > 0) {
-      // global active -> only global extra cashback
       extraGlobalCashback = Math.floor(dto.amount * (globalPercent / 100));
     } else if (gradPercent && gradPercent > 0) {
-      // no global -> if gradation exists give gradation extra cashback
       extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
-    } else if (userSpecificPercent && userSpecificPercent > 0) {
-      // fallback to user-specific extra cashback
-      extraUserSpecificCashback = Math.floor(
-        dto.amount * (userSpecificPercent / 100),
-      );
     }
 
     const totalCashbackToGrant =
       (cashbackInCoins || 0) +
       (extraGlobalCashback || 0) +
-      (extraGradationCashback || 0) +
-      (extraUserSpecificCashback || 0);
+      (extraGradationCashback || 0);
 
     Logger.log(
-      `Cashback result: base=${cashbackInCoins} extraGlobal=${extraGlobalCashback} extraGradation=${extraGradationCashback} extraUserSpecific=${extraUserSpecificCashback} total=${totalCashbackToGrant}`,
+      `Cashback result: base=${cashbackInCoins} extraGlobal=${extraGlobalCashback} extraGradation=${extraGradationCashback} total=${totalCashbackToGrant}`,
       'PaymentService',
     );
 
