@@ -223,17 +223,51 @@ export class PaymentService {
       gradPercent = 0;
     }
 
-    let modelPercent;
+    // Explicitly resolve user-specific and global discounts so we can control precedence
+    let userSpecificPercent = 0;
+    let globalPercent = 0;
     try {
-      const modelApplicable = await this.getApplicableDiscount(
-        user.user_id,
-        amountInUnits,
-        user.accountType,
-      );
-      modelPercent = modelApplicable?.discount ?? 0;
+      // user-specific discount
+      const userDiscount = await this.discountModel
+        .findOne({ type: 'user', user_id: user.user_id, active: true })
+        .lean()
+        .exec();
+      if (
+        userDiscount &&
+        typeof userDiscount.discount === 'number' &&
+        (typeof userDiscount.minAmount !== 'number' ||
+          amountInUnits >= userDiscount.minAmount)
+      ) {
+        userSpecificPercent = userDiscount.discount;
+      }
+      // global discount (pick max among active eligible globals)
+      if (user.accountType === AccountType.BUSINESS) {
+        const globalDiscounts = await this.discountModel
+          .find({ type: 'global', active: true })
+          .lean()
+          .exec();
+        if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
+          const eligibleGlobals = globalDiscounts.filter((d) => {
+            return (
+              typeof d.discount === 'number' &&
+              (typeof d.minAmount !== 'number' || amountInUnits >= d.minAmount)
+            );
+          });
+          if (eligibleGlobals.length > 0) {
+            globalPercent = eligibleGlobals.reduce(
+              (acc, d) => (d.discount > acc ? d.discount : acc),
+              0,
+            );
+          }
+        }
+      }
     } catch (e) {
-      modelPercent = 0;
+      userSpecificPercent = 0;
+      globalPercent = 0;
     }
+
+    // modelPercent represents discounts coming from user or global (user-specific takes precedence over global here for model pricing)
+    const modelPercent = userSpecificPercent || globalPercent || 0;
 
     let totalDiscountPercent = +(gradPercent + modelPercent);
     if (totalDiscountPercent > 100) totalDiscountPercent = 100;
@@ -241,6 +275,12 @@ export class PaymentService {
     // Apply discounts to the payment amount to compute effective amount for cashback
     const discountedAmountCoins = Math.floor(
       dto.amount * (1 - totalDiscountPercent / 100),
+    );
+
+    // Debug log to trace discount resolution
+    Logger.log(
+      `Cashback calc: user=${user.user_id} amountCoins=${dto.amount} gradPercent=${gradPercent} userSpecificPercent=${userSpecificPercent} globalPercent=${globalPercent} modelPercent=${modelPercent} totalDiscountPercent=${totalDiscountPercent} discountedAmountCoins=${discountedAmountCoins}`,
+      'PaymentService',
     );
 
     // Milestone checks removed. Use default cashback threshold/percent only.
@@ -254,54 +294,28 @@ export class PaymentService {
 
     // --- New: if there is an active global discount applicable, grant extra cashback equal to that global percent of the original paid amount ---
     let extraGlobalCashback = 0;
-    try {
-      if (user && user.accountType === AccountType.BUSINESS) {
-        const amountInUnits = dto.amount / 100; // original paid amount in AZN
-        const globalDiscounts = await this.discountModel
-          .find({ type: 'global', active: true })
-          .lean()
-          .exec();
-        if (Array.isArray(globalDiscounts) && globalDiscounts.length > 0) {
-          const eligible = globalDiscounts.filter((d) => {
-            return (
-              typeof d.discount === 'number' &&
-              (typeof d.minAmount !== 'number' || amountInUnits >= d.minAmount)
-            );
-          });
-          if (eligible.length > 0) {
-            const maxGlobal = eligible.reduce(
-              (acc, d) => (d.discount > acc ? d.discount : acc),
-              0,
-            );
-            if (maxGlobal > 0) {
-              extraGlobalCashback = Math.floor(dto.amount * (maxGlobal / 100));
-            }
-          }
-        }
-      }
-    } catch (e) {
-      Logger.error(
-        `Failed to evaluate global discounts: ${e}`,
-        '',
-        'PaymentService',
-      );
-      extraGlobalCashback = 0;
+    if (globalPercent && globalPercent > 0) {
+      extraGlobalCashback = Math.floor(dto.amount * (globalPercent / 100));
     }
 
     // --- New: grant extra cashback equal to gradation discount percent of original paid amount ---
     let extraGradationCashback = 0;
-    try {
-      if (gradPercent && gradPercent > 0) {
-        extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
-      }
-    } catch (e) {
-      extraGradationCashback = 0;
+    // Only grant gradation extra cashback when there is NO active global discount applied
+    if (
+      (!globalPercent || globalPercent <= 0) &&
+      gradPercent &&
+      gradPercent > 0
+    ) {
+      extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
     }
 
     const totalCashbackToGrant =
-      (cashbackInCoins || 0) +
-      (extraGlobalCashback || 0) +
-      (extraGradationCashback || 0);
+      (cashbackInCoins || 0) + (extraGlobalCashback || 0) + (extraGradationCashback || 0);
+
+    Logger.log(
+      `Cashback result: base=${cashbackInCoins} extraGlobal=${extraGlobalCashback} extraGradation=${extraGradationCashback} total=${totalCashbackToGrant}`,
+      'PaymentService',
+    );
 
     if (totalCashbackToGrant > 0) {
       await this.userModel.updateOne(
