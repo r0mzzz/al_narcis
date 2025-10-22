@@ -349,13 +349,24 @@ export class PaymentService {
       'PaymentService',
     );
 
+    // Update user balance only when there is a positive cashback amount
     if (totalCashbackToGrant > 0) {
-      await this.userModel.updateOne(
-        { user_id: dto.user_id },
-        { $inc: { balance: totalCashbackToGrant } },
-      );
+      try {
+        await this.userModel.updateOne(
+          { user_id: dto.user_id },
+          { $inc: { balance: totalCashbackToGrant } },
+        );
+      } catch (e) {
+        Logger.error(
+          `Failed to update user balance for cashback: ${e}`,
+          '',
+          'PaymentService',
+        );
+      }
+    }
 
-      // Create single cashback record summarizing the granted amount
+    // Always create a cashback record (even if cashback amount is 0) so payments are recorded
+    try {
       await this.cashbackService.create({
         ...dto,
         cashbackType,
@@ -365,6 +376,12 @@ export class PaymentService {
         from_user_id,
         deliveryAddress: dto.deliveryAddress,
       });
+    } catch (e) {
+      Logger.error(
+        `Failed to create cashback record: ${e}`,
+        '',
+        'PaymentService',
+      );
     }
 
     return totalCashbackToGrant;
