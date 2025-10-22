@@ -95,6 +95,19 @@ export class PaymentService {
     const buyer = await this.userModel.findOne({ user_id: dto.user_id });
     if (!buyer) throw new NotFoundException('Alıcı tapılmadı');
 
+    // Skip referral cashback for small payments: require main cashback threshold (in coins)
+    const mainConfig = await this.mainCashbackConfigService.getConfig();
+    if (
+      typeof mainConfig?.defaultThreshold === 'number' &&
+      dto.amount < mainConfig.defaultThreshold
+    ) {
+      Logger.log(
+        `Skipping referral cashback: payment ${dto.amount} < defaultThreshold ${mainConfig.defaultThreshold}`,
+        'PaymentService',
+      );
+      return;
+    }
+
     // Convert coins to units for percentage calculation
     const amountInUnits = dto.amount / 100;
 
