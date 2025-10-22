@@ -13,7 +13,10 @@ export class OrderService {
   ) {}
 
   async addOrder(createOrderDto: CreateOrderDto): Promise<Order> {
-    console.log('[ORDER] addOrder() called with:', JSON.stringify(createOrderDto));
+    console.log(
+      '[ORDER] addOrder() called with:',
+      JSON.stringify(createOrderDto),
+    );
     try {
       const createdOrder = new this.orderModel(createOrderDto);
       const savedOrder = await createdOrder.save();
