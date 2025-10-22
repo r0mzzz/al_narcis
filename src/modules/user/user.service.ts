@@ -491,6 +491,7 @@ export class UsersService {
       durationDays:
         typeof dto.durationDays === 'number' ? dto.durationDays : null,
       note: typeof dto.note === 'string' ? dto.note : undefined,
+      minAmount: typeof dto.minAmount === 'number' ? dto.minAmount : 0,
       active: dto.active ?? true,
     });
     await created.save();
@@ -509,6 +510,7 @@ export class UsersService {
       grad.discountPercent = dto.discountPercent;
     if (dto.durationDays !== undefined)
       grad.durationDays = dto.durationDays as any;
+    if (dto.minAmount !== undefined) grad.minAmount = dto.minAmount as any;
     if (dto.note !== undefined) grad.note = dto.note;
     if (dto.active !== undefined) grad.active = dto.active;
     await grad.save();

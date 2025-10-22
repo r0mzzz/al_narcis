@@ -178,14 +178,11 @@ export class CartService {
       user = null;
     }
 
-    // Gradation discount (only BUSINESS users and when subtotal threshold met)
+    // Gradation discount (only BUSINESS users) — do not gate by subtotal; check if user has active gradation discount and apply it
     let gradPercent = 0;
-    if (
-      user &&
-      user.accountType === AccountType.BUSINESS &&
-      subtotal >= CartService.DEFAULT_MIN_DISCOUNT_AMOUNT
-    ) {
+    if (user && user.accountType === AccountType.BUSINESS) {
       try {
+        // pass subtotal so gradation.minAmount is respected
         const gradationDiscount =
           await this.usersService.getActiveGradationDiscount(
             cart.user_id,
