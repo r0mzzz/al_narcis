@@ -269,8 +269,13 @@ export class PaymentService {
     // modelPercent is only globalPercent for payment (we ignore user-specific discounts here)
     const modelPercent = globalPercent && globalPercent > 0 ? globalPercent : 0;
 
-    // totalDiscountPercent used to compute discounted amount for base cashback should NOT include gradPercent
+    // If a global percent exists we include gradPercent in the price discount as well
+    // (global + gradation both reduce the price). If no global exists we do NOT reduce
+    // price by gradPercent to preserve prior behaviour where gradation only yields extra cashback.
     let totalDiscountPercent = modelPercent;
+    if (modelPercent > 0 && gradPercent && gradPercent > 0) {
+      totalDiscountPercent = modelPercent + gradPercent;
+    }
     if (totalDiscountPercent > 100) totalDiscountPercent = 100;
 
     // Apply discounts to the payment amount to compute effective amount for cashback
@@ -288,38 +293,37 @@ export class PaymentService {
     const config = await this.mainCashbackConfigService.getConfig();
     let cashbackInCoins = 0;
 
-    // If there is a model discount (global or user-specific), compute base cashback on discounted amount
+    // Base cashback calculation:
     if (modelPercent > 0) {
+      // Global is active => discountedAmountCoins already includes gradPercent as well
       if (discountedAmountCoins >= config.defaultThreshold) {
         cashbackInCoins = Math.floor(
           discountedAmountCoins * (config.defaultPercent / 100),
         );
       }
     } else {
-      // No model discount: if gradation exists, user expects only gradation cashback (no base cashback)
+      // No global: if gradPercent exists, we intentionally do NOT give base cashback;
+      // user receives only gradation extra cashback. If neither exists give base on full amount.
       if (!gradPercent || gradPercent <= 0) {
-        // No discounts at all -> apply base cashback on full amount
         if (dto.amount >= config.defaultThreshold) {
           cashbackInCoins = Math.floor(
             dto.amount * (config.defaultPercent / 100),
           );
         }
       } else {
-        // gradPercent > 0 and no model discount -> do not set base cashback (user wants only gradation extra)
         cashbackInCoins = 0;
       }
     }
 
-    // Extra cashback precedence:
-    // - if active global exists -> only extraGlobal
-    // - else if gradation exists -> only extraGradation
-    let extraGlobalCashback = 0;
-    let extraGradationCashback = 0;
-    if (globalPercent && globalPercent > 0) {
-      extraGlobalCashback = Math.floor(dto.amount * (globalPercent / 100));
-    } else if (gradPercent && gradPercent > 0) {
-      extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
-    }
+    // Extra cashback: grant both global and gradation extras when global is active.
+    const extraGlobalCashback =
+      globalPercent && globalPercent > 0
+        ? Math.floor(dto.amount * (globalPercent / 100))
+        : 0;
+    const extraGradationCashback =
+      gradPercent && gradPercent > 0
+        ? Math.floor(dto.amount * (gradPercent / 100))
+        : 0;
 
     const totalCashbackToGrant =
       (cashbackInCoins || 0) +
