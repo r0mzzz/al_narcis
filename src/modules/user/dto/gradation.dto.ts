@@ -6,6 +6,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Prop } from '@nestjs/mongoose';
 
 export class CreateGradationDto {
   @IsString()
@@ -54,6 +55,11 @@ export class UpdateGradationDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @IsOptional()
+  @Min(0)
+  @IsNumber()
+  minAmount?: number; // minimum cart subtotal required for this discount (AZN)
 
   @IsOptional()
   @IsBoolean()
