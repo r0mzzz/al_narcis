@@ -266,8 +266,18 @@ export class PaymentService {
       globalPercent = 0;
     }
 
-    // modelPercent represents discounts coming from user or global (user-specific takes precedence over global here for model pricing)
-    const modelPercent = userSpecificPercent || globalPercent || 0;
+    // Determine modelPercent precedence:
+    // if active global exists -> use globalPercent
+    // else if gradPercent exists -> prefer gradPercent
+    // else fall back to userSpecificPercent
+    let modelPercent = 0;
+    if (globalPercent && globalPercent > 0) {
+      modelPercent = globalPercent;
+    } else if (gradPercent && gradPercent > 0) {
+      modelPercent = gradPercent;
+    } else {
+      modelPercent = userSpecificPercent || 0;
+    }
 
     let totalDiscountPercent = +(gradPercent + modelPercent);
     if (totalDiscountPercent > 100) totalDiscountPercent = 100;
@@ -292,28 +302,31 @@ export class PaymentService {
       );
     }
 
-    // --- New: if there is an active global discount applicable, grant extra cashback equal to that global percent of the original paid amount ---
+    // --- New: extra cashback logic based on precedence ---
     let extraGlobalCashback = 0;
-    if (globalPercent && globalPercent > 0) {
-      extraGlobalCashback = Math.floor(dto.amount * (globalPercent / 100));
-    }
-
-    // --- New: grant extra cashback equal to gradation discount percent of original paid amount ---
     let extraGradationCashback = 0;
-    // Only grant gradation extra cashback when there is NO active global discount applied
-    if (
-      (!globalPercent || globalPercent <= 0) &&
-      gradPercent &&
-      gradPercent > 0
-    ) {
+    let extraUserSpecificCashback = 0;
+    if (globalPercent && globalPercent > 0) {
+      // global active -> only global extra cashback
+      extraGlobalCashback = Math.floor(dto.amount * (globalPercent / 100));
+    } else if (gradPercent && gradPercent > 0) {
+      // no global -> if gradation exists give gradation extra cashback
       extraGradationCashback = Math.floor(dto.amount * (gradPercent / 100));
+    } else if (userSpecificPercent && userSpecificPercent > 0) {
+      // fallback to user-specific extra cashback
+      extraUserSpecificCashback = Math.floor(
+        dto.amount * (userSpecificPercent / 100),
+      );
     }
 
     const totalCashbackToGrant =
-      (cashbackInCoins || 0) + (extraGlobalCashback || 0) + (extraGradationCashback || 0);
+      (cashbackInCoins || 0) +
+      (extraGlobalCashback || 0) +
+      (extraGradationCashback || 0) +
+      (extraUserSpecificCashback || 0);
 
     Logger.log(
-      `Cashback result: base=${cashbackInCoins} extraGlobal=${extraGlobalCashback} extraGradation=${extraGradationCashback} total=${totalCashbackToGrant}`,
+      `Cashback result: base=${cashbackInCoins} extraGlobal=${extraGlobalCashback} extraGradation=${extraGradationCashback} extraUserSpecific=${extraUserSpecificCashback} total=${totalCashbackToGrant}`,
       'PaymentService',
     );
 
