@@ -72,15 +72,11 @@ export class UsersService {
     user_id: string,
     subtotal?: number,
   ): Promise<{ discount: number; expiresAt: Date | null } | null> {
-    const DEFAULT_MIN_DISCOUNT_AMOUNT = 200;
     // Load user (plain object)
     const user = await this.userModel.findOne({ user_id }).lean();
     if (!user) return null;
     // Enforce BUSINESS account type
     if (user.accountType !== AccountType.BUSINESS) return null;
-    // If subtotal provided and below threshold, no gradation discount
-    if (typeof subtotal === 'number' && subtotal < DEFAULT_MIN_DISCOUNT_AMOUNT)
-      return null;
 
     // Re-evaluate current gradation from referralCount and update user record if changed.
     // determineGradation returns string|null
@@ -110,6 +106,14 @@ export class UsersService {
       .lean()
       .exec();
     if (!grad || typeof grad.discountPercent !== 'number') return null;
+    // If gradation defines minAmount and subtotal provided, enforce it
+    if (
+      typeof subtotal === 'number' &&
+      typeof grad.minAmount === 'number' &&
+      subtotal < grad.minAmount
+    ) {
+      return null;
+    }
     // If durationDays not provided or <=0 treat as permanent
     // Use the up-to-date reached timestamp. If we updated the user above, reload it; otherwise use existing.
     const userToCheck = await this.userModel.findOne({ user_id }).lean();

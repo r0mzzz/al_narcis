@@ -215,9 +215,10 @@ export class PaymentService {
     let gradPercent: number;
     let gradObj: any = null;
     try {
-      // Always check active gradation discount for the user (UsersService enforces BUSINESS account internally)
+      // Pass subtotal (amountInUnits) so gradation.minAmount is enforced inside UsersService
       const grad = await this.usersService.getActiveGradationDiscount(
         user.user_id,
+        amountInUnits,
       );
       gradPercent = grad?.discount ?? 0;
       gradObj = grad ?? null;

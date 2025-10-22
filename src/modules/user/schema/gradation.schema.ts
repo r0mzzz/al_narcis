@@ -20,6 +20,9 @@ export class Gradation {
   @Prop({ required: false })
   note?: string; // optional admin note about this gradation
 
+  @Prop({ required: false, default: 0 })
+  minAmount?: number; // minimum payment amount (AZN) required for this gradation discount to apply
+
   @Prop({ default: true })
   active?: boolean;
 }
