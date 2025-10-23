@@ -40,7 +40,10 @@ export class UsersController {
   ) {
     const l = Number(limit) || 10;
     const p = Number(page) || 1;
-    const s = typeof search === 'string' && search.trim() !== '' ? search.trim() : undefined;
+    const s =
+      typeof search === 'string' && search.trim() !== ''
+        ? search.trim()
+        : undefined;
     return this.usersService.findAll(l, p, s);
   }
 
