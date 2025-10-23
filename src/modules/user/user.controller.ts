@@ -10,6 +10,7 @@ import {
   Req,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { UpdateUserDto } from './dto/updateuser.dto';
@@ -32,8 +33,15 @@ export class UsersController {
 
   @UseGuards(AccessTokenGuard)
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(
+    @Query('limit') limit = '10',
+    @Query('page') page = '1',
+    @Query('search') search = '',
+  ) {
+    const l = Number(limit) || 10;
+    const p = Number(page) || 1;
+    const s = typeof search === 'string' && search.trim() !== '' ? search.trim() : undefined;
+    return this.usersService.findAll(l, p, s);
   }
 
   @UseGuards(AccessTokenGuard)

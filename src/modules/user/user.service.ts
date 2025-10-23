@@ -207,14 +207,34 @@ export class UsersService {
     return { ...rest, invitedBy };
   }
 
-  async findAll(): Promise<Record<string, any>[]> {
+  async findAll(
+    limit = 10,
+    page = 1,
+    search?: string,
+  ): Promise<{
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    users: Record<string, any>[];
+  }> {
+    // Build filter: if search provided, match email or mobile (case-insensitive, partial)
+    const filter: any = {};
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const s = search.trim();
+      const regex = { $regex: s, $options: 'i' };
+      filter.$or = [{ email: regex }, { mobile: regex }];
+    }
+
     const users = await this.userModel
-      .find({}, { password: false, refresh_token: false })
+      .find(filter, { password: false, refresh_token: false })
       .select('-_id -__v')
+      .skip((page - 1) * limit)
+      .limit(limit)
       .exec();
+    const total = await this.userModel.countDocuments(filter).exec();
     const inviteBaseUrl =
       process.env.INVITE_BASE_URL || 'https://yourdomain.com/invite';
-    return Promise.all(
+    const userWithDetails = await Promise.all(
       users.map(async (user) => {
         const obj = user.toObject();
         let presignedImage = '';
@@ -230,6 +250,12 @@ export class UsersService {
         };
       }),
     );
+    return {
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      users: userWithDetails,
+    };
   }
 
   async findById(id: string): Promise<Record<string, any>> {
