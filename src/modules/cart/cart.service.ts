@@ -313,8 +313,41 @@ export class CartService {
     if (!cart) {
       throw new NotFoundException('Cart not found');
     }
+    // Update cart-level discount as before
     cart.discount = discount;
     await cart.save();
+
+    // Also persist a user-scoped Discount document so admin/list APIs show which user has a discount
+    try {
+      const existing = await this.discountModel
+        .findOne({ type: DiscountType.USER, user_id })
+        .exec();
+      if (existing) {
+        existing.discount = discount;
+        existing.active = true;
+        // keep existing.minAmount if set, otherwise set default
+        if (typeof existing.minAmount !== 'number') {
+          existing.minAmount = CartService.DEFAULT_MIN_DISCOUNT_AMOUNT;
+        }
+        await existing.save();
+      } else {
+        const created = new this.discountModel({
+          type: DiscountType.USER,
+          user_id,
+          discount,
+          minAmount: CartService.DEFAULT_MIN_DISCOUNT_AMOUNT,
+          active: true,
+        });
+        await created.save();
+      }
+    } catch (err) {
+      // Log and continue — cart discount change should not fail because of discount persistence issues
+      // Use console here to avoid introducing additional dependencies; project uses Logger elsewhere.
+      // If you prefer Logger, replace with Logger.warn/Logger.error and import it.
+      // tslint:disable-next-line:no-console
+      console.warn('Failed to persist user-scoped discount:', err);
+    }
+
     return this.getCart(user_id);
   }
 
