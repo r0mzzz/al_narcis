@@ -91,12 +91,10 @@ export class ProductController {
   @UseGuards(AccessTokenGuard)
   @Get('categories')
   async listCategories() {
-    // Ensure each category includes its id in the response
     const categories = await this.productService.listCategories();
-    // If categories are objects with _id, map to include id
     return categories.map((cat: any) => ({
-      id: cat._id?.toString?.() ?? cat.id ?? cat,
-      name: cat.name ?? cat,
+      id: cat._id?.toString?.() ?? cat.id,
+      name: cat.categoryName ?? cat.name ?? cat,
     }));
   }
 
