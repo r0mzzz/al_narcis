@@ -229,10 +229,8 @@ export class ProductService {
     return { categoryName: created.categoryName };
   }
 
-  async listCategories(): Promise<{ categoryName: string }[]> {
-    return (
-      await this.categoryModel.find().select('categoryName -_id').exec()
-    ).map((c) => ({ categoryName: c.categoryName }));
+  async listCategories(): Promise<{ _id: string; categoryName: string }[]> {
+    return this.categoryModel.find().select('_id categoryName').exec();
   }
 
   async categoryExists(categoryNames: string[]): Promise<boolean> {
