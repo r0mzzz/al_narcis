@@ -606,8 +606,22 @@ export class ProductService {
     return !!type;
   }
 
-  async findByBrand(brandId: string, limit = 10, page = 1) {
-    const filter: any = { brand_id: brandId, visible: 1 };
+  async findByBrand(
+    brandId: string,
+    limit = 10,
+    page = 1,
+    visible?: string | number,
+  ) {
+    // Build filter: always filter by brand_id; only filter by visible if caller provided it explicitly
+    const filter: any = { brand_id: brandId };
+    if (visible !== undefined && visible !== null && visible !== '') {
+      // coerce string to number
+      const v = typeof visible === 'string' ? Number(visible) : visible;
+      if (v === 0 || v === 1) {
+        filter.visible = v;
+      }
+    }
+    this.logger.debug(`findByBrand filter: ${JSON.stringify(filter)}`);
     const products = await this.productModel
       .find(filter)
       .select('-__v')

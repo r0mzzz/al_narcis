@@ -303,11 +303,13 @@ export class ProductController {
     @Param('brandId') brandId: string,
     @Query('limit') limit?: string,
     @Query('page') page?: string,
+    @Query('visible') visible?: string,
   ) {
     return this.productService.findByBrand(
       brandId,
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
+      visible,
     );
   }
 
