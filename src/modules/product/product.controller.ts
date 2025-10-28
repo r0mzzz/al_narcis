@@ -73,7 +73,10 @@ export class ProductController {
     const pageNum = page !== undefined ? Number(page) : undefined;
     // Convert categories to string array if provided
     const categoriesArr = categories
-      ? categories.split(',').map((c) => c.trim()).filter(Boolean)
+      ? categories
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean)
       : undefined;
     return this.productService.findAll(
       productType,
