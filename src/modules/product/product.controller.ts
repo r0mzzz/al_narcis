@@ -26,7 +26,7 @@ import { AppError } from '../../common/errors';
 import { GenderService } from './gender.service';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 import { isValidObjectId } from 'mongoose';
-import { ParseJsonArrayPipe } from '../../common/pipes/parse-json-array.pipe';
+import { ParseJsonFieldsPipe } from '../../common/pipes/parse-json-fields.pipe';
 
 @Controller('products')
 export class ProductController {
@@ -41,15 +41,9 @@ export class ProductController {
   @Post()
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
-    @Body('category', ParseJsonArrayPipe) category: string[],
-    @Body('variants', ParseJsonArrayPipe) variants: any[],
-    @Body('tags', ParseJsonArrayPipe) tags: string[],
-    @Body() createProductDto: CreateProductDto,
+    @Body(new ParseJsonFieldsPipe(['category', 'variants', 'tags'])) createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    createProductDto.category = category;
-    createProductDto.variants = variants;
-    createProductDto.tags = tags;
     return this.productService.create(createProductDto, image);
   }
 
