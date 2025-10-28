@@ -59,6 +59,24 @@ export class ProductController {
         createProductDto.tags = JSON.parse(createProductDto.tags);
       } catch {}
     }
+    // Convert category names to IDs if needed
+    if (Array.isArray(createProductDto.category)) {
+      const updatedCategories = [];
+      for (const cat of createProductDto.category) {
+        // If it's a valid ObjectId, use as is
+        if (typeof cat === 'string' && cat.match(/^[0-9a-fA-F]{24}$/)) {
+          updatedCategories.push(cat);
+        } else {
+          // Try to resolve by name
+          const catId = await this.productService.findCategoryIdByName(cat);
+          if (!catId) {
+            throw new NotFoundException(`Category '${cat}' does not exist`);
+          }
+          updatedCategories.push(catId);
+        }
+      }
+      createProductDto.category = updatedCategories;
+    }
     this.logger.log(
       `Received create request. Image present: ${!!image}, filename: ` +
         image?.originalname,

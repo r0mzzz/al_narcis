@@ -578,4 +578,9 @@ export class ProductService {
       this.logger.debug(`Failed to refresh products cache: ${e?.message || e}`);
     }
   }
+
+  async findCategoryIdByName(name: string): Promise<string | null> {
+    const cat = await this.categoryModel.findOne({ categoryName: name }).select('_id').exec();
+    return cat ? cat._id.toString() : null;
+  }
 }
