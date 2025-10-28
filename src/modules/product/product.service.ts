@@ -54,6 +54,7 @@ export class ProductService {
     tag?: string,
     gender?: string,
     status?: number, // <-- Accept status param
+    visible?: string | number, // optional visible param from query
   ): Promise<unknown> {
     // Do not filter by `visible` here so products with visible 0 and 1 are returned.
     // Previously we defaulted to { visible: 1 } which hid invisible products.
@@ -66,6 +67,16 @@ export class ProductService {
     if (tag) filter.tags = tag;
     if (gender) filter.gender = gender;
     if (status !== undefined) filter.status = status; // <-- Add status to filter
+    // visible handling:
+    // - If visible explicitly provided (0 or 1) use it.
+    // - Otherwise, if a status filter is provided, default to visible = 1 so callers
+    //   who request status=1 don't get invisible (visible=0) products.
+    if (visible !== undefined) {
+      const visNum = typeof visible === 'string' ? Number(visible) : visible;
+      if (visNum === 0 || visNum === 1) filter.visible = visNum;
+    } else if (status !== undefined) {
+      filter.visible = 1;
+    }
     this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
 
     // Caching disabled for findAll — always hit DB to ensure up-to-date results.

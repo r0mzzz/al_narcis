@@ -67,6 +67,8 @@ export class ProductController {
     @Query('tag') tag?: string,
     @Query('gender') gender?: string,
     @Query('status') status?: string,
+    // Optional visible param: '0' or '1' to explicitly filter. If omitted and status is provided, visible=1 will be applied by default.
+    @Query('visible') visible?: string,
   ) {
     // Convert status, limit, and page to numbers if provided
     const statusNum = status !== undefined ? Number(status) : undefined;
@@ -96,6 +98,7 @@ export class ProductController {
       tag,
       gender,
       statusNum,
+      visible,
     );
   }
 
