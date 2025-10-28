@@ -26,6 +26,7 @@ import { AppError } from '../../common/errors';
 import { GenderService } from './gender.service';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 import { isValidObjectId } from 'mongoose';
+import { ParseJsonArrayPipe } from '../../common/pipes/parse-json-array.pipe';
 
 @Controller('products')
 export class ProductController {
@@ -40,42 +41,21 @@ export class ProductController {
   @Post()
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
-    @Body() createProductDto: any, // Accept any to allow parsing
+    @Body('category', ParseJsonArrayPipe) category: string[],
+    @Body('tags', ParseJsonArrayPipe) tags: string[],
+    @Body('variants', ParseJsonArrayPipe) variants: any[],
+    @Body() createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    // Parse JSON fields if they are stringified (for form-data)
-    if (typeof createProductDto.variants === 'string') {
-      try {
-        createProductDto.variants = JSON.parse(createProductDto.variants);
-      } catch {}
-    }
-    if (typeof createProductDto.category === 'string') {
-      try {
-        createProductDto.category = JSON.parse(createProductDto.category);
-      } catch {}
-    }
-    if (typeof createProductDto.tags === 'string') {
-      try {
-        createProductDto.tags = JSON.parse(createProductDto.tags);
-      } catch {}
-    }
-    // Always treat category as array of names, convert to IDs
-    if (Array.isArray(createProductDto.category)) {
-      const updatedCategories = [];
-      for (const catName of createProductDto.category) {
-        const catId = await this.productService.findCategoryIdByName(catName);
-        if (!catId) {
-          throw new NotFoundException(`Category '${catName}' does not exist`);
-        }
-        updatedCategories.push(catId);
-      }
-      createProductDto.category = updatedCategories;
-    }
+    // Merge parsed arrays into DTO
+    createProductDto.category = category;
+    createProductDto.tags = tags;
+    createProductDto.variants = variants;
     this.logger.log(
       `Received create request. Image present: ${!!image}, filename: ` +
         image?.originalname,
     );
-    return await this.productService.create(createProductDto, image);
+    return this.productService.create(createProductDto, image);
   }
 
   @UseGuards(AccessTokenGuard)
