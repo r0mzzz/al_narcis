@@ -55,7 +55,9 @@ export class ProductService {
     gender?: string,
     status?: number, // <-- Accept status param
   ): Promise<unknown> {
-    const filter: any = { visible: 1 };
+    // Do not filter by `visible` here so products with visible 0 and 1 are returned.
+    // Previously we defaulted to { visible: 1 } which hid invisible products.
+    const filter: any = {};
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
     if (categories && categories.length > 0) {
@@ -66,6 +68,8 @@ export class ProductService {
     if (status !== undefined) filter.status = status; // <-- Add status to filter
     this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
 
+    // Caching disabled for findAll — always hit DB to ensure up-to-date results.
+    /*
     // Only cache unfiltered, unpaginated queries
     const isCacheable =
       !productType &&
@@ -160,6 +164,51 @@ export class ProductService {
       }
       total = allProducts.length;
     }
+    */
+
+    // Always fetch from DB to include both visible 0 and 1 and avoid stale cache
+    const products = await this.productModel
+      .find(filter)
+      .select('-__v')
+      .sort({ _id: -1 })
+      .exec();
+    let allProducts: any[] = await Promise.all(
+      products.map(async (doc) => {
+        const obj = doc.toObject();
+        let presignedImage = '';
+        if (obj.productImage) {
+          presignedImage = await this.minioService.getPresignedUrl(
+            obj.productImage,
+          );
+        }
+        delete obj.images;
+        return { ...obj, productImage: presignedImage };
+      }),
+    );
+    this.logger.debug(`Products from DB: ${allProducts.length}`);
+    this.logger.debug(
+      `All gender values from DB: ${JSON.stringify(
+        allProducts.map((p) => p.gender),
+      )}`,
+    );
+    // Defensive: filter in memory as well
+    if (gender) {
+      allProducts = allProducts.filter(
+        (p) => typeof p.gender === 'string' && p.gender === gender,
+      );
+      this.logger.debug(
+        `Products after in-memory gender filter: ${allProducts.length}`,
+      );
+      if (allProducts.length > 0) {
+        this.logger.debug(
+          `Example gender values: ${allProducts
+            .slice(0, 5)
+            .map((p) => p.gender)
+            .join(', ')}`,
+        );
+      }
+    }
+    const total = allProducts.length;
 
     // Apply limit/page in memory
     const parsedLimit = Number(limit) || 10;
@@ -487,7 +536,7 @@ export class ProductService {
       .select('-__v')
       .sort({ _id: -1 })
       .exec();
-    const allProducts = await Promise.all(
+    const allProducts: any[] = await Promise.all(
       products.map(async (doc) => {
         const obj = doc.toObject();
         let presignedImage = '';
@@ -515,7 +564,7 @@ export class ProductService {
       .select('-__v')
       .sort({ _id: -1 })
       .exec();
-    const allProducts = await Promise.all(
+    const allProducts: any[] = await Promise.all(
       products.map(async (doc) => {
         const obj = doc.toObject();
         let presignedImage = '';
@@ -546,7 +595,7 @@ export class ProductService {
       .select('-__v')
       .sort({ _id: -1 })
       .exec();
-    const allProducts = await Promise.all(
+    const allProducts: any[] = await Promise.all(
       products.map(async (doc) => {
         const obj = doc.toObject();
         let presignedImage = '';
@@ -575,7 +624,7 @@ export class ProductService {
         .select('-__v')
         .sort({ _id: -1 })
         .exec();
-      const allProducts = await Promise.all(
+      const allProducts: any[] = await Promise.all(
         products.map(async (doc) => {
           const obj = doc.toObject();
           let presignedImage = '';

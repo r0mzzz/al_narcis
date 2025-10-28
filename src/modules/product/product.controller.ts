@@ -62,7 +62,8 @@ export class ProductController {
     @Query('search') search?: string,
     @Query('limit') limit?: string,
     @Query('page') page?: string,
-    @Query('categories') categories?: string,
+    // Accept categories either as a comma-separated string or as repeated query params (string[])
+    @Query('categories') categories?: string | string[],
     @Query('tag') tag?: string,
     @Query('gender') gender?: string,
     @Query('status') status?: string,
@@ -72,12 +73,20 @@ export class ProductController {
     const limitNum = limit !== undefined ? Number(limit) : undefined;
     const pageNum = page !== undefined ? Number(page) : undefined;
     // Convert categories to string array if provided
-    const categoriesArr = categories
-      ? categories
-          .split(',')
-          .map((c) => c.trim())
-          .filter(Boolean)
-      : undefined;
+    let categoriesArr: string[] | undefined;
+    if (Array.isArray(categories)) {
+      categoriesArr = (categories as string[])
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else if (typeof categories === 'string' && categories.trim().length > 0) {
+      categoriesArr = categories
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else {
+      categoriesArr = undefined;
+    }
+    // Note: findAll was changed to always query DB (no cached-only results) and to return products regardless of `visible` flag (both 0 and 1).
     return this.productService.findAll(
       productType,
       search,
