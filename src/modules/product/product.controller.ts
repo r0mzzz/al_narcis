@@ -50,6 +50,7 @@ export class ProductController {
     return await this.productService.create(createProductDto, image);
   }
 
+
   @UseGuards(AccessTokenGuard)
   @Get()
   findAll(
