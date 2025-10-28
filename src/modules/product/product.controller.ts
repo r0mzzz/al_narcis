@@ -40,9 +40,25 @@ export class ProductController {
   @Post()
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
-    @Body() createProductDto: CreateProductDto,
+    @Body() createProductDto: any, // Accept any to allow parsing
     @UploadedFile() image?: Express.Multer.File,
   ) {
+    // Parse JSON fields if they are stringified (for form-data)
+    if (typeof createProductDto.variants === 'string') {
+      try {
+        createProductDto.variants = JSON.parse(createProductDto.variants);
+      } catch {}
+    }
+    if (typeof createProductDto.category === 'string') {
+      try {
+        createProductDto.category = JSON.parse(createProductDto.category);
+      } catch {}
+    }
+    if (typeof createProductDto.tags === 'string') {
+      try {
+        createProductDto.tags = JSON.parse(createProductDto.tags);
+      } catch {}
+    }
     this.logger.log(
       `Received create request. Image present: ${!!image}, filename: ` +
         image?.originalname,
