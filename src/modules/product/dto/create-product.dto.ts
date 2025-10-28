@@ -9,6 +9,7 @@ import {
   IsString,
   ValidateNested,
   IsEnum,
+  IsIn,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { IsAllowedCapacity } from './is-allowed-capacity.validator';
@@ -121,4 +122,13 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @ApiProperty({
+    example: 1,
+    required: false,
+    description: 'Product status (0=inactive, 1=active)',
+  })
+  @IsOptional()
+  @IsIn([0, 1])
+  status?: number;
 }

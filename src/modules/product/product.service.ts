@@ -53,6 +53,7 @@ export class ProductService {
     categories?: string[],
     tag?: string,
     gender?: string,
+    status?: number, // <-- Accept status param
   ): Promise<unknown> {
     const filter: any = { visible: 1 };
     if (productType) filter.productType = productType;
@@ -60,12 +61,9 @@ export class ProductService {
     if (categories && categories.length > 0) {
       filter.category = { $in: categories };
     }
-    if (tag) {
-      filter.tags = { $eq: tag };
-    }
-    if (gender) {
-      filter.gender = gender;
-    }
+    if (tag) filter.tags = tag;
+    if (gender) filter.gender = gender;
+    if (status !== undefined) filter.status = status; // <-- Add status to filter
     this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
 
     // Only cache unfiltered, unpaginated queries

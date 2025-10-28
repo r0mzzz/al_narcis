@@ -63,6 +63,11 @@ export class UpdateProductDto {
   @Min(0)
   quantity?: number;
 
+  @ApiProperty({ example: 1, required: false, description: 'Product status (0=inactive, 1=active)' })
+  @IsOptional()
+  @IsIn([0, 1])
+  status?: number;
+
   @ApiProperty({ example: 'WOMAN', enum: Gender, required: false, description: 'Product gender' })
   @IsOptional()
   @IsEnum(Gender)

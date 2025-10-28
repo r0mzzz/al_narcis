@@ -27,6 +27,7 @@ import { GenderService } from './gender.service';
 import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 import { isValidObjectId } from 'mongoose';
 import { ParseJsonFieldsPipe } from '../../common/pipes/parse-json-fields.pipe';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('products')
 export class ProductController {
@@ -41,15 +42,21 @@ export class ProductController {
   @Post()
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
-    @Body(new ParseJsonFieldsPipe(['category', 'variants', 'tags'])) createProductDto: CreateProductDto,
+    @Body(new ParseJsonFieldsPipe(['category', 'variants', 'tags']))
+    createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
     return this.productService.create(createProductDto, image);
   }
 
-
   @UseGuards(AccessTokenGuard)
   @Get()
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: [0, 1],
+    description: 'Product status (0=inactive, 1=active)',
+  })
   findAll(
     @Query('productType') productType?: string,
     @Query('search') search?: string,
@@ -58,25 +65,25 @@ export class ProductController {
     @Query('categories') categories?: string,
     @Query('tag') tag?: string,
     @Query('gender') gender?: string,
-    @Query('genderType') genderType?: string,
+    @Query('status') status?: string,
   ) {
-    // Use gender if present, otherwise genderType
-    const genderParam = gender || genderType;
-    // Parse categories as array if provided
-    const categoryArr = categories
-      ? categories
-          .split(',')
-          .map((c) => c.trim())
-          .filter(Boolean)
+    // Convert status, limit, and page to numbers if provided
+    const statusNum = status !== undefined ? Number(status) : undefined;
+    const limitNum = limit !== undefined ? Number(limit) : undefined;
+    const pageNum = page !== undefined ? Number(page) : undefined;
+    // Convert categories to string array if provided
+    const categoriesArr = categories
+      ? categories.split(',').map((c) => c.trim()).filter(Boolean)
       : undefined;
     return this.productService.findAll(
       productType,
       search,
-      limit ? parseInt(limit, 10) : 10,
-      page ? parseInt(page, 10) : 1,
-      categoryArr,
+      limitNum,
+      pageNum,
+      categoriesArr,
       tag,
-      genderParam,
+      gender,
+      statusNum,
     );
   }
 
