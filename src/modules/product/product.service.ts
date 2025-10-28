@@ -19,6 +19,7 @@ import { AppError } from '../../common/errors';
 import { RedisService } from '../../services/redis.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Tag, TagDocument } from './schema/tag.schema';
+import { GenderService } from './gender.service';
 
 @Injectable()
 export class ProductService {
@@ -33,6 +34,7 @@ export class ProductService {
     private productTypeModel: Model<ProductTypeDocument>,
     private readonly redisService: RedisService,
     @InjectModel(Tag.name) private tagModel: Model<TagDocument>,
+    private readonly genderService: GenderService,
   ) {}
 
   private async getProductsCacheVersion(): Promise<string> {
@@ -50,7 +52,7 @@ export class ProductService {
     search?: string,
     limit = 10,
     page = 1,
-    categories?: string[],
+    categories?: string | string[],
     tag?: string,
     gender?: string,
     status?: number, // <-- Accept status param
@@ -59,10 +61,27 @@ export class ProductService {
     // Do not filter by `visible` here so products with visible 0 and 1 are returned.
     // Previously we defaulted to { visible: 1 } which hid invisible products.
     const filter: any = {};
+    // Coerce status and visible to numbers if they come as strings
+    if (status !== undefined) status = Number(status);
+    if (visible !== undefined)
+      visible = typeof visible === 'string' ? Number(visible) : visible;
+
     if (productType) filter.productType = productType;
     if (search) filter.productName = { $regex: search, $options: 'i' };
-    if (categories && categories.length > 0) {
-      filter.category = { $in: categories };
+    // Normalize categories to array if caller passed a string
+    if (categories) {
+      if (typeof categories === 'string') {
+        const trimmed = categories.trim();
+        if (trimmed.length > 0) {
+          // allow comma-separated list as well
+          const arr = trimmed.includes(',')
+            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            : [trimmed];
+          if (arr.length > 0) filter.category = { $in: arr };
+        }
+      } else if (Array.isArray(categories) && categories.length > 0) {
+        filter.category = { $in: categories };
+      }
     }
     if (tag) filter.tags = tag;
     if (gender) filter.gender = gender;
@@ -71,13 +90,14 @@ export class ProductService {
     // - If visible explicitly provided (0 or 1) use it.
     // - Otherwise, if a status filter is provided, default to visible = 1 so callers
     //   who request status=1 don't get invisible (visible=0) products.
-    if (visible !== undefined) {
-      const visNum = typeof visible === 'string' ? Number(visible) : visible;
-      if (visNum === 0 || visNum === 1) filter.visible = visNum;
+    if (visible !== undefined && (visible === 0 || visible === 1)) {
+      filter.visible = visible;
     } else if (status !== undefined) {
+      // If client requested a status filter and didn't explicitly set visible,
+      // default to visible=1 to avoid returning invisible products when asking for active status.
       filter.visible = 1;
     }
-    this.logger.debug(`Product filter: ${JSON.stringify(filter)}`);
+    this.logger.debug(`Final product filter before DB query: ${JSON.stringify(filter)}`);
 
     // Caching disabled for findAll — always hit DB to ensure up-to-date results.
     /*
@@ -153,13 +173,13 @@ export class ProductService {
       this.logger.debug(`Products from DB: ${allProducts.length}`);
       this.logger.debug(
         `All gender values from DB: ${JSON.stringify(
-          allProducts.map((p) => p.gender),
+          allProducts.map((p: any) => p.gender),
         )}`,
       );
       // Defensive: filter in memory as well
       if (gender) {
         allProducts = allProducts.filter(
-          (p) => typeof p.gender === 'string' && p.gender === gender,
+          (p) => typeof (p as any).gender === 'string' && (p as any).gender === gender,
         );
         this.logger.debug(
           `Products after in-memory gender filter: ${allProducts.length}`,
@@ -168,7 +188,7 @@ export class ProductService {
           this.logger.debug(
             `Example gender values: ${allProducts
               .slice(0, 5)
-              .map((p) => p.gender)
+              .map((p: any) => p.gender)
               .join(', ')}`,
           );
         }
@@ -178,6 +198,12 @@ export class ProductService {
     */
 
     // Always fetch from DB to include both visible 0 and 1 and avoid stale cache
+    // Build a map from gender type -> localized name so products return gender name
+    const genders = this.genderService.findAll();
+    const genderMap: Record<string, string> = Object.fromEntries(
+      genders.map((g) => [g.type, g.name || g.type]),
+    );
+
     const products = await this.productModel
       .find(filter)
       .select('-__v')
@@ -186,6 +212,10 @@ export class ProductService {
     let allProducts: any[] = await Promise.all(
       products.map(async (doc) => {
         const obj = doc.toObject();
+        // Map gender type to localized name if available
+        if (obj.gender && typeof obj.gender === 'string') {
+          obj.gender = genderMap[obj.gender] || obj.gender;
+        }
         let presignedImage = '';
         if (obj.productImage) {
           presignedImage = await this.minioService.getPresignedUrl(
@@ -199,13 +229,13 @@ export class ProductService {
     this.logger.debug(`Products from DB: ${allProducts.length}`);
     this.logger.debug(
       `All gender values from DB: ${JSON.stringify(
-        allProducts.map((p) => p.gender),
+        allProducts.map((p: any) => p.gender),
       )}`,
     );
     // Defensive: filter in memory as well
     if (gender) {
       allProducts = allProducts.filter(
-        (p) => typeof p.gender === 'string' && p.gender === gender,
+        (p) => typeof (p as any).gender === 'string' && (p as any).gender === gender,
       );
       this.logger.debug(
         `Products after in-memory gender filter: ${allProducts.length}`,
@@ -214,7 +244,7 @@ export class ProductService {
         this.logger.debug(
           `Example gender values: ${allProducts
             .slice(0, 5)
-            .map((p) => p.gender)
+            .map((p: any) => p.gender)
             .join(', ')}`,
         );
       }
