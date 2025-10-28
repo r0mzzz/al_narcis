@@ -42,19 +42,14 @@ export class ProductController {
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
     @Body('category', ParseJsonArrayPipe) category: string[],
-    @Body('tags', ParseJsonArrayPipe) tags: string[],
     @Body('variants', ParseJsonArrayPipe) variants: any[],
+    @Body('tags', ParseJsonArrayPipe) tags: string[],
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    // Merge parsed arrays into DTO
     createProductDto.category = category;
-    createProductDto.tags = tags;
     createProductDto.variants = variants;
-    this.logger.log(
-      `Received create request. Image present: ${!!image}, filename: ` +
-        image?.originalname,
-    );
+    createProductDto.tags = tags;
     return this.productService.create(createProductDto, image);
   }
 
