@@ -233,15 +233,6 @@ export class ProductService {
     return this.categoryModel.find().select('_id categoryName').exec();
   }
 
-  async categoryExists(categoryNames: string[]): Promise<boolean> {
-    if (!Array.isArray(categoryNames) || categoryNames.length === 0)
-      return false;
-    const count = await this.categoryModel.countDocuments({
-      categoryName: { $in: categoryNames },
-    });
-    return count === categoryNames.length;
-  }
-
   async updateCategory(
     id: string,
     categoryName: string,
@@ -267,28 +258,35 @@ export class ProductService {
     createProductDto: CreateProductDto,
     image?: Express.Multer.File,
   ): Promise<Record<string, any>> {
+    // Validate categories (case-insensitive, trimmed)
     if (
       !Array.isArray(createProductDto.category) ||
       createProductDto.category.length === 0
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
-    if (!(await this.categoryExists(createProductDto.category))) {
-      throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
+    // Reject if any category value looks like an ObjectId (24 hex chars)
+    const invalidCategory = createProductDto.category.find(
+      (cat) => typeof cat === 'string' && /^[a-f\d]{24}$/i.test(cat.trim()),
+    );
+    if (invalidCategory) {
+      throw new BadRequestException(
+        'Kateqoriya adı göndərin, ID yox. (Send category name, not ID)',
+      );
     }
-    if (
-      !createProductDto.productType ||
-      !(await this.typeExists(createProductDto.productType))
-    ) {
-      throw new BadRequestException(AppError.PRODUCT_TYPE_NOT_FOUND.az);
-    }
-    if (createProductDto.tags && createProductDto.tags.length > 0) {
-      const count = await this.tagModel.countDocuments({
-        name: { $in: createProductDto.tags },
-      });
-      if (count !== createProductDto.tags.length) {
-        throw new BadRequestException('Bir və ya bir neçə etiket mövcud deyil');
-      }
+    const foundCategories = await this.getCategoriesByNames(
+      createProductDto.category,
+    );
+    if (foundCategories.length !== createProductDto.category.length) {
+      const foundNames = foundCategories.map((c) =>
+        c.categoryName.toLowerCase(),
+      );
+      const missing = createProductDto.category.filter(
+        (n) => !foundNames.includes(n.trim().toLowerCase()),
+      );
+      throw new BadRequestException(
+        `Aşağıdakı kateqoriyalar mövcud deyil: ${missing.join(', ')}`,
+      );
     }
 
     const brand_id = createProductDto.brand_id || createProductDto.brand;
@@ -302,19 +300,18 @@ export class ProductService {
       brand_id: brandStr,
       productImage: '',
       productId: uuidv4(),
+      // Optionally, store category IDs instead of names:
+      // category: foundCategories.map((c) => c._id),
     });
     await createdProduct.save();
 
     if (image) {
-      const objectPath = await this.minioService.upload(
+      createdProduct.productImage = await this.minioService.upload(
         image,
         createdProduct._id.toString(),
       );
-      createdProduct.productImage = objectPath;
       await createdProduct.save();
     }
-
-    // Return product with presigned URL for image
     let presignedImage = '';
     if (createdProduct.productImage) {
       presignedImage = await this.minioService.getPresignedUrl(
@@ -334,9 +331,36 @@ export class ProductService {
     if (
       updateProductDto.category &&
       (!Array.isArray(updateProductDto.category) ||
-        !(await this.categoryExists(updateProductDto.category)))
+        updateProductDto.category.length === 0)
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
+    }
+    if (updateProductDto.category) {
+      // Reject if any category value looks like an ObjectId (24 hex chars)
+      const invalidCategory = updateProductDto.category.find(
+        (cat) => typeof cat === 'string' && /^[a-f\d]{24}$/i.test(cat.trim()),
+      );
+      if (invalidCategory) {
+        throw new BadRequestException(
+          'Kateqoriya adı göndərin, ID yox. (Send category name, not ID)',
+        );
+      }
+      const foundCategories = await this.getCategoriesByNames(
+        updateProductDto.category,
+      );
+      if (foundCategories.length !== updateProductDto.category.length) {
+        const foundNames = foundCategories.map((c) =>
+          c.categoryName.toLowerCase(),
+        );
+        const missing = updateProductDto.category.filter(
+          (n) => !foundNames.includes(n.trim().toLowerCase()),
+        );
+        throw new BadRequestException(
+          `Aşağıdakı kateqoriyalar mövcud deyil: ${missing.join(', ')}`,
+        );
+      }
+      // Optionally, update to store category IDs:
+      // updateProductDto.category = foundCategories.map((c) => c._id);
     }
     if (
       updateProductDto.productType &&
@@ -359,10 +383,8 @@ export class ProductService {
       if (product.productImage) {
         await this.minioService.delete(product.productImage);
       }
-      const objectPath = await this.minioService.upload(image, id);
-      product.productImage = objectPath;
+      product.productImage = await this.minioService.upload(image, id);
     }
-    // Handle brand_id/brand update
     const brand_id = updateProductDto.brand_id || updateProductDto.brand;
     if (brand_id) {
       product.brand = String(brand_id);
@@ -517,7 +539,10 @@ export class ProductService {
   }
 
   async searchByProductName(query: string, limit = 10, page = 1) {
-    const filter: any = { productName: { $regex: query, $options: 'i' }, visible: 1 };
+    const filter: any = {
+      productName: { $regex: query, $options: 'i' },
+      visible: 1,
+    };
     const products = await this.productModel
       .find(filter)
       .select('-__v')
@@ -577,5 +602,32 @@ export class ProductService {
     } catch (e) {
       this.logger.debug(`Failed to refresh products cache: ${e?.message || e}`);
     }
+  }
+
+  async findCategoryIdByName(name: string): Promise<string | null> {
+    // Case-insensitive, trimmed match
+    const cat = await this.categoryModel
+      .findOne({
+        categoryName: { $regex: `^${name.trim()}$`, $options: 'i' },
+      })
+      .select('_id')
+      .exec();
+    return cat ? cat._id.toString() : null;
+  }
+
+  // Helper: Given a list of category names, returns all matching categories (case-insensitive, trimmed)
+  private async getCategoriesByNames(
+    names: string[],
+  ): Promise<{ _id: string; categoryName: string }[]> {
+    if (!Array.isArray(names) || names.length === 0) return [];
+    const uniqueNames = Array.from(
+      new Set(names.map((n) => n.trim()).filter(Boolean)),
+    );
+    if (uniqueNames.length === 0) return [];
+    const regexes = uniqueNames.map((n) => new RegExp(`^${n}$`, 'i'));
+    return this.categoryModel
+      .find({ categoryName: { $in: regexes } })
+      .select('_id categoryName')
+      .exec();
   }
 }
