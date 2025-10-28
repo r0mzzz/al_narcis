@@ -75,7 +75,10 @@ export class ProductService {
         if (trimmed.length > 0) {
           // allow comma-separated list as well
           const arr = trimmed.includes(',')
-            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            ? trimmed
+                .split(',')
+                .map((c) => c.trim())
+                .filter(Boolean)
             : [trimmed];
           if (arr.length > 0) filter.category = { $in: arr };
         }
@@ -97,7 +100,9 @@ export class ProductService {
       // default to visible=1 to avoid returning invisible products when asking for active status.
       filter.visible = 1;
     }
-    this.logger.debug(`Final product filter before DB query: ${JSON.stringify(filter)}`);
+    this.logger.debug(
+      `Final product filter before DB query: ${JSON.stringify(filter)}`,
+    );
 
     // Caching disabled for findAll — always hit DB to ensure up-to-date results.
     /*
@@ -235,7 +240,8 @@ export class ProductService {
     // Defensive: filter in memory as well
     if (gender) {
       allProducts = allProducts.filter(
-        (p) => typeof (p as any).gender === 'string' && (p as any).gender === gender,
+        (p) =>
+          typeof (p as any).gender === 'string' && (p as any).gender === gender,
       );
       this.logger.debug(
         `Products after in-memory gender filter: ${allProducts.length}`,
