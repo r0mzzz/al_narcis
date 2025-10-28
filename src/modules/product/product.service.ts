@@ -283,6 +283,19 @@ export class ProductService {
       .exec();
     if (!product) throw new NotFoundException(AppError.PRODUCT_NOT_FOUND.az);
     const obj = product.toObject();
+
+    // Add genderType (localized name) while keeping obj.gender as stored type
+    const genders = this.genderService.findAll();
+    const genderMap: Record<string, string> = Object.fromEntries(
+      genders.map((g) => [g.type, g.name || g.type]),
+    );
+    const _origGender = obj.gender;
+    if (_origGender && typeof _origGender === 'string') {
+      obj.genderType = genderMap[_origGender] || _origGender;
+    } else {
+      obj.genderType = _origGender;
+    }
+
     let presignedImage = '';
     if (obj.productImage) {
       presignedImage = await this.minioService.getPresignedUrl(
@@ -303,6 +316,19 @@ export class ProductService {
       .exec();
     if (!product) return null;
     const obj = product.toObject();
+
+    // Add genderType (localized name) while keeping obj.gender as stored type
+    const genders = this.genderService.findAll();
+    const genderMap: Record<string, string> = Object.fromEntries(
+      genders.map((g) => [g.type, g.name || g.type]),
+    );
+    const _origGender = obj.gender;
+    if (_origGender && typeof _origGender === 'string') {
+      obj.genderType = genderMap[_origGender] || _origGender;
+    } else {
+      obj.genderType = _origGender;
+    }
+
     let presignedImage = '';
     if (obj.productImage) {
       presignedImage = await this.minioService.getPresignedUrl(
