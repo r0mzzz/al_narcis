@@ -580,7 +580,10 @@ export class ProductService {
   }
 
   async findCategoryIdByName(name: string): Promise<string | null> {
-    const cat = await this.categoryModel.findOne({ categoryName: name }).select('_id').exec();
+    // Case-insensitive, trimmed match
+    const cat = await this.categoryModel.findOne({
+      categoryName: { $regex: `^${name.trim()}$`, $options: 'i' }
+    }).select('_id').exec();
     return cat ? cat._id.toString() : null;
   }
 }
