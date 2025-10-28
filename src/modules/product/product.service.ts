@@ -265,6 +265,15 @@ export class ProductService {
     ) {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
+    // Reject if any category value looks like an ObjectId (24 hex chars)
+    const invalidCategory = createProductDto.category.find(
+      (cat) => typeof cat === 'string' && /^[a-f\d]{24}$/i.test(cat.trim()),
+    );
+    if (invalidCategory) {
+      throw new BadRequestException(
+        'Kateqoriya adı göndərin, ID yox. (Send category name, not ID)',
+      );
+    }
     const foundCategories = await this.getCategoriesByNames(
       createProductDto.category,
     );
@@ -327,6 +336,15 @@ export class ProductService {
       throw new BadRequestException(AppError.CATEGORY_NOT_EXISTS.az);
     }
     if (updateProductDto.category) {
+      // Reject if any category value looks like an ObjectId (24 hex chars)
+      const invalidCategory = updateProductDto.category.find(
+        (cat) => typeof cat === 'string' && /^[a-f\d]{24}$/i.test(cat.trim()),
+      );
+      if (invalidCategory) {
+        throw new BadRequestException(
+          'Kateqoriya adı göndərin, ID yox. (Send category name, not ID)',
+        );
+      }
       const foundCategories = await this.getCategoriesByNames(
         updateProductDto.category,
       );
