@@ -217,9 +217,13 @@ export class ProductService {
     let allProducts: any[] = await Promise.all(
       products.map(async (doc) => {
         const obj = doc.toObject();
-        // Map gender type to localized name if available
-        if (obj.gender && typeof obj.gender === 'string') {
-          obj.gender = genderMap[obj.gender] || obj.gender;
+        // Keep original stored gender type (e.g. 'MAN') in obj.gender
+        // and add a new field `genderType` with the localized name (e.g. 'Kişi')
+        const _origGender = obj.gender;
+        if (_origGender && typeof _origGender === 'string') {
+          obj.genderType = genderMap[_origGender] || _origGender;
+        } else {
+          obj.genderType = _origGender;
         }
         let presignedImage = '';
         if (obj.productImage) {
