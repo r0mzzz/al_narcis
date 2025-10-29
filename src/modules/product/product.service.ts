@@ -235,12 +235,6 @@ export class ProductService {
         return { ...obj, productImage: presignedImage };
       }),
     );
-    this.logger.debug(`Products from DB: ${allProducts.length}`);
-    this.logger.debug(
-      `All gender values from DB: ${JSON.stringify(
-        allProducts.map((p: any) => p.gender),
-      )}`,
-    );
     // Defensive: filter in memory as well
     if (gender) {
       allProducts = allProducts.filter(
