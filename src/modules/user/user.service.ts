@@ -452,6 +452,47 @@ export class UsersService {
     return this.userModel.findOne({ user_id: userId });
   }
 
+  /**
+   * Apply user's business cashback balance against given amount.
+   * Behavior:
+   * - If user not found -> throw BadRequestException
+   * - If user is not BUSINESS or has no businessCashbackBalance -> no cashback applied
+   * - If balance >= amount -> subtract amount from balance, return totalAmount: 0, isFree: true
+   * - If balance < amount -> set balance to 0, return remaining amount and isFree:false
+   */
+  async applyBusinessCashback(
+    user_id: string,
+    amount: number,
+  ): Promise<{ totalAmount: number; isFree: boolean }> {
+    if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
+      throw new BadRequestException('Invalid amount');
+    }
+    const user = await this.userModel.findOne({ user_id });
+    if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
+
+    // Only BUSINESS accounts have businessCashbackBalance
+    if (user.accountType !== AccountType.BUSINESS) {
+      return { totalAmount: amount, isFree: false };
+    }
+
+    const bal = Number(user.businessCashbackBalance ?? 0);
+    if (bal <= 0) {
+      return { totalAmount: amount, isFree: false };
+    }
+
+    if (bal >= amount) {
+      user.businessCashbackBalance = bal - amount;
+      await user.save();
+      return { totalAmount: 0, isFree: true };
+    }
+
+    // bal < amount
+    const remaining = Number((amount - bal).toFixed(2));
+    user.businessCashbackBalance = 0;
+    await user.save();
+    return { totalAmount: remaining, isFree: remaining === 0 };
+  }
+
   async addAddress(
     userId: string,
     addAddressDto: AddAddressDto,

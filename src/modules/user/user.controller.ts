@@ -21,6 +21,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AddAddressDto } from './dto/add-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { CreateGradationDto, UpdateGradationDto } from './dto/gradation.dto';
+import { ApplyBusinessCashbackDto } from './dto/apply-business-cashback.dto';
 
 @Controller('/users')
 export class UsersController {
@@ -141,5 +142,15 @@ export class UsersController {
   ) {
     const userId = req.user['sub'];
     return this.usersService.deleteAddress(userId, addressId);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('business-cashback/apply')
+  async applyBusinessCashback(
+    @Req() req: Request,
+    @Body() dto: ApplyBusinessCashbackDto,
+  ) {
+    const userId = dto.user_id || req.user['sub'];
+    return this.usersService.applyBusinessCashback(userId, dto.amount);
   }
 }

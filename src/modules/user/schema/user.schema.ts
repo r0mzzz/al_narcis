@@ -38,6 +38,9 @@ export class User {
   balanceFromReferrals: number;
 
   @Prop({ default: 0 })
+  businessCashbackBalance: number | 0;
+
+  @Prop({ default: 0 })
   referralCount: number;
 
   @Prop({
