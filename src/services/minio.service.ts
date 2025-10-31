@@ -141,10 +141,14 @@ export class MinioService {
 
   async getPresignedUrl(objectName: string, expiry = 60 * 60): Promise<string> {
     try {
-      return await this.minioClient.presignedGetObject(
+      const presignedUrl = await this.minioClient.presignedGetObject(
         this.bucket,
         objectName,
         expiry,
+      );
+      return presignedUrl.replace(
+        'http://188.132.197.211:9000',
+        'https://api.alnarcis.az',
       );
     } catch (error) {
       this.logger.error(
@@ -168,26 +172,25 @@ export class MinioService {
     refreshBufferSeconds = 120,
   ): Promise<string> {
     if (!objectName) return null;
-    const now = Date.now();
+
     const cached = this.presignedCache.get(objectName);
-    if (cached) {
-      // If cached URL still valid and not within the refresh buffer, return it
-      if (cached.expiresAt - now > refreshBufferSeconds * 1000) {
-        return cached.url;
-      }
-    }
-    // Generate new presigned URL and cache it
-    try {
-      const url = await this.getPresignedUrl(objectName, expiry);
-      const expiresAt = Date.now() + expiry * 1000;
-      this.presignedCache.set(objectName, { url, expiresAt });
-      return url;
-    } catch (error) {
-      this.logger.error(
-        `Failed to generate cached presigned URL for ${objectName}: ${error}`,
+    const now = Date.now();
+    if (cached && cached.expiresAt - now > refreshBufferSeconds * 1000) {
+      return cached.url.replace(
+        'http://188.132.197.211:9000',
+        'https://api.alnarcis.az',
       );
-      throw error;
     }
+
+    const url = await this.getPresignedUrl(objectName, expiry);
+    const httpsUrl = url.replace(
+      'http://188.132.197.211:9000',
+      'https://api.alnarcis.az',
+    );
+
+    const expiresAt = Date.now() + expiry * 1000;
+    this.presignedCache.set(objectName, { url: httpsUrl, expiresAt });
+    return httpsUrl;
   }
 
   async delete(objectPath: string): Promise<void> {
