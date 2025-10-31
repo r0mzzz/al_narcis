@@ -17,7 +17,7 @@ import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
 import { ValidationPipe } from '@nestjs/common';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
-@UseGuards(AccessTokenGuard)
+@UseGuards(AdminOrUserGuard)
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
