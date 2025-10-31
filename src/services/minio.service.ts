@@ -140,32 +140,10 @@ export class MinioService {
   }
 
   async getPresignedUrl(objectName: string, expiry = 60 * 60): Promise<string> {
-    try {
-      const presignedUrl = await this.minioClient.presignedGetObject(
-        this.bucket,
-        objectName,
-        expiry,
-      );
-      return presignedUrl.replace(
-        'http://188.132.197.211:9000',
-        'https://api.alnarcis.az',
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to generate presigned URL for ${objectName}: ${error}`,
-      );
-      throw error;
-    }
+    // Возвращаем только путь для прокси
+    return `/product-images/${objectName}?expiry=${expiry}`;
   }
 
-  /**
-   * Returns a presigned URL, but uses an in-memory cache to avoid regenerating
-   * a new URL on every request. If the cached URL will expire within
-   * refreshBufferSeconds, a new URL is generated and cached.
-   *
-   * Note: in-memory cache is per-process and will be lost on restart. If you
-   * need cross-process caching, use Redis or another external cache.
-   */
   async getCachedPresignedUrl(
     objectName: string,
     expiry = 60 * 60,
@@ -176,22 +154,15 @@ export class MinioService {
     const cached = this.presignedCache.get(objectName);
     const now = Date.now();
     if (cached && cached.expiresAt - now > refreshBufferSeconds * 1000) {
-      return cached.url.replace(
-        'http://188.132.197.211:9000',
-        'https://api.alnarcis.az',
-      );
+      return cached.url;
     }
 
     const url = await this.getPresignedUrl(objectName, expiry);
-    const httpsUrl = url.replace(
-      'http://188.132.197.211:9000',
-      'https://api.alnarcis.az',
-    );
-
     const expiresAt = Date.now() + expiry * 1000;
-    this.presignedCache.set(objectName, { url: httpsUrl, expiresAt });
-    return httpsUrl;
+    this.presignedCache.set(objectName, { url, expiresAt });
+    return url;
   }
+
 
   async delete(objectPath: string): Promise<void> {
     try {
