@@ -18,6 +18,7 @@ import { TagService } from './tag.service';
 import { TagController } from './tag.controller';
 import { GenderService } from './gender.service';
 import { JwtSharedModule } from '../../services/jwt-shared.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { JwtSharedModule } from '../../services/jwt-shared.module';
     ]),
     RedisModule,
     JwtSharedModule,
+    AdminModule,
   ],
   controllers: [ProductController, TagController],
   providers: [
