@@ -20,6 +20,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 import { CapacityService } from './capacity.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AppError } from '../../common/errors';
@@ -28,6 +29,7 @@ import { CreateGenderDto, UpdateGenderDto } from './dto/gender.dto';
 import { isValidObjectId } from 'mongoose';
 import { ParseJsonFieldsPipe } from '../../common/pipes/parse-json-fields.pipe';
 import { ApiQuery } from '@nestjs/swagger';
+import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
 @Controller('products')
 export class ProductController {
@@ -38,7 +40,7 @@ export class ProductController {
     private readonly genderService: GenderService,
   ) {}
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('productImage'))
   async create(
@@ -49,7 +51,8 @@ export class ProductController {
     return this.productService.create(createProductDto, image);
   }
 
-  @UseGuards(AccessTokenGuard)
+  // Remove guard for GET endpoints so both admin and base users can call them
+  @UseGuards(AdminOrUserGuard)
   @Get()
   @ApiQuery({
     name: 'status',
@@ -102,13 +105,13 @@ export class ProductController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post('categories')
   async addCategory(@Body('categoryName') name: string) {
     return this.productService.addCategory(name);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('categories')
   async listCategories() {
     const categories = await this.productService.listCategories();
@@ -118,13 +121,13 @@ export class ProductController {
     }));
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('capacities')
   async getCapacities() {
     return await this.capacityService.getCapacities();
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post('capacities')
   async addCapacity(@Body('capacity') capacity: any) {
     if (
@@ -148,57 +151,57 @@ export class ProductController {
   }
 
   // Product Type CRUD
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('types')
   async getProductTypes() {
     return this.productService.getProductTypes();
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post('types')
   async createProductType(@Body('name') name: string) {
     return this.productService.createProductType(name);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch('types/:id')
   async updateProductType(@Param('id') id: string, @Body('name') name: string) {
     return this.productService.updateProductType(id, name);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('types/:id')
   async deleteProductType(@Param('id') id: string) {
     return this.productService.deleteProductType(id);
   }
 
   // Move all static routes above this
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post('genders')
   async addGender(@Body() dto: CreateGenderDto) {
     return this.genderService.create(dto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('genders')
   async listGenders() {
     return this.genderService.findAll();
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch('genders/:id')
   async updateGender(@Param('id') id: string, @Body() dto: UpdateGenderDto) {
     return this.genderService.update(id, dto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('genders/:id')
   async deleteGender(@Param('id') id: string) {
     this.genderService.delete(id);
     return { statusCode: 200, message: 'Gender deleted' };
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -207,7 +210,7 @@ export class ProductController {
     return this.productService.findOne(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('productImage'))
   async update(
@@ -234,13 +237,13 @@ export class ProductController {
     return await this.productService.update(id, updateProductDto, image);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch('capacities/:id')
   async updateCapacity(
     @Param('id') id: string,
@@ -268,7 +271,7 @@ export class ProductController {
     }
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('capacities/:id')
   async deleteCapacity(@Param('id') id: string) {
     try {
@@ -282,7 +285,7 @@ export class ProductController {
     }
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch('categories/:id')
   async updateCategory(
     @Param('id') id: string,
@@ -291,13 +294,13 @@ export class ProductController {
     return this.productService.updateCategory(id, categoryName);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('categories/:id')
   async deleteCategory(@Param('id') id: string) {
     return this.productService.deleteCategory(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('by-brand/:brandId')
   async getByBrand(
     @Param('brandId') brandId: string,
@@ -313,7 +316,7 @@ export class ProductController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('by-tag/:tag')
   async getByTag(
     @Param('tag') tag: string,
@@ -327,7 +330,7 @@ export class ProductController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('search')
   async searchProducts(
     @Query('query') query: string,
