@@ -22,6 +22,7 @@ import { AddAddressDto } from './dto/add-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { CreateGradationDto, UpdateGradationDto } from './dto/gradation.dto';
 import { ApplyBusinessCashbackDto } from './dto/apply-business-cashback.dto';
+import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
 @Controller('/users')
 export class UsersController {
@@ -32,7 +33,7 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get()
   findAll(
     @Query('limit') limit = '10',
@@ -48,7 +49,7 @@ export class UsersController {
     return this.usersService.findAll(l, p, s);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Get('profile')
   getUserByToken(@Req() req: Request) {
     const id = req.user['sub'];
@@ -65,19 +66,19 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Post('profile-picture')
   @UseInterceptors(FileInterceptor('file'))
   async uploadProfilePicture(
@@ -88,20 +89,20 @@ export class UsersController {
     return this.usersService.uploadProfilePicture(userId, file);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Delete('profile-picture')
   async deleteProfilePicture(@Req() req: Request) {
     const userId = req.user['sub'];
     return this.usersService.deleteProfilePicture(userId);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Post('gradations')
   async createGradation(@Body() dto: CreateGradationDto) {
     return this.usersService.createGradation(dto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Patch('gradations/:id')
   async updateGradation(
     @Param('id') id: string,
@@ -110,20 +111,20 @@ export class UsersController {
     return this.usersService.updateGradation(id, dto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Delete('gradations/:id')
   async deleteGradation(@Param('id') id: string) {
     return this.usersService.deleteGradation(id);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Post('address/add')
   async addAddress(@Req() req: Request, @Body() addAddressDto: AddAddressDto) {
     const userId = req.user['sub'];
     return this.usersService.addAddress(userId, addAddressDto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Patch('address/:addressId')
   async updateAddress(
     @Req() req: Request,
@@ -134,7 +135,7 @@ export class UsersController {
     return this.usersService.updateAddress(userId, addressId, updateAddressDto);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Delete('address/:addressId')
   async deleteAddress(
     @Req() req: Request,
@@ -144,7 +145,7 @@ export class UsersController {
     return this.usersService.deleteAddress(userId, addressId);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminOrUserGuard)
   @Post('business-cashback/apply')
   async applyBusinessCashback(
     @Req() req: Request,

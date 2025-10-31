@@ -15,12 +15,14 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
 import { ValidationPipe } from '@nestjs/common';
+import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
 @UseGuards(AccessTokenGuard)
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @UseGuards(AdminOrUserGuard)
   @Post()
   async addOrder(
     @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -29,6 +31,7 @@ export class OrderController {
     return this.orderService.addOrder(createOrderDto);
   }
 
+  @UseGuards(AdminOrUserGuard)
   @Put(':id')
   async updateOrder(
     @Param('id') id: string,
@@ -37,11 +40,13 @@ export class OrderController {
     return this.orderService.updateOrder(id, updateOrderDto);
   }
 
+  @UseGuards(AdminOrUserGuard)
   @Delete(':id')
   async deleteOrder(@Param('id') id: string) {
     return this.orderService.deleteOrder(id);
   }
 
+  @UseGuards(AdminOrUserGuard)
   @Get()
   async getOrders(@Query() query: GetOrdersQueryDto) {
     return this.orderService.getOrders(query);
