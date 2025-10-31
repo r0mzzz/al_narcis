@@ -12,6 +12,6 @@ import { JwtSharedModule } from '../../services/jwt-shared.module';
   ],
   controllers: [AdminController],
   providers: [AdminService],
-  exports: [AdminService],
+  exports: [AdminService, MongooseModule],
 })
 export class AdminModule {}
