@@ -141,26 +141,11 @@ export class MinioService {
 
   async getPresignedUrl(objectName: string, expiry = 60 * 60): Promise<string> {
     try {
-      let url = await this.minioClient.presignedGetObject(
+      return await this.minioClient.presignedGetObject(
         this.bucket,
         objectName,
         expiry,
       );
-
-      // Переписываем URL чтобы не было mixed content
-      url = url
-        .replace(
-          `http://${this.configService.get(
-            'minio.endPoint',
-          )}:${this.configService.get('minio.port')}`,
-          `https://api.alnarcis.az`,
-        )
-        .replace(`http://188.132.197.211:9000`, `https://api.alnarcis.az`);
-
-      // Если вдруг MinIO добавил прям путь
-      url = url.replace(`/${this.bucket}/`, `/product-images/`);
-
-      return url;
     } catch (error) {
       this.logger.error(
         `Failed to generate presigned URL for ${objectName}: ${error}`,
