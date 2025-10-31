@@ -12,7 +12,6 @@ import {
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
 import { ValidationPipe } from '@nestjs/common';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
