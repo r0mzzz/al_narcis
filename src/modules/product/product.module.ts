@@ -17,6 +17,7 @@ import { Tag, TagSchema } from './schema/tag.schema';
 import { TagService } from './tag.service';
 import { TagController } from './tag.controller';
 import { GenderService } from './gender.service';
+import { JwtSharedModule } from '../../services/jwt-shared.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { GenderService } from './gender.service';
       { name: Tag.name, schema: TagSchema },
     ]),
     RedisModule,
+    JwtSharedModule,
   ],
   controllers: [ProductController, TagController],
   providers: [

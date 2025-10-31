@@ -4,12 +4,12 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { AccessTokenStrategy } from '../../strategy/access-token';
 import { RefreshTokenStrategy } from '../../strategy/refresh-token';
-import { JwtModule } from '@nestjs/jwt';
 import { MailService } from '../../services/mail.service';
 import { RedisModule } from '../../services/redis.module';
+import { JwtSharedModule } from '../../services/jwt-shared.module';
 
 @Module({
-  imports: [UserModule, JwtModule.register({}), RedisModule],
+  imports: [UserModule, JwtSharedModule, RedisModule],
   providers: [
     AuthService,
     AccessTokenStrategy,

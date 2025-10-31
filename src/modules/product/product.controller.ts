@@ -19,7 +19,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
-import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 import { CapacityService } from './capacity.service';
 import { FileInterceptor } from '@nestjs/platform-express';
