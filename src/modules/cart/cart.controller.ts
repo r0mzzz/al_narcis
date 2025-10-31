@@ -13,12 +13,12 @@ import { CartService } from './cart.service';
 import { AddToCartDto, RemoveFromCartDto } from './dto/cart-ops.dto';
 import { UpdateCartItemCountDto } from './dto/update-cart-item-count.dto';
 import { SetDiscountDto } from './dto/set-discount.dto';
-import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 
 @Controller('cart')
-@UseGuards(AccessTokenGuard)
+@UseGuards(AdminOrUserGuard)
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
