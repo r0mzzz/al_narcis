@@ -21,11 +21,19 @@ export class AdminOrUserGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest();
     try {
-      if (await this.adminGuard.canActivate(context)) return true;
+      if (await this.adminGuard.canActivate(context)) {
+        // If adminGuard succeeded, propagate admin as user for downstream use
+        req.user = req.admin;
+        return true;
+      }
     } catch {}
     try {
-      if (await this.userGuard.canActivate(context)) return true;
+      if (await this.userGuard.canActivate(context)) {
+        // If userGuard succeeded, req.user is already set
+        return true;
+      }
     } catch {}
     throw new UnauthorizedException('Unauthorized');
   }
