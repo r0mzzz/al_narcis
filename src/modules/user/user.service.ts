@@ -498,24 +498,31 @@ export class UsersService {
       throw new BadRequestException('Invalid amount');
     }
     const user = await this.userModel.findOne({ user_id });
-    if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
+    if (!user) {
+      console.error(`[subtractBusinessCashback] User not found for user_id: ${user_id}`);
+      throw new BadRequestException('İstifadəçi tapılmadı');
+    }
     if (user.accountType !== AccountType.BUSINESS) {
       throw new BadRequestException('Yalnız biznes istifadəçilər üçün keçərlidir');
     }
     const bal = Number(user.businessCashbackBalance ?? 0);
+    console.log(`[subtractBusinessCashback] Before: user_id=${user_id}, balance=${bal}, amount=${amount}`);
     if (bal <= 0) {
       user.businessCashbackBalance = 0;
       await user.save();
+      console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=0`);
       return { newBalance: 0 };
     }
     if (bal >= amount) {
       user.businessCashbackBalance = bal - amount;
       await user.save();
+      console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=${user.businessCashbackBalance}`);
       return { newBalance: user.businessCashbackBalance };
     }
     // bal < amount
     user.businessCashbackBalance = 0;
     await user.save();
+    console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=0`);
     return { newBalance: 0 };
   }
 
