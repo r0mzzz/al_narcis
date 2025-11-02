@@ -22,6 +22,7 @@ import { AddAddressDto } from './dto/add-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { CreateGradationDto, UpdateGradationDto } from './dto/gradation.dto';
 import { ApplyBusinessCashbackDto } from './dto/apply-business-cashback.dto';
+import { SubtractBusinessCashbackDto } from './dto/subtract-business-cashback.dto';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
 @Controller('/users')
@@ -153,5 +154,15 @@ export class UsersController {
   ) {
     const userId = dto.user_id || req.user['sub'];
     return this.usersService.applyBusinessCashback(userId, dto.amount);
+  }
+
+  @UseGuards(AdminOrUserGuard)
+  @Post('business-cashback/subtract')
+  async subtractBusinessCashback(
+    @Req() req: Request,
+    @Body() dto: SubtractBusinessCashbackDto,
+  ) {
+    const userId = dto.user_id || req.user['sub'];
+    return this.usersService.subtractBusinessCashback(userId, dto.amount);
   }
 }

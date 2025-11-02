@@ -453,12 +453,8 @@ export class UsersService {
   }
 
   /**
-   * Apply user's business cashback balance against given amount.
-   * Behavior:
-   * - If user not found -> throw BadRequestException
-   * - If user is not BUSINESS or has no businessCashbackBalance -> no cashback applied
-   * - If balance >= amount -> subtract amount from balance, return totalAmount: 0, isFree: true
-   * - If balance < amount -> set balance to 0, return remaining amount and isFree:false
+   * Calculate how much of the amount can be covered by businessCashbackBalance, but do NOT update the balance.
+   * Returns the amount left to pay and whether it is free (fully covered).
    */
   async applyBusinessCashback(
     user_id: string,
@@ -481,16 +477,46 @@ export class UsersService {
     }
 
     if (bal >= amount) {
-      user.businessCashbackBalance = bal - amount;
-      await user.save();
       return { totalAmount: 0, isFree: true };
     }
 
     // bal < amount
     const remaining = Number((amount - bal).toFixed(2));
+    return { totalAmount: remaining, isFree: remaining === 0 };
+  }
+
+  /**
+   * Subtract the given amount from user's businessCashbackBalance (if possible).
+   * If balance >= amount, subtract amount. If balance < amount, set balance to 0.
+   * Returns the updated balance.
+   */
+  async subtractBusinessCashback(
+    user_id: string,
+    amount: number,
+  ): Promise<{ newBalance: number }> {
+    if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
+      throw new BadRequestException('Invalid amount');
+    }
+    const user = await this.userModel.findOne({ user_id });
+    if (!user) throw new BadRequestException('İstifadəçi tapılmadı');
+    if (user.accountType !== AccountType.BUSINESS) {
+      throw new BadRequestException('Yalnız biznes istifadəçilər üçün keçərlidir');
+    }
+    const bal = Number(user.businessCashbackBalance ?? 0);
+    if (bal <= 0) {
+      user.businessCashbackBalance = 0;
+      await user.save();
+      return { newBalance: 0 };
+    }
+    if (bal >= amount) {
+      user.businessCashbackBalance = bal - amount;
+      await user.save();
+      return { newBalance: user.businessCashbackBalance };
+    }
+    // bal < amount
     user.businessCashbackBalance = 0;
     await user.save();
-    return { totalAmount: remaining, isFree: remaining === 0 };
+    return { newBalance: 0 };
   }
 
   async addAddress(
