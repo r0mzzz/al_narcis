@@ -545,6 +545,49 @@ export class UsersService {
     return { newBalance: 0 };
   }
 
+  /**
+   * Directly subtracts amount from businessCashbackBalance using updateOne for debugging.
+   */
+  async subtractBusinessCashbackDirect(
+    user_id: string,
+    amount: number,
+  ): Promise<{ newBalance: number; updateResult: any }> {
+    Logger.log(
+      `[subtractBusinessCashbackDirect] Called with user_id=${user_id}, amount=${amount}`,
+    );
+    if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
+      Logger.error(`[subtractBusinessCashbackDirect] Invalid amount: ${amount}`);
+      throw new BadRequestException('Invalid amount');
+    }
+    const user = await this.userModel.findOne({ user_id });
+    if (!user) {
+      Logger.error(
+        `[subtractBusinessCashbackDirect] User not found for user_id: ${user_id}`,
+      );
+      throw new BadRequestException('İstifadəçi tapılmadı');
+    }
+    if (user.accountType !== AccountType.BUSINESS) {
+      Logger.error(
+        `[subtractBusinessCashbackDirect] Not a BUSINESS account: user_id=${user_id}`,
+      );
+      throw new BadRequestException(
+        'Yalnız biznes istifadəçilər üçün keçərlidir',
+      );
+    }
+    // Only subtract up to the current balance
+    const bal = Number(user.businessCashbackBalance ?? 0);
+    const subtractAmount = Math.min(bal, amount);
+    const updateResult = await this.userModel.updateOne(
+      { user_id },
+      { $inc: { businessCashbackBalance: -subtractAmount } }
+    );
+    Logger.log(`[subtractBusinessCashbackDirect] updateOne result: ${JSON.stringify(updateResult)}`);
+    // Fetch the user again to get the new balance
+    const updatedUser = await this.userModel.findOne({ user_id });
+    Logger.log(`[subtractBusinessCashbackDirect] After: user_id=${user_id}, balance=${updatedUser.businessCashbackBalance}`);
+    return { newBalance: Number(updatedUser.businessCashbackBalance ?? 0), updateResult };
+  }
+
   async getBusinessCashbackBalance(
     user_id: string,
   ): Promise<{ balance: number }> {
