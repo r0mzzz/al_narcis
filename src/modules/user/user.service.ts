@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UpdateUserDto } from './dto/updateuser.dto';
@@ -494,36 +494,68 @@ export class UsersService {
     user_id: string,
     amount: number,
   ): Promise<{ newBalance: number }> {
+    Logger.log(
+      `[subtractBusinessCashback] Called with user_id=${user_id}, amount=${amount}`,
+    );
     if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
+      Logger.error(`[subtractBusinessCashback] Invalid amount: ${amount}`);
       throw new BadRequestException('Invalid amount');
     }
     const user = await this.userModel.findOne({ user_id });
     if (!user) {
-      console.error(`[subtractBusinessCashback] User not found for user_id: ${user_id}`);
+      Logger.error(
+        `[subtractBusinessCashback] User not found for user_id: ${user_id}`,
+      );
       throw new BadRequestException('İstifadəçi tapılmadı');
     }
     if (user.accountType !== AccountType.BUSINESS) {
-      throw new BadRequestException('Yalnız biznes istifadəçilər üçün keçərlidir');
+      Logger.error(
+        `[subtractBusinessCashback] Not a BUSINESS account: user_id=${user_id}`,
+      );
+      throw new BadRequestException(
+        'Yalnız biznes istifadəçilər üçün keçərlidir',
+      );
     }
     const bal = Number(user.businessCashbackBalance ?? 0);
-    console.log(`[subtractBusinessCashback] Before: user_id=${user_id}, balance=${bal}, amount=${amount}`);
+    Logger.log(
+      `[subtractBusinessCashback] Before: user_id=${user_id}, balance=${bal}, amount=${amount}`,
+    );
     if (bal <= 0) {
       user.businessCashbackBalance = 0;
       await user.save();
-      console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=0`);
+      Logger.log(
+        `[subtractBusinessCashback] After: user_id=${user_id}, balance=0`,
+      );
       return { newBalance: 0 };
     }
     if (bal >= amount) {
       user.businessCashbackBalance = bal - amount;
       await user.save();
-      console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=${user.businessCashbackBalance}`);
+      Logger.log(
+        `[subtractBusinessCashback] After: user_id=${user_id}, balance=${user.businessCashbackBalance}`,
+      );
       return { newBalance: user.businessCashbackBalance };
     }
     // bal < amount
     user.businessCashbackBalance = 0;
     await user.save();
-    console.log(`[subtractBusinessCashback] After: user_id=${user_id}, balance=0`);
+    Logger.log(
+      `[subtractBusinessCashback] After: user_id=${user_id}, balance=0`,
+    );
     return { newBalance: 0 };
+  }
+
+  async getBusinessCashbackBalance(
+    user_id: string,
+  ): Promise<{ balance: number }> {
+    const user = await this.userModel.findOne({ user_id });
+    if (!user) {
+      Logger.error(
+        `[getBusinessCashbackBalance] User not found for user_id: ${user_id}`,
+      );
+      throw new BadRequestException('İstifadəçi tapılmadı');
+    }
+    return { balance: Number(user.businessCashbackBalance ?? 0) };
   }
 
   async addAddress(

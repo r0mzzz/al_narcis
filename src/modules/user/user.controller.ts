@@ -165,4 +165,10 @@ export class UsersController {
     const userId = dto.user_id || req.user['sub'];
     return this.usersService.subtractBusinessCashback(userId, dto.amount);
   }
+
+  @UseGuards(AdminOrUserGuard)
+  @Get('business-cashback/balance/:user_id')
+  async getBusinessCashbackBalance(@Param('user_id') user_id: string) {
+    return this.usersService.getBusinessCashbackBalance(user_id);
+  }
 }
