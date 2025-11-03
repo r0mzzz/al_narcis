@@ -33,7 +33,6 @@ export class BannerController {
     return { id: banner._id, imageUrl };
   }
 
-  @UseGuards(AccessTokenGuard)
   @Get()
   async findAll() {
     const banners = await this.bannerService.findAll();
