@@ -52,19 +52,28 @@ export class Order extends Document implements GoldenPayPaymentResult {
       {
         productId: { type: String, required: true },
         productName: { type: String, required: true },
-        variant: { type: String, required: true },
-        count: { type: Number, required: true },
+        productDesc: { type: String, required: true },
+        productImage: { type: String, required: true },
+        productType: { type: String, required: true },
+        category: { type: [String], required: true },
+        gender: { type: String, required: true },
+        brand: { type: String, required: true },
+        variants: [
+          {
+            capacity: { type: Number, required: true },
+            price: { type: Number, required: true },
+            _id: { type: String, required: true },
+            count: { type: Number, required: true },
+            unitPrice: { type: Number, required: true },
+            lineTotal: { type: Number, required: true },
+          },
+        ],
       },
     ],
     required: true,
     default: [],
   })
-  products: {
-    productId: string;
-    productName: string;
-    variant: string;
-    count: number;
-  }[];
+  products: any[];
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
