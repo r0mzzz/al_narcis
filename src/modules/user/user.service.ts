@@ -556,7 +556,9 @@ export class UsersService {
       `[subtractBusinessCashbackDirect] Called with user_id=${user_id}, amount=${amount}`,
     );
     if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
-      Logger.error(`[subtractBusinessCashbackDirect] Invalid amount: ${amount}`);
+      Logger.error(
+        `[subtractBusinessCashbackDirect] Invalid amount: ${amount}`,
+      );
       throw new BadRequestException('Invalid amount');
     }
     const user = await this.userModel.findOne({ user_id });
@@ -579,13 +581,22 @@ export class UsersService {
     const subtractAmount = Math.min(bal, amount);
     const updateResult = await this.userModel.updateOne(
       { user_id },
-      { $inc: { businessCashbackBalance: -subtractAmount } }
+      { $inc: { businessCashbackBalance: -subtractAmount } },
     );
-    Logger.log(`[subtractBusinessCashbackDirect] updateOne result: ${JSON.stringify(updateResult)}`);
+    Logger.log(
+      `[subtractBusinessCashbackDirect] updateOne result: ${JSON.stringify(
+        updateResult,
+      )}`,
+    );
     // Fetch the user again to get the new balance
     const updatedUser = await this.userModel.findOne({ user_id });
-    Logger.log(`[subtractBusinessCashbackDirect] After: user_id=${user_id}, balance=${updatedUser.businessCashbackBalance}`);
-    return { newBalance: Number(updatedUser.businessCashbackBalance ?? 0), updateResult };
+    Logger.log(
+      `[subtractBusinessCashbackDirect] After: user_id=${user_id}, balance=${updatedUser.businessCashbackBalance}`,
+    );
+    return {
+      newBalance: Number(updatedUser.businessCashbackBalance ?? 0),
+      updateResult,
+    };
   }
 
   async getBusinessCashbackBalance(
@@ -698,7 +709,9 @@ export class UsersService {
     return { success: true };
   }
 
-  async disableUser(user_id: string): Promise<{ success: boolean; user?: any }> {
+  async disableUser(
+    user_id: string,
+  ): Promise<{ success: boolean; user?: any }> {
     const user = await this.userModel.findOne({ user_id });
     if (!user) {
       return { success: false };
