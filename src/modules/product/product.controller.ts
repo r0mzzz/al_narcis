@@ -51,7 +51,6 @@ export class ProductController {
   }
 
   // Remove guard for GET endpoints so both admin and base users can call them
-  @UseGuards(AdminOrUserGuard)
   @Get()
   @ApiQuery({
     name: 'status',
@@ -110,7 +109,6 @@ export class ProductController {
     return this.productService.addCategory(name);
   }
 
-  @UseGuards(AdminOrUserGuard)
   @Get('categories')
   async listCategories() {
     const categories = await this.productService.listCategories();
@@ -120,7 +118,6 @@ export class ProductController {
     }));
   }
 
-  @UseGuards(AdminOrUserGuard)
   @Get('capacities')
   async getCapacities() {
     return await this.capacityService.getCapacities();
@@ -150,7 +147,6 @@ export class ProductController {
   }
 
   // Product Type CRUD
-  @UseGuards(AdminOrUserGuard)
   @Get('types')
   async getProductTypes() {
     return this.productService.getProductTypes();
@@ -200,7 +196,6 @@ export class ProductController {
     return { statusCode: 200, message: 'Gender deleted' };
   }
 
-  @UseGuards(AdminOrUserGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -299,7 +294,6 @@ export class ProductController {
     return this.productService.deleteCategory(id);
   }
 
-  @UseGuards(AdminOrUserGuard)
   @Get('by-brand/:brandId')
   async getByBrand(
     @Param('brandId') brandId: string,
@@ -315,7 +309,6 @@ export class ProductController {
     );
   }
 
-  @UseGuards(AdminOrUserGuard)
   @Get('by-tag/:tag')
   async getByTag(
     @Param('tag') tag: string,
