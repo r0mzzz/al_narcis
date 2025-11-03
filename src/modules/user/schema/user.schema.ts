@@ -81,6 +81,9 @@ export class User {
     default: [],
   })
   addresses: { address: string; isFavorite: boolean }[];
+
+  @Prop({ default: 1 })
+  data_status: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

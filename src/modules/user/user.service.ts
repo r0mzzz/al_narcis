@@ -697,4 +697,14 @@ export class UsersService {
     if (!res) throw new BadRequestException('Gradation not found');
     return { success: true };
   }
+
+  async disableUser(user_id: string): Promise<{ success: boolean; user?: any }> {
+    const user = await this.userModel.findOne({ user_id });
+    if (!user) {
+      return { success: false };
+    }
+    user.data_status = 0;
+    await user.save();
+    return { success: true, user };
+  }
 }

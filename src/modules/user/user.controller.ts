@@ -181,4 +181,10 @@ export class UsersController {
   async getBusinessCashbackBalance(@Param('user_id') user_id: string) {
     return this.usersService.getBusinessCashbackBalance(user_id);
   }
+
+  @UseGuards(AdminOrUserGuard)
+  @Patch('disable/:user_id')
+  async disableUser(@Param('user_id') user_id: string) {
+    return this.usersService.disableUser(user_id);
+  }
 }
