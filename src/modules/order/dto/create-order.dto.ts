@@ -10,24 +10,75 @@ import { Type } from 'class-transformer';
 import { OrderStatus } from '../order-status.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
+export class ProductVariantOrderDto {
+  @ApiProperty({ example: 30 })
+  @IsNumber()
+  capacity: number;
+
+  @ApiProperty({ example: 45 })
+  @IsNumber()
+  price: number;
+
+  @ApiProperty({ example: '690096095f53cba1687bf1ab' })
+  @IsString()
+  _id: string;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  count: number;
+
+  @ApiProperty({ example: 45 })
+  @IsNumber()
+  unitPrice: number;
+
+  @ApiProperty({ example: 45 })
+  @IsNumber()
+  lineTotal: number;
+}
+
 export class ProductOrderDto {
   @ApiProperty({ example: 'productId123' })
   @IsString()
   productId: string;
 
+  @ApiProperty({ type: [ProductVariantOrderDto], example: [] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantOrderDto)
+  variants: ProductVariantOrderDto[];
+
   @ApiProperty({ example: 'Product Name' })
   @IsString()
   productName: string;
 
-  @ApiProperty({ example: 'variant1' })
+  @ApiProperty({ example: 'Product Description' })
   @IsString()
-  variant: string;
+  productDesc: string;
 
-  @ApiProperty({ example: 2 })
-  @IsNumber()
-  count: number;
+  @ApiProperty({
+    example:
+      '/product-images/products/690096095f53cba1687bf1aa.jpg?expiry=3600',
+  })
+  @IsString()
+  productImage: string;
+
+  @ApiProperty({ example: 'parfume' })
+  @IsString()
+  productType: string;
+
+  @ApiProperty({ example: ['EMPTY'] })
+  @IsArray()
+  @IsString({ each: true })
+  category: string[];
+
+  @ApiProperty({ example: 'UNISEX' })
+  @IsString()
+  gender: string;
+
+  @ApiProperty({ example: 'Montale' })
+  @IsString()
+  brand: string;
 }
-
 
 export class CreateOrderDto {
   @ApiProperty({ type: Object, example: { code: 1, message: 'success' } })
@@ -92,4 +143,3 @@ export class CreateOrderDto {
   @IsString()
   deliveryAddress: string;
 }
-
