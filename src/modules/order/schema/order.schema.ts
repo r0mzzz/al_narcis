@@ -8,8 +8,8 @@ export class Order extends Document implements GoldenPayPaymentResult {
   @Prop({ required: true, type: Object })
   status: { code: number; message: string };
 
-  @Prop({ required: true })
-  paymentKey: string;
+  @Prop({ required: false, default: null })
+  paymentKey: string | null;
 
   @Prop({ required: true })
   merchantName: string;
@@ -23,8 +23,8 @@ export class Order extends Document implements GoldenPayPaymentResult {
   @Prop({ required: true })
   paymentDate: string;
 
-  @Prop({ required: true })
-  cardNumber: string;
+  @Prop({ required: false, default: null })
+  cardNumber: string | null;
 
   @Prop({ required: true })
   language: string;
@@ -32,8 +32,8 @@ export class Order extends Document implements GoldenPayPaymentResult {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true })
-  rrn: string;
+  @Prop({ required: false, default: null })
+  rrn: string | null;
 
   @Prop({ required: true })
   user_id: string;
