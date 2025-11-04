@@ -5,6 +5,7 @@ import {
   IsNumber,
   ValidateNested,
   IsArray,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderStatus } from '../order-status.enum';
@@ -85,9 +86,10 @@ export class CreateOrderDto {
   @IsObject()
   status: { code: number; message: string };
 
-  @ApiProperty({ example: '2e7fea79-4714-42c4-86cf-3fb21683f71d' })
+  @ApiProperty({ example: '2e7fea79-4714-42c4-86cf-3fb21683f71d', nullable: true, required: false })
+  @IsOptional()
   @IsString()
-  paymentKey: string;
+  paymentKey: string | null;
 
   @ApiProperty({ example: 'alnarcis' })
   @IsString()
@@ -105,9 +107,10 @@ export class CreateOrderDto {
   @IsString()
   paymentDate: string;
 
-  @ApiProperty({ example: '4098XXXXXXXX5411' })
+  @ApiProperty({ example: '4098XXXXXXXX5411', nullable: true, required: false })
+  @IsOptional()
   @IsString()
-  cardNumber: string;
+  cardNumber: string | null;
 
   @ApiProperty({ example: 'az' })
   @IsString()
@@ -117,9 +120,10 @@ export class CreateOrderDto {
   @IsString()
   description: string;
 
-  @ApiProperty({ example: '528576075777' })
+  @ApiProperty({ example: '528576075777', nullable: true, required: false })
+  @IsOptional()
   @IsString()
-  rrn: string;
+  rrn: string | null;
 
   @ApiProperty({ example: '38bcc2fb-d6b8-4336-888e-504fd6ac9749' })
   @IsString()
