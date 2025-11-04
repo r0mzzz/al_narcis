@@ -18,6 +18,7 @@ import { OrderService } from '../order/order.service';
 import { CreateOrderDto } from '../order/dto/create-order.dto';
 import { UsersService } from '../user/user.service';
 import { Discount, DiscountDocument } from '../cart/schema/discount.schema';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class PaymentService {
@@ -158,6 +159,8 @@ export class PaymentService {
             { $inc: { balanceFromReferrals: cashbackInCoins } },
           );
         }
+        // Ensure paymentKey is set for cashback record
+        if (!dto.paymentKey) dto.paymentKey = randomUUID();
         await this.cashbackService.create({
           ...dto,
           cashbackType: CashbackType.REFERRAL,
@@ -226,6 +229,8 @@ export class PaymentService {
     // and return 0. Keep all other business logic unchanged for BUSINESS users.
     if (user.accountType !== AccountType.BUSINESS) {
       try {
+        // Ensure paymentKey is set for cashback record
+        if (!dto.paymentKey) dto.paymentKey = randomUUID();
         await this.cashbackService.create({
           ...dto,
           cashbackType,
@@ -391,6 +396,8 @@ export class PaymentService {
 
     // Always create a cashback record (even if cashback amount is 0) so payments are recorded
     try {
+      // Ensure paymentKey is set for cashback record
+      if (!dto.paymentKey) dto.paymentKey = randomUUID();
       await this.cashbackService.create({
         ...dto,
         cashbackType,

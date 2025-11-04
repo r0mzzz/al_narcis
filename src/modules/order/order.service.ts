@@ -5,6 +5,7 @@ import { Order } from './schema/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class OrderService {
@@ -13,6 +14,10 @@ export class OrderService {
   ) {}
 
   async addOrder(createOrderDto: CreateOrderDto): Promise<Order> {
+    // Generate UUID for paymentKey if null or missing
+    if (!createOrderDto.paymentKey) {
+      createOrderDto.paymentKey = randomUUID();
+    }
     console.log(
       '[ORDER] addOrder() called with:',
       JSON.stringify(createOrderDto),
