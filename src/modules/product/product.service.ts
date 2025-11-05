@@ -20,6 +20,8 @@ import { RedisService } from '../../services/redis.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Tag, TagDocument } from './schema/tag.schema';
 import { GenderService } from './gender.service';
+import { Section } from './schema/section.schema';
+import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
 
 @Injectable()
 export class ProductService {
@@ -35,6 +37,7 @@ export class ProductService {
     private readonly redisService: RedisService,
     @InjectModel(Tag.name) private tagModel: Model<TagDocument>,
     private readonly genderService: GenderService,
+    @InjectModel(Section.name) private sectionModel: Model<Section>,
   ) {}
 
   private async getProductsCacheVersion(): Promise<string> {
@@ -761,5 +764,31 @@ export class ProductService {
       .find({ categoryName: { $in: regexes } })
       .select('_id categoryName')
       .exec();
+  }
+
+  async createSection(dto: CreateSectionDto): Promise<Section> {
+    this.logger.log(`Creating section: ${JSON.stringify(dto)}`);
+    const section = new this.sectionModel(dto);
+    return await section.save();
+  }
+
+  async updateSection(id: string, dto: UpdateSectionDto): Promise<Section> {
+    this.logger.log(`Updating section ${id}: ${JSON.stringify(dto)}`);
+    const updated = await this.sectionModel.findByIdAndUpdate(id, dto, {
+      new: true,
+    });
+    if (!updated) throw new NotFoundException('Section not found');
+    return updated;
+  }
+
+  async deleteSection(id: string): Promise<{ deleted: boolean }> {
+    this.logger.log(`Deleting section ${id}`);
+    const result = await this.sectionModel.deleteOne({ _id: id });
+    return { deleted: result.deletedCount > 0 };
+  }
+
+  async getSections(): Promise<Section[]> {
+    this.logger.log('Fetching all sections');
+    return this.sectionModel.find().lean();
   }
 }

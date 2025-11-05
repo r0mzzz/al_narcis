@@ -22,6 +22,7 @@ import { AdminModule } from '../admin/admin.module';
 import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
+import { Section, SectionSchema } from './schema/section.schema';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
       { name: ProductCategory.name, schema: ProductCategorySchema },
       { name: ProductType.name, schema: ProductTypeSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: Section.name, schema: SectionSchema },
     ]),
     RedisModule,
     JwtSharedModule,

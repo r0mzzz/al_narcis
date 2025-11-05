@@ -15,9 +15,6 @@ import {
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Product, ProductSchema } from './schema/product.schema';
 import { ProductService } from './product.service';
 import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 import { CapacityService } from './capacity.service';
@@ -29,6 +26,7 @@ import { isValidObjectId } from 'mongoose';
 import { ParseJsonFieldsPipe } from '../../common/pipes/parse-json-fields.pipe';
 import { ApiQuery } from '@nestjs/swagger';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
+import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
 
 @Controller('products')
 export class ProductController {
@@ -196,6 +194,29 @@ export class ProductController {
     return { statusCode: 200, message: 'Gender deleted' };
   }
 
+  @Get('sections')
+  async getSections() {
+    return this.productService.getSections();
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Post('sections')
+  async createSection(@Body() dto: CreateSectionDto) {
+    return this.productService.createSection(dto);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Patch('sections/:id')
+  async updateSection(@Param('id') id: string, @Body() dto: UpdateSectionDto) {
+    return this.productService.updateSection(id, dto);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Delete('sections/:id')
+  async deleteSection(@Param('id') id: string) {
+    return this.productService.deleteSection(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -337,12 +358,3 @@ export class ProductController {
   }
 }
 
-@Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
-  ],
-  controllers: [ProductController],
-  providers: [ProductService],
-  exports: [ProductService],
-})
-export class ProductModule {}
