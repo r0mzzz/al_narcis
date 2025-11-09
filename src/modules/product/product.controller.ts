@@ -230,6 +230,11 @@ export class ProductController {
     return this.productService.getMainCategories();
   }
 
+  @Get('sub-categories')
+  async getSubCategories() {
+    return this.productService.getSubCategories();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -396,11 +401,6 @@ export class ProductController {
   @Post('sub-categories')
   async createSubCategory(@Body() dto: CreateSubCategoryDto) {
     return this.productService.createSubCategory(dto);
-  }
-
-  @Get('sub-categories')
-  async getSubCategories() {
-    return this.productService.getSubCategories();
   }
 
   @UseGuards(AdminAuthGuard)
