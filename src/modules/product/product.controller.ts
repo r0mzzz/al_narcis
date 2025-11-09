@@ -27,6 +27,14 @@ import { ParseJsonFieldsPipe } from '../../common/pipes/parse-json-fields.pipe';
 import { ApiQuery } from '@nestjs/swagger';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
+import {
+  CreateMainCategoryDto,
+  UpdateMainCategoryDto,
+} from './dto/main-category.dto';
+import {
+  CreateSubCategoryDto,
+  UpdateSubCategoryDto,
+} from './dto/sub-category.dto';
 
 @Controller('products')
 export class ProductController {
@@ -356,5 +364,58 @@ export class ProductController {
       page ? parseInt(page, 10) : 1,
     );
   }
-}
 
+  // Main Category CRUD
+  @UseGuards(AdminAuthGuard)
+  @Post('main-categories')
+  async createMainCategory(@Body() dto: CreateMainCategoryDto) {
+    return this.productService.createMainCategory(dto);
+  }
+
+  @Get('main-categories')
+  async getMainCategories() {
+    return this.productService.getMainCategories();
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Patch('main-categories/:id')
+  async updateMainCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateMainCategoryDto,
+  ) {
+    return this.productService.updateMainCategory(id, dto);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Delete('main-categories/:id')
+  async deleteMainCategory(@Param('id') id: string) {
+    return this.productService.deleteMainCategory(id);
+  }
+
+  // Sub Category CRUD
+  @UseGuards(AdminAuthGuard)
+  @Post('sub-categories')
+  async createSubCategory(@Body() dto: CreateSubCategoryDto) {
+    return this.productService.createSubCategory(dto);
+  }
+
+  @Get('sub-categories')
+  async getSubCategories() {
+    return this.productService.getSubCategories();
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Patch('sub-categories/:id')
+  async updateSubCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateSubCategoryDto,
+  ) {
+    return this.productService.updateSubCategory(id, dto);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Delete('sub-categories/:id')
+  async deleteSubCategory(@Param('id') id: string) {
+    return this.productService.deleteSubCategory(id);
+  }
+}

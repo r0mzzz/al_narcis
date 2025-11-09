@@ -56,6 +56,12 @@ export class Product {
 
   @Prop({ type: Number, enum: [0, 1], default: 1 })
   visible: number;
+
+  @Prop({ required: false })
+  mainCategory?: string;
+
+  @Prop({ required: false })
+  subCategory?: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

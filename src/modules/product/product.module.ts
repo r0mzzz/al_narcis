@@ -23,6 +23,8 @@ import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 import { Section, SectionSchema } from './schema/section.schema';
+import { MainCategory, MainCategorySchema } from './schema/main-category.schema';
+import { SubCategory, SubCategorySchema } from './schema/sub-category.schema';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { Section, SectionSchema } from './schema/section.schema';
       { name: ProductType.name, schema: ProductTypeSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Section.name, schema: SectionSchema },
+      { name: MainCategory.name, schema: MainCategorySchema },
+      { name: SubCategory.name, schema: SubCategorySchema },
     ]),
     RedisModule,
     JwtSharedModule,

@@ -22,6 +22,11 @@ import { Tag, TagDocument } from './schema/tag.schema';
 import { GenderService } from './gender.service';
 import { Section } from './schema/section.schema';
 import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
+import {
+  MainCategory,
+  MainCategoryDocument,
+} from './schema/main-category.schema';
+import { SubCategory, SubCategoryDocument } from './schema/sub-category.schema';
 
 @Injectable()
 export class ProductService {
@@ -38,6 +43,10 @@ export class ProductService {
     @InjectModel(Tag.name) private tagModel: Model<TagDocument>,
     private readonly genderService: GenderService,
     @InjectModel(Section.name) private sectionModel: Model<Section>,
+    @InjectModel(MainCategory.name)
+    private mainCategoryModel: Model<MainCategoryDocument>,
+    @InjectModel(SubCategory.name)
+    private subCategoryModel: Model<SubCategoryDocument>,
   ) {}
 
   private async getProductsCacheVersion(): Promise<string> {
@@ -790,5 +799,150 @@ export class ProductService {
   async getSections(): Promise<Section[]> {
     this.logger.log('Fetching all sections');
     return this.sectionModel.find().lean();
+  }
+
+  // Main Category CRUD
+  async createMainCategory(dto: { mainCategoryName: string }) {
+    if (!dto.mainCategoryName || typeof dto.mainCategoryName !== 'string')
+      throw new BadRequestException('Main category name is required');
+    const exists = await this.mainCategoryModel.findOne({
+      mainCategoryName: dto.mainCategoryName.trim(),
+    });
+    if (exists) throw new BadRequestException('Main category already exists');
+    const created = new this.mainCategoryModel({
+      mainCategoryName: dto.mainCategoryName.trim(),
+    });
+    await created.save();
+    return {
+      _id: created._id.toString(),
+      mainCategoryName: created.mainCategoryName,
+    };
+  }
+
+  async getMainCategories() {
+    const categories = await this.mainCategoryModel.find().exec();
+    return categories.map((cat) => ({
+      _id: cat._id.toString(),
+      mainCategoryName: cat.mainCategoryName,
+    }));
+  }
+
+  async updateMainCategory(id: string, dto: { mainCategoryName?: string }) {
+    if (!dto.mainCategoryName)
+      throw new BadRequestException('mainCategoryName is required');
+    const updated = await this.mainCategoryModel.findByIdAndUpdate(
+      id,
+      { mainCategoryName: dto.mainCategoryName.trim() },
+      { new: true },
+    );
+    if (!updated) throw new NotFoundException('Main category not found');
+    return {
+      _id: updated._id.toString(),
+      mainCategoryName: updated.mainCategoryName,
+    };
+  }
+
+  async deleteMainCategory(id: string) {
+    const deleted = await this.mainCategoryModel.findByIdAndDelete(id);
+    if (!deleted) throw new NotFoundException('Main category not found');
+    return { message: 'Main category deleted' };
+  }
+
+  // Sub Category CRUD
+  async createSubCategory(dto: {
+    subCategoryName: string;
+    mainCategoryId: string;
+  }) {
+    if (!dto.subCategoryName || !dto.mainCategoryId)
+      throw new BadRequestException(
+        'subCategoryName and mainCategoryId are required',
+      );
+    const mainCat = await this.mainCategoryModel.findById(dto.mainCategoryId);
+    if (!mainCat) throw new NotFoundException('Main category not found');
+    const exists = await this.subCategoryModel.findOne({
+      subCategoryName: dto.subCategoryName.trim(),
+      mainCategoryId: dto.mainCategoryId,
+    });
+    if (exists)
+      throw new BadRequestException(
+        'Sub category already exists for this main category',
+      );
+    const created = new this.subCategoryModel({
+      subCategoryName: dto.subCategoryName.trim(),
+      mainCategoryId: dto.mainCategoryId,
+    });
+    await created.save();
+    return {
+      _id: created._id.toString(),
+      subCategoryName: created.subCategoryName,
+      mainCategoryId: created.mainCategoryId,
+    };
+  }
+
+  // Type guard for populated MainCategory
+  private isPopulatedMainCategory(
+    obj: any,
+  ): obj is MainCategory & { _id: any } {
+    return (
+      obj &&
+      typeof obj === 'object' &&
+      '_id' in obj &&
+      'mainCategoryName' in obj
+    );
+  }
+
+  async getSubCategories() {
+    const subCats = await this.subCategoryModel
+      .find()
+      .populate('mainCategoryId')
+      .exec();
+    return subCats.map((sub) => {
+      let mainCategoryId;
+      let mainCategoryName: string | undefined;
+      const mainCat = sub.mainCategoryId;
+      if (this.isPopulatedMainCategory(mainCat)) {
+        mainCategoryId = mainCat._id?.toString?.() || String(mainCat._id);
+        mainCategoryName = mainCat.mainCategoryName;
+      } else if (mainCat) {
+        mainCategoryId = String(mainCat);
+      } else {
+        mainCategoryId = '';
+      }
+      return {
+        _id: sub._id.toString(),
+        subCategoryName: sub.subCategoryName,
+        mainCategoryId,
+        mainCategoryName,
+      };
+    });
+  }
+
+  async updateSubCategory(
+    id: string,
+    dto: { subCategoryName?: string; mainCategoryId?: string },
+  ) {
+    const update: any = {};
+    if (dto.subCategoryName)
+      update.subCategoryName = dto.subCategoryName.trim();
+    if (dto.mainCategoryId) {
+      const mainCat = await this.mainCategoryModel.findById(dto.mainCategoryId);
+      if (!mainCat) throw new NotFoundException('Main category not found');
+      update.mainCategoryId = dto.mainCategoryId;
+    }
+    const updated = await this.subCategoryModel.findByIdAndUpdate(id, update, {
+      new: true,
+    });
+    if (!updated) throw new NotFoundException('Sub category not found');
+    return {
+      _id: updated._id.toString(),
+      subCategoryName: updated.subCategoryName,
+      mainCategoryId: updated.mainCategoryId,
+    };
+  }
+
+  async deleteSubCategory(id: string) {
+    const deleted = await this.subCategoryModel.findByIdAndDelete(id);
+    if (!deleted) throw new NotFoundException('Sub category not found');
+    return { message: 'Sub category deleted' };
   }
 }
