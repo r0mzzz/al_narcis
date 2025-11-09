@@ -25,7 +25,7 @@ import { ApplyBusinessCashbackDto } from './dto/apply-business-cashback.dto';
 import { SubtractBusinessCashbackDto } from './dto/subtract-business-cashback.dto';
 import { AdminOrUserGuard } from '../../guards/admin-or-user.guard';
 
-@Controller('/users')
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
