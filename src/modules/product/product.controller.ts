@@ -199,19 +199,19 @@ export class ProductController {
     return this.productService.getSections();
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUserGuard)
   @Post('sections')
   async createSection(@Body() dto: CreateSectionDto) {
     return this.productService.createSection(dto);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUserGuard)
   @Patch('sections/:id')
   async updateSection(@Param('id') id: string, @Body() dto: UpdateSectionDto) {
     return this.productService.updateSection(id, dto);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUserGuard)
   @Delete('sections/:id')
   async deleteSection(@Param('id') id: string) {
     return this.productService.deleteSection(id);
