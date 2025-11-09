@@ -39,4 +39,3 @@ export class UpdateSectionDto {
   @IsNumber()
   maxRows?: number;
 }
-

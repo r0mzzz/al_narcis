@@ -8,7 +8,11 @@ export class CreateBrandDto {
 }
 
 export class UpdateBrandDto {
-  @ApiProperty({ example: 'Adidas', description: 'Brand name', required: false })
+  @ApiProperty({
+    example: 'Adidas',
+    description: 'Brand name',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   name?: string;

@@ -10,4 +10,3 @@ export class Capacity {
 }
 
 export const CapacitySchema = SchemaFactory.createForClass(Capacity);
-

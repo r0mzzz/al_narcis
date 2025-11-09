@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, Min, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  Min,
+  IsOptional,
+} from 'class-validator';
 
 export class CreatePaymentHistoryDto {
   @ApiProperty({ example: 100, description: 'Payment amount' })
@@ -13,12 +19,18 @@ export class CreatePaymentHistoryDto {
   @IsString({ message: 'Status sətir olmalıdır' })
   status: string;
 
-  @ApiProperty({ example: '60d21b4667d0d8992e610c85', description: 'Product ID (MongoDB ObjectId)' })
+  @ApiProperty({
+    example: '60d21b4667d0d8992e610c85',
+    description: 'Product ID (MongoDB ObjectId)',
+  })
   @IsNotEmpty({ message: 'Məhsul ID-si tələb olunur' })
   @IsString({ message: 'Məhsul ID-si sətir olmalıdır' })
   productId: string;
 
-  @ApiProperty({ example: '60d21b4667d0d8992e610c86', description: 'User ID (MongoDB ObjectId)' })
+  @ApiProperty({
+    example: '60d21b4667d0d8992e610c86',
+    description: 'User ID (MongoDB ObjectId)',
+  })
   @IsNotEmpty({ message: 'İstifadəçi ID-si tələb olunur' })
   @IsString({ message: 'İstifadəçi ID-si sətir olmalıdır' })
   userId: string;

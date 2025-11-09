@@ -8,4 +8,3 @@ import { ConfigModule } from '@nestjs/config';
   exports: [MinioService],
 })
 export class MinioModule {}
-

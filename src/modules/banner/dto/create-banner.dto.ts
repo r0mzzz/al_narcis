@@ -5,4 +5,3 @@ export class CreateBannerDto {
   @IsString()
   title?: string;
 }
-

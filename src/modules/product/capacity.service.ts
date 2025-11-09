@@ -17,7 +17,8 @@ export class CapacityService {
   }
 
   async addCapacity(capacity: number): Promise<number[]> {
-    if (isNaN(capacity)) throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY.az);
+    if (isNaN(capacity))
+      throw new Error(AppError.CAPACITY_MUST_BE_NUMBER_ONLY.az);
     const exists = await this.capacityModel.exists({ value: capacity });
     if (!exists) {
       await this.capacityModel.create({ value: capacity });

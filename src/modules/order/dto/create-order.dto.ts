@@ -86,7 +86,11 @@ export class CreateOrderDto {
   @IsObject()
   status: { code: number; message: string };
 
-  @ApiProperty({ example: '2e7fea79-4714-42c4-86cf-3fb21683f71d', nullable: true, required: false })
+  @ApiProperty({
+    example: '2e7fea79-4714-42c4-86cf-3fb21683f71d',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsString()
   paymentKey: string | null;

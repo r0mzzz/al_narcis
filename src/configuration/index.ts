@@ -15,7 +15,7 @@ function getSecret(name: string): string {
     return process.env[name] as string;
   }
   throw new Error(
-    `Secret '${name}' not found as Docker secret or environment variable.`
+    `Secret '${name}' not found as Docker secret or environment variable.`,
   );
 }
 

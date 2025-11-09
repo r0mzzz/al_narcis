@@ -225,6 +225,11 @@ export class ProductController {
     return this.productService.deleteSection(id);
   }
 
+  @Get('main-categories')
+  async getMainCategories() {
+    return this.productService.getMainCategories();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -371,12 +376,6 @@ export class ProductController {
   async createMainCategory(@Body() dto: CreateMainCategoryDto) {
     return this.productService.createMainCategory(dto);
   }
-
-  @Get('main-categories')
-  async getMainCategories() {
-    return this.productService.getMainCategories();
-  }
-
   @UseGuards(AdminAuthGuard)
   @Patch('main-categories/:id')
   async updateMainCategory(

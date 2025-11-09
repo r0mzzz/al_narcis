@@ -13,4 +13,3 @@ export class SubCategory {
 }
 
 export const SubCategorySchema = SchemaFactory.createForClass(SubCategory);
-

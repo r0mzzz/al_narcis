@@ -20,7 +20,11 @@ const GenderNameMap: Record<GenderCode, string> = {
 };
 
 export class CreateGenderDto {
-  @ApiProperty({ example: 'WOMAN', enum: GenderType, description: 'Gender type' })
+  @ApiProperty({
+    example: 'WOMAN',
+    enum: GenderType,
+    description: 'Gender type',
+  })
   @IsEnum(GenderType)
   type: GenderType;
 
@@ -35,17 +39,32 @@ export class CreateGenderDto {
 }
 
 export class UpdateGenderDto {
-  @ApiProperty({ example: 'MAN', enum: GenderType, required: false, description: 'Gender type' })
+  @ApiProperty({
+    example: 'MAN',
+    enum: GenderType,
+    required: false,
+    description: 'Gender type',
+  })
   @IsOptional()
   @IsEnum(GenderType)
   type?: GenderType;
 
-  @ApiProperty({ example: 'M', enum: GenderCode, required: false, description: 'Gender code' })
+  @ApiProperty({
+    example: 'M',
+    enum: GenderCode,
+    required: false,
+    description: 'Gender code',
+  })
   @IsOptional()
   @IsEnum(GenderCode)
   code?: GenderCode;
 
-  @ApiProperty({ example: 'Kişi', description: 'Gender name', readOnly: true, required: false })
+  @ApiProperty({
+    example: 'Kişi',
+    description: 'Gender name',
+    readOnly: true,
+    required: false,
+  })
   get name(): string | undefined {
     if (this.code) {
       return GenderNameMap[this.code];

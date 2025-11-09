@@ -23,4 +23,3 @@ export class Section extends Document {
 }
 
 export const SectionSchema = SchemaFactory.createForClass(Section);
-

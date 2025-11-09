@@ -19,4 +19,3 @@ export class UpdateSubCategoryDto {
   @IsString()
   mainCategoryId?: string;
 }
-

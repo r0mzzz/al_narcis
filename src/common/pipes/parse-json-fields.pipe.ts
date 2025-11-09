@@ -1,4 +1,9 @@
-import { PipeTransform, Injectable, ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import {
+  PipeTransform,
+  Injectable,
+  ArgumentMetadata,
+  BadRequestException,
+} from '@nestjs/common';
 
 @Injectable()
 export class ParseJsonFieldsPipe implements PipeTransform {
@@ -19,4 +24,3 @@ export class ParseJsonFieldsPipe implements PipeTransform {
     return value;
   }
 }
-

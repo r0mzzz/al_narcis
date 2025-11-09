@@ -13,4 +13,3 @@ export class Brand {
 }
 
 export const BrandSchema = SchemaFactory.createForClass(Brand);
-

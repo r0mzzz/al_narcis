@@ -47,7 +47,8 @@ export class AuthService {
 
   async signIn(data: LoginUserDto) {
     const user = await this.usersService.findByEmailWithPassword(data.email);
-    if (!user || user.data_status === 0) throw new BadRequestException(AppError.USER_NOT_EXISTS);
+    if (!user || user.data_status === 0)
+      throw new BadRequestException(AppError.USER_NOT_EXISTS);
     const passwordMatches = await bcrypt.compare(data.password, user.password);
     if (!passwordMatches) throw new BadRequestException(AppError.WRONG_DATA);
     const tokens = await this.getTokens(user.user_id);
@@ -67,7 +68,9 @@ export class AuthService {
 
   async logout(userId: string) {
     this.logger.debug(`Attempting logout for userId: ${userId}`);
-    const user = await this.usersService.updateByUserId(userId, { refresh_token: null });
+    const user = await this.usersService.updateByUserId(userId, {
+      refresh_token: null,
+    });
     if (!user) {
       this.logger.warn(`User not found for logout, userId: ${userId}`);
       throw new BadRequestException('User not found');

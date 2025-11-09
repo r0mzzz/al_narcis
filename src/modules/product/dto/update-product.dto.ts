@@ -1,4 +1,14 @@
-import { IsOptional, IsString, IsArray, ArrayUnique, ValidateNested, Min, IsNumber, IsIn, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsArray,
+  ArrayUnique,
+  ValidateNested,
+  Min,
+  IsNumber,
+  IsIn,
+  IsEnum,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { Gender } from '../../../common/genre.enum';
 import { ApiProperty } from '@nestjs/swagger';
@@ -6,7 +16,11 @@ import { ApiProperty } from '@nestjs/swagger';
 const ALLOWED_CAPACITIES = [30, 50, 100];
 
 class VariantDto {
-  @ApiProperty({ example: 100, required: false, description: 'Product capacity (ml)' })
+  @ApiProperty({
+    example: 100,
+    required: false,
+    description: 'Product capacity (ml)',
+  })
   @IsOptional()
   @IsNumber()
   @IsIn(ALLOWED_CAPACITIES)
@@ -22,33 +36,57 @@ class VariantDto {
 }
 
 export class UpdateProductDto {
-  @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'Product image URL' })
+  @ApiProperty({
+    example: 'https://example.com/image.jpg',
+    required: false,
+    description: 'Product image URL',
+  })
   @IsOptional()
   @IsString()
   productImage?: string;
 
-  @ApiProperty({ example: 'Perfume X', required: false, description: 'Product name' })
+  @ApiProperty({
+    example: 'Perfume X',
+    required: false,
+    description: 'Product name',
+  })
   @IsOptional()
   @IsString()
   productName?: string;
 
-  @ApiProperty({ example: 'A great perfume', required: false, description: 'Product description' })
+  @ApiProperty({
+    example: 'A great perfume',
+    required: false,
+    description: 'Product description',
+  })
   @IsOptional()
   @IsString()
   productDesc?: string;
 
-  @ApiProperty({ example: 'perfume', required: false, description: 'Product type' })
+  @ApiProperty({
+    example: 'perfume',
+    required: false,
+    description: 'Product type',
+  })
   @IsOptional()
   @IsString()
   productType?: string;
 
-  @ApiProperty({ example: ['fragrance', 'luxury'], required: false, description: 'Product categories' })
+  @ApiProperty({
+    example: ['fragrance', 'luxury'],
+    required: false,
+    description: 'Product categories',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   category?: string[];
 
-  @ApiProperty({ type: [VariantDto], required: false, description: 'Product variants' })
+  @ApiProperty({
+    type: [VariantDto],
+    required: false,
+    description: 'Product variants',
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -56,34 +94,59 @@ export class UpdateProductDto {
   @ArrayUnique((o: VariantDto) => o.capacity)
   variants?: VariantDto[];
 
-  @ApiProperty({ example: 10, required: false, description: 'Product quantity' })
+  @ApiProperty({
+    example: 10,
+    required: false,
+    description: 'Product quantity',
+  })
   @IsOptional()
   @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(0)
   quantity?: number;
 
-  @ApiProperty({ example: 1, required: false, description: 'Product status (0=inactive, 1=active)' })
+  @ApiProperty({
+    example: 1,
+    required: false,
+    description: 'Product status (0=inactive, 1=active)',
+  })
   @IsOptional()
   @IsIn([0, 1])
   status?: number;
 
-  @ApiProperty({ example: 'WOMAN', enum: Gender, required: false, description: 'Product gender' })
+  @ApiProperty({
+    example: 'WOMAN',
+    enum: Gender,
+    required: false,
+    description: 'Product gender',
+  })
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
 
-  @ApiProperty({ example: 'Chanel', required: false, description: 'Brand name' })
+  @ApiProperty({
+    example: 'Chanel',
+    required: false,
+    description: 'Brand name',
+  })
   @IsOptional()
   @IsString()
   brand?: string;
 
-  @ApiProperty({ example: '60d21b4667d0d8992e610c85', required: false, description: 'Brand ID (MongoDB ObjectId)' })
+  @ApiProperty({
+    example: '60d21b4667d0d8992e610c85',
+    required: false,
+    description: 'Brand ID (MongoDB ObjectId)',
+  })
   @IsOptional()
   @IsString()
   brand_id?: string;
 
-  @ApiProperty({ example: ['new', 'sale'], required: false, description: 'Product tags' })
+  @ApiProperty({
+    example: ['new', 'sale'],
+    required: false,
+    description: 'Product tags',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

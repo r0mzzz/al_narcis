@@ -37,7 +37,7 @@ export class MailService {
     // Replace the hardcoded OTP in the template with the actual OTP
     return Templates.passwordReset.replace(
       /<div class="otp-code">\d{6}<\/div>/,
-      `<div class="otp-code">${otp}</div>`
+      `<div class="otp-code">${otp}</div>`,
     );
   }
 

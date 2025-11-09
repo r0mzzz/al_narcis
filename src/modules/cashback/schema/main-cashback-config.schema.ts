@@ -18,5 +18,5 @@ export class MainCashbackConfig {
   milestoneThreshold: number; // e.g., 10000 coins (100 AZN)
 }
 
-export const MainCashbackConfigSchema = SchemaFactory.createForClass(MainCashbackConfig);
-
+export const MainCashbackConfigSchema =
+  SchemaFactory.createForClass(MainCashbackConfig);

@@ -9,4 +9,3 @@ export const CASHBACK_PERCENT_ARRAY = [
   CashbackPercents.SECOND_LEVEL,
   CashbackPercents.THIRD_LEVEL,
 ];
-

@@ -10,4 +10,3 @@ export class MainCategory {
 }
 
 export const MainCategorySchema = SchemaFactory.createForClass(MainCategory);
-

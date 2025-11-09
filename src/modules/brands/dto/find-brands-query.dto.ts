@@ -18,4 +18,3 @@ export class FindBrandsQueryDto {
   @IsString()
   search?: string;
 }
-

@@ -15,4 +15,3 @@ export class Admin {
 
 export type AdminDocument = Admin & Document;
 export const AdminSchema = SchemaFactory.createForClass(Admin);
-

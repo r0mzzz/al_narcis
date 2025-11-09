@@ -25,5 +25,5 @@ export class PaymentHistory extends Document {
   productName: string;
 }
 
-export const PaymentHistorySchema = SchemaFactory.createForClass(PaymentHistory);
-
+export const PaymentHistorySchema =
+  SchemaFactory.createForClass(PaymentHistory);

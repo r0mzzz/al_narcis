@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CashbackConfig, CashbackConfigDocument } from './schema/cashback-config.schema';
+import {
+  CashbackConfig,
+  CashbackConfigDocument,
+} from './schema/cashback-config.schema';
 
 @Injectable()
 export class CashbackConfigService {
@@ -20,8 +23,13 @@ export class CashbackConfigService {
     return this.cashbackConfigModel.create(data);
   }
 
-  async updateConfig(id: string, data: Partial<CashbackConfig>): Promise<CashbackConfig> {
-    const config = await this.cashbackConfigModel.findByIdAndUpdate(id, data, { new: true });
+  async updateConfig(
+    id: string,
+    data: Partial<CashbackConfig>,
+  ): Promise<CashbackConfig> {
+    const config = await this.cashbackConfigModel.findByIdAndUpdate(id, data, {
+      new: true,
+    });
     if (!config) throw new NotFoundException('Kəşbək konfiqi tapılmadı');
     return config;
   }

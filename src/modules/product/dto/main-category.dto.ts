@@ -11,4 +11,3 @@ export class UpdateMainCategoryDto {
   @IsString()
   mainCategoryName?: string;
 }
-

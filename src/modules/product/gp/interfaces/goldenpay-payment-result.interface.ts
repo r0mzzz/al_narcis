@@ -13,4 +13,3 @@ export interface GoldenPayPaymentResult {
   description: string;
   rrn: string;
 }
-

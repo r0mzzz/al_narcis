@@ -8,18 +8,27 @@ export class MainCashbackConfigDto {
   @Max(100)
   defaultPercent: number;
 
-  @ApiProperty({ example: 10, description: 'Milestone cashback percent (0-100)' })
+  @ApiProperty({
+    example: 10,
+    description: 'Milestone cashback percent (0-100)',
+  })
   @IsNumber()
   @Min(0)
   @Max(100)
   milestonePercent: number;
 
-  @ApiProperty({ example: 1000, description: 'Default threshold for cashback milestone' })
+  @ApiProperty({
+    example: 1000,
+    description: 'Default threshold for cashback milestone',
+  })
   @IsNumber()
   @Min(0)
   defaultThreshold: number;
 
-  @ApiProperty({ example: 5000, description: 'Milestone threshold for cashback' })
+  @ApiProperty({
+    example: 5000,
+    description: 'Milestone threshold for cashback',
+  })
   @IsNumber()
   @Min(0)
   milestoneThreshold: number;

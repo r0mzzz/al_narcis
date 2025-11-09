@@ -163,7 +163,6 @@ export class MinioService {
     return url;
   }
 
-
   async delete(objectPath: string): Promise<void> {
     try {
       await this.minioClient.removeObject(this.bucket, objectPath);

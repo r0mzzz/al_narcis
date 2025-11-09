@@ -32,7 +32,10 @@ export class CartResponseDto {
     items: {
       type: 'object',
       properties: {
-        products: { type: 'array', items: { $ref: '#/components/schemas/CartItemDto' } },
+        products: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/CartItemDto' },
+        },
         user_id: { type: 'string' },
       },
     },

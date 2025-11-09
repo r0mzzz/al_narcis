@@ -10,4 +10,3 @@ export class Tag {
 }
 
 export const TagSchema = SchemaFactory.createForClass(Tag);
-
