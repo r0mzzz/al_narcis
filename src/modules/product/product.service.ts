@@ -417,8 +417,15 @@ export class ProductService {
       throw new BadRequestException(
         `Aşağıdakı kateqoriyalar mövcud deyil: ${missing.join(', ')}`,
       );
-    }
+   }
 
+    // Remove any _id from variants to avoid Mongoose Cast errors
+    if (Array.isArray(createProductDto.variants)) {
+      createProductDto.variants = createProductDto.variants.map((v) => {
+        const { _id, ...rest } = v;
+        return rest;
+      });
+    }
     const brand_id = createProductDto.brand_id || createProductDto.brand;
     let brandStr = undefined;
     if (brand_id) {

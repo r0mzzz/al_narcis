@@ -33,6 +33,15 @@ class VariantDto {
   @Min(0)
   @Transform(({ value }) => Number(value))
   price?: number;
+
+  @ApiProperty({
+    example: '60d21b4667d0d8992e610c85',
+    required: false,
+    description: 'Variant ID (MongoDB ObjectId)',
+  })
+  @IsOptional()
+  @IsString()
+  _id?: string;
 }
 
 export class UpdateProductDto {
