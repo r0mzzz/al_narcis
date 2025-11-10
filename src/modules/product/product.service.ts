@@ -821,11 +821,20 @@ export class ProductService {
 
   async getMainCategories() {
     const categories = await this.mainCategoryModel.find().exec();
-    return categories.map((cat) => ({
-      _id: cat._id.toString(),
-      mainCategoryName: cat.mainCategoryName,
-      imagePath: cat.imagePath || null,
-    }));
+    return Promise.all(
+      categories.map(async (cat) => {
+        let imageUrl = null;
+        if (cat.imagePath) {
+          // Always store relative path like 'product-images/main-category/filename.jpg'
+          imageUrl = await this.minioService.getPresignedUrl(cat.imagePath);
+        }
+        return {
+          _id: cat._id.toString(),
+          mainCategoryName: cat.mainCategoryName,
+          imagePath: imageUrl,
+        };
+      })
+    );
   }
 
   async updateMainCategory(
@@ -840,18 +849,22 @@ export class ProductService {
     if (image) {
       // Save image to Minio and get path
       const ext = image.originalname.split('.').pop();
-      const fileName = `main-category/${id}_${Date.now()}.${ext}`;
+      const fileName = `product-images/main-category/${id}_${Date.now()}.${ext}`;
       await this.minioService.uploadToPath(image, fileName);
-      update.imagePath = `/images/${fileName}`;
+      update.imagePath = fileName; // Store relative path only
     }
     const updated = await this.mainCategoryModel.findByIdAndUpdate(id, update, {
       new: true,
     });
     if (!updated) throw new NotFoundException('Main category not found');
+    let imageUrl = null;
+    if (updated.imagePath) {
+      imageUrl = await this.minioService.getPresignedUrl(updated.imagePath);
+    }
     return {
       _id: updated._id.toString(),
       mainCategoryName: updated.mainCategoryName,
-      imagePath: updated.imagePath || null,
+      imagePath: imageUrl,
     };
   }
 
