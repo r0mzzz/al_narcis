@@ -819,12 +819,14 @@ export class ProductService {
     };
   }
 
-  // Helper to convert a full presigned URL to a relative path with query string
+  // Helper to convert a full presigned URL to a relative path with query string, removing double /product-images/
   private presignedUrlToRelativePath(url: string): string {
     if (!url) return '';
     try {
       const u = new URL(url);
-      return u.pathname + u.search;
+      // Remove double /product-images/ at the start of the path
+      let path = u.pathname.replace(/^\/product-images\/product-images\//, '/product-images/');
+      return path + u.search;
     } catch {
       return url; // fallback
     }
