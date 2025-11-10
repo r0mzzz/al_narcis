@@ -55,12 +55,16 @@ export class CreateProductDto {
   @ArrayUnique((o: VariantDto) => o.capacity)
   variants: VariantDto[];
 
-  @ApiProperty({ example: 10, description: 'Product quantity' })
-  @IsNotEmpty()
-  @Transform(({ value }) => Number(value))
+  @ApiProperty({
+    example: 10,
+    required: false,
+    description: 'Product quantity',
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
   @IsNumber()
   @Min(0)
-  quantity: number;
+  quantity?: number;
 
   @ApiProperty({
     example: 'https://example.com/image.jpg',
@@ -71,10 +75,14 @@ export class CreateProductDto {
   @IsString()
   productImage?: string;
 
-  @ApiProperty({ example: 'perfume', description: 'Product type' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: 'perfume',
+    required: false,
+    description: 'Product type',
+  })
+  @IsOptional()
   @IsString()
-  productType: string;
+  productType?: string;
 
   @ApiProperty({
     example: ['fragrance', 'luxury'],

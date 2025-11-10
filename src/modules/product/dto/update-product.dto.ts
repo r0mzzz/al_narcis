@@ -100,9 +100,9 @@ export class UpdateProductDto {
     description: 'Product quantity',
   })
   @IsOptional()
-  @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
   quantity?: number;
 
   @ApiProperty({
