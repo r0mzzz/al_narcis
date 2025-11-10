@@ -14,12 +14,13 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BannerService } from './banner.service';
 import { AccessTokenGuard } from '../../guards/jwt-guard';
+import { AdminAuthGuard } from '../../guards/admin-auth.guard';
 
 @Controller('banners')
 export class BannerController {
   constructor(private readonly bannerService: BannerService) {}
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('image'))
   async create(@UploadedFile() image?: Express.Multer.File) {
@@ -40,7 +41,7 @@ export class BannerController {
     return banners.map((b) => ({ imageUrl: b.imageUrl, id: b._id }));
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image'))
   async update(
@@ -57,7 +58,7 @@ export class BannerController {
     return { id: banner._id, imageUrl };
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {
