@@ -819,14 +819,25 @@ export class ProductService {
     };
   }
 
+  // Helper to convert a full presigned URL to a relative path with query string
+  private presignedUrlToRelativePath(url: string): string {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      return u.pathname + u.search;
+    } catch {
+      return url; // fallback
+    }
+  }
+
   async getMainCategories() {
     const categories = await this.mainCategoryModel.find().exec();
     return Promise.all(
       categories.map(async (cat) => {
         let imageUrl = null;
         if (cat.imagePath) {
-          // Always store relative path like 'product-images/main-category/filename.jpg'
-          imageUrl = await this.minioService.getPresignedUrl(cat.imagePath);
+          const presigned = await this.minioService.getPresignedUrl(cat.imagePath);
+          imageUrl = this.presignedUrlToRelativePath(presigned);
         }
         return {
           _id: cat._id.toString(),
@@ -847,11 +858,10 @@ export class ProductService {
       update.mainCategoryName = dto.mainCategoryName.trim();
     }
     if (image) {
-      // Save image to Minio and get path
       const ext = image.originalname.split('.').pop();
       const fileName = `product-images/main-category/${id}_${Date.now()}.${ext}`;
       await this.minioService.uploadToPath(image, fileName);
-      update.imagePath = fileName; // Store relative path only
+      update.imagePath = fileName;
     }
     const updated = await this.mainCategoryModel.findByIdAndUpdate(id, update, {
       new: true,
@@ -859,7 +869,8 @@ export class ProductService {
     if (!updated) throw new NotFoundException('Main category not found');
     let imageUrl = null;
     if (updated.imagePath) {
-      imageUrl = await this.minioService.getPresignedUrl(updated.imagePath);
+      const presigned = await this.minioService.getPresignedUrl(updated.imagePath);
+      imageUrl = this.presignedUrlToRelativePath(presigned);
     }
     return {
       _id: updated._id.toString(),
