@@ -819,14 +819,14 @@ export class ProductService {
     };
   }
 
-  // Helper to convert a full presigned URL to a relative path with query string, removing double /product-images/
+  // Helper to convert a full presigned URL to a relative path with query string, always prefixing /product-images/
   private presignedUrlToRelativePath(url: string): string {
     if (!url) return '';
     try {
       const u = new URL(url);
-      // Remove double /product-images/ at the start of the path
-      let path = u.pathname.replace(/^\/product-images\/product-images\//, '/product-images/');
-      return path + u.search;
+      // Remove any leading /product-images/ from the path, then add exactly one
+      let path = u.pathname.replace(/^\/product-images\//, '');
+      return '/product-images/' + path + u.search;
     } catch {
       return url; // fallback
     }
@@ -838,7 +838,9 @@ export class ProductService {
       categories.map(async (cat) => {
         let imageUrl = null;
         if (cat.imagePath) {
-          const presigned = await this.minioService.getPresignedUrl(cat.imagePath);
+          const presigned = await this.minioService.getPresignedUrl(
+            cat.imagePath,
+          );
           imageUrl = this.presignedUrlToRelativePath(presigned);
         }
         return {
@@ -846,7 +848,7 @@ export class ProductService {
           mainCategoryName: cat.mainCategoryName,
           imagePath: imageUrl,
         };
-      })
+      }),
     );
   }
 
@@ -861,7 +863,8 @@ export class ProductService {
     }
     if (image) {
       const ext = image.originalname.split('.').pop();
-      const fileName = `product-images/main-category/${id}_${Date.now()}.${ext}`;
+      // Only store 'main-category/filename' in DB
+      const fileName = `main-category/${id}_${Date.now()}.${ext}`;
       await this.minioService.uploadToPath(image, fileName);
       update.imagePath = fileName;
     }
