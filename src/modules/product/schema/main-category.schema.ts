@@ -7,6 +7,9 @@ export type MainCategoryDocument = MainCategory & Document;
 export class MainCategory {
   @Prop({ required: true, unique: true })
   mainCategoryName: string;
+
+  @Prop({ required: false })
+  imagePath?: string;
 }
 
 export const MainCategorySchema = SchemaFactory.createForClass(MainCategory);

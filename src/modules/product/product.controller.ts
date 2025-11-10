@@ -383,11 +383,13 @@ export class ProductController {
   }
   @UseGuards(AdminAuthGuard)
   @Patch('main-categories/:id')
+  @UseInterceptors(FileInterceptor('image'))
   async updateMainCategory(
     @Param('id') id: string,
     @Body() dto: UpdateMainCategoryDto,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
-    return this.productService.updateMainCategory(id, dto);
+    return this.productService.updateMainCategory(id, dto, image);
   }
 
   @UseGuards(AdminAuthGuard)
