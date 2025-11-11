@@ -13,8 +13,8 @@ export class BannerService {
     private readonly minioService: MinioService,
   ) {}
 
-  async create(file?: Express.Multer.File) {
-    const banner = new this.bannerModel({});
+  async create(file?: Express.Multer.File, link?: string) {
+    const banner = new this.bannerModel({ link: link || null });
     await banner.save();
 
     if (file) {
@@ -40,14 +40,23 @@ export class BannerService {
         if (b.imagePath) {
           imageUrl = await this.getPresignedImageUrl(b.imagePath);
         }
-        return { imageUrl, _id: b._id };
+        return {
+          imageUrl,
+          _id: b._id,
+          link: b.link || null,
+        };
       }),
     );
   }
 
-  async update(id: string, file?: Express.Multer.File) {
+  async update(id: string, file?: Express.Multer.File, link?: string) {
     const banner = await this.bannerModel.findById(id);
     if (!banner) throw new NotFoundException('Banner not found');
+
+    // Update link if provided
+    if (link !== undefined) {
+      banner.link = link || null;
+    }
 
     if (file) {
       // remove old image if exists

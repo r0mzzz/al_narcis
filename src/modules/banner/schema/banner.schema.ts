@@ -11,6 +11,9 @@ export class Banner {
   @Prop()
   folder?: string; // folder inside the bucket where images are stored
 
+  @Prop()
+  link?: string; // optional link URL for the banner
+
   @Prop({ default: Date.now })
   createdAt?: Date;
 }

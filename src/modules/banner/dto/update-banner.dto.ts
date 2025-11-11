@@ -1,10 +1,6 @@
 import { IsOptional, IsString } from 'class-validator';
 
-export class CreateBannerDto {
-  @IsOptional()
-  @IsString()
-  title?: string;
-
+export class UpdateBannerDto {
   @IsOptional()
   @IsString()
   link?: string;
