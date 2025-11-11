@@ -633,7 +633,7 @@ export class ProductService {
       }
     }
     if (search && search.trim().length > 0) {
-      filter.name = { $regex: search.trim(), $options: 'i' };
+      filter.productName = { $regex: search.trim(), $options: 'i' };
     }
     this.logger.debug(`findByBrand filter: ${JSON.stringify(filter)}`);
     const products = await this.productModel
@@ -1006,7 +1006,9 @@ export class ProductService {
     if (!mainCategoryId.match(/^[a-fA-F0-9]{24}$/)) {
       throw new BadRequestException('Invalid mainCategoryId');
     }
-    const subCategories = await this.subCategoryModel.find({ mainCategoryId }).exec();
+    const subCategories = await this.subCategoryModel
+      .find({ mainCategoryId })
+      .exec();
     return subCategories.map((sub) => ({
       _id: sub._id.toString(),
       subCategoryName: sub.subCategoryName,
