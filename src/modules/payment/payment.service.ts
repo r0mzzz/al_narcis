@@ -419,8 +419,8 @@ export class PaymentService {
   }
 
   async pay(dto: CreateOrderDto) {
-    // If isFree is true, deduct cashbackAmount from user's balance
-    if (dto.isFree && dto.cashbackAmount && dto.cashbackAmount > 0) {
+    // If usedCashbackAmount is provided and > 0, deduct from user's balance
+    if (dto.usedCashbackAmount && dto.usedCashbackAmount > 0) {
       try {
         const user = await this.userModel.findOne({ user_id: dto.user_id });
         if (!user) {
@@ -428,37 +428,27 @@ export class PaymentService {
         }
 
         // Check if user has sufficient cashback balance
-        if (user.businessCashbackBalance < dto.cashbackAmount) {
+        if (user.businessCashbackBalance < dto.usedCashbackAmount) {
           throw new Error(
-            `Insufficient cashback balance. Required: ${dto.cashbackAmount}, Available: ${user.balance}`,
+            `Insufficient cashback balance. Required: ${dto.usedCashbackAmount}, Available: ${user.businessCashbackBalance}`,
           );
         }
 
-        const newBalance = user.businessCashbackBalance - dto.cashbackAmount;
+        const newBalance = user.businessCashbackBalance - dto.usedCashbackAmount;
 
         // Deduct cashback from user balance
         await this.userModel.updateOne(
           { user_id: dto.user_id },
-          { $inc: { businessCashbackBalance: -dto.cashbackAmount } },
+          { $inc: { businessCashbackBalance: -dto.usedCashbackAmount } },
         );
 
         Logger.log(
-          `[PAYMENT] Deducted ${dto.cashbackAmount} coins from user ${dto.user_id} balance. New balance: ${newBalance}`,
+          `[PAYMENT] Deducted ${dto.usedCashbackAmount} coins from user ${dto.user_id} balance. New balance: ${newBalance}`,
           'PaymentService',
         );
-
-        // Create order without processing payment or cashback
-        const orderResult = await this.orderService.addOrder(dto);
-
-        return {
-          order: orderResult,
-          cashback: null,
-          singlePaymentCashback: 0,
-          message: 'Order paid with cashback',
-        };
       } catch (error) {
         Logger.error(
-          `[PAYMENT] Failed to process cashback payment: ${error.message}`,
+          `[PAYMENT] Failed to process cashback deduction: ${error.message}`,
           error.stack,
           'PaymentService',
         );
