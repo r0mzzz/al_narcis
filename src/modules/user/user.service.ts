@@ -459,7 +459,7 @@ export class UsersService {
   async applyBusinessCashback(
     user_id: string,
     amount: number,
-  ): Promise<{ totalAmount: number; isFree: boolean }> {
+  ): Promise<{ totalAmount: number; isFree: boolean; usedCashbackAmount: number }> {
     if (typeof amount !== 'number' || Number.isNaN(amount) || amount < 0) {
       throw new BadRequestException('Invalid amount');
     }
@@ -468,21 +468,22 @@ export class UsersService {
 
     // Only BUSINESS accounts have businessCashbackBalance
     if (user.accountType !== AccountType.BUSINESS) {
-      return { totalAmount: amount, isFree: false };
+      return { totalAmount: amount, isFree: false, usedCashbackAmount: 0 };
     }
 
     const bal = Number(user.businessCashbackBalance ?? 0);
     if (bal <= 0) {
-      return { totalAmount: amount, isFree: false };
+      return { totalAmount: amount, isFree: false, usedCashbackAmount: 0 };
     }
 
     if (bal >= amount) {
-      return { totalAmount: 0, isFree: true };
+      // Cashback fully covers the amount
+      return { totalAmount: 0, isFree: true, usedCashbackAmount: amount };
     }
 
-    // bal < amount
+    // bal < amount - partial coverage
     const remaining = Number((amount - bal).toFixed(2));
-    return { totalAmount: remaining, isFree: remaining === 0 };
+    return { totalAmount: remaining, isFree: false, usedCashbackAmount: bal };
   }
 
   /**
