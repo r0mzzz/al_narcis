@@ -100,38 +100,24 @@ export class ProductService {
         filter.category = { $in: categories };
       }
     }
-    // Filter by mainCategory if provided
-    if (mainCategory) {
-      if (typeof mainCategory === 'string') {
-        const trimmed = mainCategory.trim();
-        if (trimmed.length > 0) {
-          const arr = trimmed.includes(',')
-            ? trimmed
-                .split(',')
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : [trimmed];
-          if (arr.length > 0) filter.mainCategoryId = { $in: arr };
-        }
-      } else if (Array.isArray(mainCategory) && mainCategory.length > 0) {
-        filter.mainCategoryId = { $in: mainCategory };
+    // Filter by mainCategory if provided (string, allow comma-separated)
+    if (mainCategory && typeof mainCategory === 'string') {
+      const trimmed = mainCategory.trim();
+      if (trimmed.length > 0) {
+        const arr = trimmed.includes(',')
+          ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+          : [trimmed];
+        filter.mainCategoryId = { $in: arr };
       }
     }
-    // Filter by subCategory if provided
-    if (subCategory) {
-      if (typeof subCategory === 'string') {
-        const trimmed = subCategory.trim();
-        if (trimmed.length > 0) {
-          const arr = trimmed.includes(',')
-            ? trimmed
-                .split(',')
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : [trimmed];
-          if (arr.length > 0) filter.subCategoryId = { $in: arr };
-        }
-      } else if (Array.isArray(subCategory) && subCategory.length > 0) {
-        filter.subCategoryId = { $in: subCategory };
+    // Filter by subCategory if provided (string, allow comma-separated)
+    if (subCategory && typeof subCategory === 'string') {
+      const trimmed = subCategory.trim();
+      if (trimmed.length > 0) {
+        const arr = trimmed.includes(',')
+          ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+          : [trimmed];
+        filter.subCategoryId = { $in: arr };
       }
     }
     if (tag) filter.tags = tag;
