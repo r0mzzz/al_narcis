@@ -239,6 +239,11 @@ export class ProductController {
     return this.productService.getSubCategories();
   }
 
+  @Get('sub-categories/by-main/:mainCategoryId')
+  async getSubCategoriesByMainCategory(@Param('mainCategoryId') mainCategoryId: string) {
+    return this.productService.getSubCategoriesByMainCategory(mainCategoryId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -343,12 +348,14 @@ export class ProductController {
     @Query('limit') limit?: string,
     @Query('page') page?: string,
     @Query('visible') visible?: string,
+    @Query('search') search?: string, // <-- add search query param
   ) {
     return this.productService.findByBrand(
       brandId,
       limit ? parseInt(limit, 10) : 10,
       page ? parseInt(page, 10) : 1,
       visible,
+      search, // <-- pass search to service
     );
   }
 

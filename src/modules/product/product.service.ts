@@ -621,6 +621,7 @@ export class ProductService {
     limit = 10,
     page = 1,
     visible?: string | number,
+    search?: string, // <-- add search param
   ) {
     // Build filter: always filter by brand_id; only filter by visible if caller provided it explicitly
     const filter: any = { brand_id: brandId };
@@ -630,6 +631,9 @@ export class ProductService {
       if (v === 0 || v === 1) {
         filter.visible = v;
       }
+    }
+    if (search && search.trim().length > 0) {
+      filter.name = { $regex: search.trim(), $options: 'i' };
     }
     this.logger.debug(`findByBrand filter: ${JSON.stringify(filter)}`);
     const products = await this.productModel
@@ -992,5 +996,21 @@ export class ProductService {
     const deleted = await this.subCategoryModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Sub category not found');
     return { message: 'Sub category deleted' };
+  }
+
+  async getSubCategoriesByMainCategory(mainCategoryId: string) {
+    if (!mainCategoryId) {
+      throw new BadRequestException('mainCategoryId is required');
+    }
+    // Validate mainCategoryId is a valid ObjectId
+    if (!mainCategoryId.match(/^[a-fA-F0-9]{24}$/)) {
+      throw new BadRequestException('Invalid mainCategoryId');
+    }
+    const subCategories = await this.subCategoryModel.find({ mainCategoryId }).exec();
+    return subCategories.map((sub) => ({
+      _id: sub._id.toString(),
+      subCategoryName: sub.subCategoryName,
+      mainCategoryId: sub.mainCategoryId.toString(),
+    }));
   }
 }
