@@ -118,7 +118,7 @@ export class ProductService {
             },
           })
           .select('_id');
-        const ids = mainCats.map((cat) => cat._id.toString());
+        const ids = mainCats.map((cat) => cat._id); // Use ObjectId, not string
         // Always set the filter, even if ids is empty
         filter.mainCategoryId = { $in: ids };
         this.logger.debug(
@@ -133,10 +133,7 @@ export class ProductService {
       const trimmed = subCategory.trim();
       if (trimmed.length > 0) {
         const arr = trimmed.includes(',')
-          ? trimmed
-              .split(',')
-              .map((c) => c.trim())
-              .filter(Boolean)
+          ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
           : [trimmed];
         const subCats = await this.subCategoryModel
           .find({
@@ -145,8 +142,11 @@ export class ProductService {
             },
           })
           .select('_id');
-        const ids = subCats.map((cat) => cat._id.toString());
-        filter.subCategoryId = ids.length > 0 ? { $in: ids } : { $in: [] };
+        const ids = subCats.map((cat) => cat._id); // Use ObjectId, not string
+        filter.subCategoryId = { $in: ids };
+        this.logger.debug(
+          `Resolved subCategory names [${arr.join(', ')}] to IDs [${ids.join(', ')}}]`,
+        );
       }
     }
     if (tag) filter.tags = tag;
