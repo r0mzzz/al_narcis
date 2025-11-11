@@ -150,4 +150,21 @@ export class CreateOrderDto {
   @ApiProperty({ example: 'Baku, Nizami street 1' })
   @IsString()
   deliveryAddress: string;
+
+  @ApiProperty({
+    example: false,
+    required: false,
+    description: 'Whether this order is paid with cashback',
+  })
+  @IsOptional()
+  isFree?: boolean;
+
+  @ApiProperty({
+    example: 0,
+    required: false,
+    description: 'Cashback amount to deduct from user balance (in coins)',
+  })
+  @IsOptional()
+  @IsNumber()
+  cashbackAmount?: number;
 }
