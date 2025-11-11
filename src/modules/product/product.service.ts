@@ -69,6 +69,8 @@ export class ProductService {
     gender?: string,
     status?: number, // <-- Accept status param
     visible?: string | number, // optional visible param from query
+    mainCategory?: string | string[], // <-- New mainCategory filter
+    subCategory?: string | string[], // <-- New subCategory filter
   ): Promise<unknown> {
     // Do not filter by `visible` here so products with visible 0 and 1 are returned.
     // Previously we defaulted to { visible: 1 } which hid invisible products.
@@ -96,6 +98,34 @@ export class ProductService {
         }
       } else if (Array.isArray(categories) && categories.length > 0) {
         filter.category = { $in: categories };
+      }
+    }
+    // Filter by mainCategory if provided
+    if (mainCategory) {
+      if (typeof mainCategory === 'string') {
+        const trimmed = mainCategory.trim();
+        if (trimmed.length > 0) {
+          const arr = trimmed.includes(',')
+            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            : [trimmed];
+          if (arr.length > 0) filter.mainCategoryId = { $in: arr };
+        }
+      } else if (Array.isArray(mainCategory) && mainCategory.length > 0) {
+        filter.mainCategoryId = { $in: mainCategory };
+      }
+    }
+    // Filter by subCategory if provided
+    if (subCategory) {
+      if (typeof subCategory === 'string') {
+        const trimmed = subCategory.trim();
+        if (trimmed.length > 0) {
+          const arr = trimmed.includes(',')
+            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            : [trimmed];
+          if (arr.length > 0) filter.subCategoryId = { $in: arr };
+        }
+      } else if (Array.isArray(subCategory) && subCategory.length > 0) {
+        filter.subCategoryId = { $in: subCategory };
       }
     }
     if (tag) filter.tags = tag;
@@ -417,7 +447,7 @@ export class ProductService {
       throw new BadRequestException(
         `Aşağıdakı kateqoriyalar mövcud deyil: ${missing.join(', ')}`,
       );
-   }
+    }
 
     // Remove any _id from variants to avoid Mongoose Cast errors
     if (Array.isArray(createProductDto.variants)) {
@@ -832,7 +862,7 @@ export class ProductService {
     try {
       const u = new URL(url);
       // Remove any leading /product-images/ from the path, then add exactly one
-      let path = u.pathname.replace(/^\/product-images\//, '');
+      const path = u.pathname.replace(/^\/product-images\//, '');
       return '/product-images/' + path + u.search;
     } catch {
       return url; // fallback
@@ -881,7 +911,9 @@ export class ProductService {
     if (!updated) throw new NotFoundException('Main category not found');
     let imageUrl = null;
     if (updated.imagePath) {
-      const presigned = await this.minioService.getPresignedUrl(updated.imagePath);
+      const presigned = await this.minioService.getPresignedUrl(
+        updated.imagePath,
+      );
       imageUrl = this.presignedUrlToRelativePath(presigned);
     }
     return {

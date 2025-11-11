@@ -64,18 +64,32 @@ export class ProductController {
     enum: [0, 1],
     description: 'Product status (0=inactive, 1=active)',
   })
+  @ApiQuery({
+    name: 'mainCategory',
+    required: false,
+    description: 'Main category id(s), comma-separated or repeated',
+    type: String,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'subCategory',
+    required: false,
+    description: 'Sub category id(s), comma-separated or repeated',
+    type: String,
+    isArray: true,
+  })
   findAll(
     @Query('productType') productType?: string,
     @Query('search') search?: string,
     @Query('limit') limit?: string,
     @Query('page') page?: string,
-    // Accept categories either as a comma-separated string or as repeated query params (string[])
     @Query('categories') categories?: string | string[],
     @Query('tag') tag?: string,
     @Query('gender') gender?: string,
     @Query('status') status?: string,
-    // Optional visible param: '0' or '1' to explicitly filter. If omitted and status is provided, visible=1 will be applied by default.
     @Query('visible') visible?: string,
+    @Query('mainCategory') mainCategory?: string | string[],
+    @Query('subCategory') subCategory?: string | string[],
   ) {
     // Convert status, limit, and page to numbers if provided
     const statusNum = status !== undefined ? Number(status) : undefined;
@@ -95,6 +109,38 @@ export class ProductController {
     } else {
       categoriesArr = undefined;
     }
+    let mainCategoryArr: string[] | undefined;
+    if (Array.isArray(mainCategory)) {
+      mainCategoryArr = (mainCategory as string[])
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else if (
+      typeof mainCategory === 'string' &&
+      mainCategory.trim().length > 0
+    ) {
+      mainCategoryArr = mainCategory
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else {
+      mainCategoryArr = undefined;
+    }
+    let subCategoryArr: string[] | undefined;
+    if (Array.isArray(subCategory)) {
+      subCategoryArr = (subCategory as string[])
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else if (
+      typeof subCategory === 'string' &&
+      subCategory.trim().length > 0
+    ) {
+      subCategoryArr = subCategory
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else {
+      subCategoryArr = undefined;
+    }
     // Note: findAll was changed to always query DB (no cached-only results) and to return products regardless of `visible` flag (both 0 and 1).
     return this.productService.findAll(
       productType,
@@ -106,6 +152,8 @@ export class ProductController {
       gender,
       statusNum,
       visible,
+      mainCategoryArr,
+      subCategoryArr,
     );
   }
 
