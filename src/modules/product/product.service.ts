@@ -106,7 +106,10 @@ export class ProductService {
         const trimmed = mainCategory.trim();
         if (trimmed.length > 0) {
           const arr = trimmed.includes(',')
-            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            ? trimmed
+                .split(',')
+                .map((c) => c.trim())
+                .filter(Boolean)
             : [trimmed];
           if (arr.length > 0) filter.mainCategoryId = { $in: arr };
         }
@@ -120,7 +123,10 @@ export class ProductService {
         const trimmed = subCategory.trim();
         if (trimmed.length > 0) {
           const arr = trimmed.includes(',')
-            ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
+            ? trimmed
+                .split(',')
+                .map((c) => c.trim())
+                .filter(Boolean)
             : [trimmed];
           if (arr.length > 0) filter.subCategoryId = { $in: arr };
         }
