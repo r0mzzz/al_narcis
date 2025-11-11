@@ -76,6 +76,8 @@ export class ProductController {
     @Query('status') status?: string,
     // Optional visible param: '0' or '1' to explicitly filter. If omitted and status is provided, visible=1 will be applied by default.
     @Query('visible') visible?: string,
+    @Query('mainCategory') mainCategory?: string, // <-- add this
+    @Query('subCategory') subCategory?: string, // <-- add this
   ) {
     // Convert status, limit, and page to numbers if provided
     const statusNum = status !== undefined ? Number(status) : undefined;
@@ -106,6 +108,8 @@ export class ProductController {
       gender,
       statusNum,
       visible,
+      mainCategory, // <-- pass to service
+      subCategory, // <-- pass to service
     );
   }
 

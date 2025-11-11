@@ -59,7 +59,6 @@ export class ProductService {
     return v;
   }
 
-
   async findAll(
     productType?: string,
     search?: string,
@@ -70,6 +69,8 @@ export class ProductService {
     gender?: string,
     status?: number, // <-- Accept status param
     visible?: string | number, // optional visible param from query
+    mainCategory?: string, // <-- Add mainCategory param
+    subCategory?: string, // <-- Add subCategory param
   ): Promise<unknown> {
     // Do not filter by `visible` here so products with visible 0 and 1 are returned.
     // Previously we defaulted to { visible: 1 } which hid invisible products.
@@ -80,6 +81,8 @@ export class ProductService {
       visible = typeof visible === 'string' ? Number(visible) : visible;
 
     if (productType) filter.productType = productType;
+    if (mainCategory) filter.mainCategory = mainCategory;
+    if (subCategory) filter.subCategory = subCategory;
     if (search) filter.productName = { $regex: search, $options: 'i' };
     // Normalize categories to array if caller passed a string
     if (categories) {
@@ -826,7 +829,7 @@ export class ProductService {
     try {
       const u = new URL(url);
       // Remove any leading /product-images/ from the path, then add exactly one
-      let path = u.pathname.replace(/^\/product-images\//, '');
+      const path = u.pathname.replace(/^\/product-images\//, '');
       return '/product-images/' + path + u.search;
     } catch {
       return url; // fallback
@@ -875,7 +878,9 @@ export class ProductService {
     if (!updated) throw new NotFoundException('Main category not found');
     let imageUrl = null;
     if (updated.imagePath) {
-      const presigned = await this.minioService.getPresignedUrl(updated.imagePath);
+      const presigned = await this.minioService.getPresignedUrl(
+        updated.imagePath,
+      );
       imageUrl = this.presignedUrlToRelativePath(presigned);
     }
     return {
