@@ -105,12 +105,15 @@ export class ProductService {
       const trimmed = mainCategory.trim();
       if (trimmed.length > 0) {
         const arr = trimmed.includes(',')
-          ? trimmed
-              .split(',')
-              .map((c) => c.trim())
-              .filter(Boolean)
+          ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
           : [trimmed];
-        filter.mainCategoryId = { $in: arr };
+        // Find mainCategory IDs by name (case-insensitive)
+        const mainCats = await this.mainCategoryModel.find({
+          mainCategoryName: { $in: arr.map((name) => new RegExp(`^${name}$`, 'i')) }
+        }).select('_id');
+        const ids = mainCats.map((cat) => cat._id.toString());
+        // If none found, set impossible filter
+        filter.mainCategoryId = ids.length > 0 ? { $in: ids } : { $in: [] };
       }
     }
     // Filter by subCategory if provided (string, allow comma-separated)
@@ -118,12 +121,13 @@ export class ProductService {
       const trimmed = subCategory.trim();
       if (trimmed.length > 0) {
         const arr = trimmed.includes(',')
-          ? trimmed
-              .split(',')
-              .map((c) => c.trim())
-              .filter(Boolean)
+          ? trimmed.split(',').map((c) => c.trim()).filter(Boolean)
           : [trimmed];
-        filter.subCategoryId = { $in: arr };
+        const subCats = await this.subCategoryModel.find({
+          subCategoryName: { $in: arr.map((name) => new RegExp(`^${name}$`, 'i')) }
+        }).select('_id');
+        const ids = subCats.map((cat) => cat._id.toString());
+        filter.subCategoryId = ids.length > 0 ? { $in: ids } : { $in: [] };
       }
     }
     if (tag) filter.tags = tag;
