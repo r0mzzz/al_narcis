@@ -119,8 +119,13 @@ export class ProductService {
           })
           .select('_id');
         const ids = mainCats.map((cat) => cat._id.toString());
-        // If none found, set impossible filter
-        filter.mainCategoryId = ids.length > 0 ? { $in: ids } : { $in: [] };
+        // Always set the filter, even if ids is empty
+        filter.mainCategoryId = { $in: ids };
+        this.logger.debug(
+          `Resolved mainCategory names [${arr.join(', ')}] to IDs [${ids.join(
+            ', ',
+          )}]`,
+        );
       }
     }
     // Filter by subCategory if provided (string, allow comma-separated)
