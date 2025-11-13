@@ -623,15 +623,21 @@ export class ProductService {
     visible?: string | number,
     search?: string, // <-- add search param
   ) {
-    // Build filter: always filter by brand_id; only filter by visible if caller provided it explicitly
+    // Build filter: always filter by brand_id
     const filter: any = { brand_id: brandId };
+
+    // Default to visible=1 if not explicitly provided
     if (visible !== undefined && visible !== null && visible !== '') {
       // coerce string to number
       const v = typeof visible === 'string' ? Number(visible) : visible;
       if (v === 0 || v === 1) {
         filter.visible = v;
       }
+    } else {
+      // Default to visible=1 (only show visible products)
+      filter.visible = 1;
     }
+
     if (search && search.trim().length > 0) {
       filter.productName = { $regex: search.trim(), $options: 'i' };
     }

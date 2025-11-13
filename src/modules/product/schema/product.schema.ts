@@ -10,6 +10,7 @@ export class Product {
     required: true,
     type: [
       {
+        _id: false, // Disable automatic _id generation for subdocuments
         capacity: { type: Number, required: true },
         price: { type: Number, required: true },
       },
@@ -18,8 +19,8 @@ export class Product {
   })
   variants: { capacity: number; price: number }[];
 
-  @Prop({ required: true })
-  quantity: number;
+  @Prop({ required: false })
+  quantity?: number;
 
   @Prop({ required: true })
   productName: string;
@@ -33,8 +34,8 @@ export class Product {
   @Prop({ type: [String], default: [] })
   images?: string[];
 
-  @Prop({ required: true })
-  productType: string;
+  @Prop({ required: false })
+  productType?: string;
 
   @Prop({ required: true, type: [String] })
   category: string[];
