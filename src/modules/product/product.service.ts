@@ -618,29 +618,49 @@ export class ProductService {
 
   async findByBrand(
     brandId: string,
+    productType?: string,
+    search?: string,
     limit = 10,
     page = 1,
+    categories?: string[],
+    tag?: string,
+    gender?: string,
+    status?: number,
     visible?: string | number,
-    search?: string, // <-- add search param
+    mainCategory?: string,
+    subCategory?: string,
   ) {
     // Build filter: always filter by brand_id
     const filter: any = { brand_id: brandId };
 
-    // Default to visible=1 if not explicitly provided
+    // Add all the same filters as findAll
+    if (productType) filter.productType = productType;
+    if (mainCategory) filter.mainCategory = mainCategory;
+    if (subCategory) filter.subCategory = subCategory;
+    if (search && search.trim().length > 0) {
+      filter.productName = { $regex: search.trim(), $options: 'i' };
+    }
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      filter.category = { $in: categories };
+    }
+    if (tag) filter.tags = tag;
+    if (gender) filter.gender = gender;
+    if (status !== undefined) filter.status = status;
+
+    // Handle visible parameter
     if (visible !== undefined && visible !== null && visible !== '') {
-      // coerce string to number
       const v = typeof visible === 'string' ? Number(visible) : visible;
       if (v === 0 || v === 1) {
         filter.visible = v;
       }
+    } else if (status !== undefined) {
+      // Default to visible=1 when status filter is provided
+      filter.visible = 1;
     } else {
       // Default to visible=1 (only show visible products)
       filter.visible = 1;
     }
 
-    if (search && search.trim().length > 0) {
-      filter.productName = { $regex: search.trim(), $options: 'i' };
-    }
     this.logger.debug(`findByBrand filter: ${JSON.stringify(filter)}`);
     const products = await this.productModel
       .find(filter)

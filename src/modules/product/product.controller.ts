@@ -240,7 +240,9 @@ export class ProductController {
   }
 
   @Get('sub-categories/by-main/:mainCategoryId')
-  async getSubCategoriesByMainCategory(@Param('mainCategoryId') mainCategoryId: string) {
+  async getSubCategoriesByMainCategory(
+    @Param('mainCategoryId') mainCategoryId: string,
+  ) {
     return this.productService.getSubCategoriesByMainCategory(mainCategoryId);
   }
 
@@ -345,17 +347,49 @@ export class ProductController {
   @Get('by-brand/:brandId')
   async getByBrand(
     @Param('brandId') brandId: string,
+    @Query('productType') productType?: string,
+    @Query('search') search?: string,
     @Query('limit') limit?: string,
     @Query('page') page?: string,
+    @Query('categories') categories?: string | string[],
+    @Query('tag') tag?: string,
+    @Query('gender') gender?: string,
+    @Query('status') status?: string,
     @Query('visible') visible?: string,
-    @Query('search') search?: string, // <-- add search query param
+    @Query('mainCategory') mainCategory?: string,
+    @Query('subCategory') subCategory?: string,
   ) {
+    const statusNum = status !== undefined ? Number(status) : undefined;
+    const limitNum = limit !== undefined ? Number(limit) : 10;
+    const pageNum = page !== undefined ? Number(page) : 1;
+
+    let categoriesArr: string[] | undefined;
+    if (Array.isArray(categories)) {
+      categoriesArr = (categories as string[])
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else if (typeof categories === 'string' && categories.trim().length > 0) {
+      categoriesArr = categories
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else {
+      categoriesArr = undefined;
+    }
+
     return this.productService.findByBrand(
       brandId,
-      limit ? parseInt(limit, 10) : 10,
-      page ? parseInt(page, 10) : 1,
+      productType,
+      search,
+      limitNum,
+      pageNum,
+      categoriesArr,
+      tag,
+      gender,
+      statusNum,
       visible,
-      search, // <-- pass search to service
+      mainCategory,
+      subCategory,
     );
   }
 
