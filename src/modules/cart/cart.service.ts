@@ -448,4 +448,66 @@ export class CartService {
     await discount.save();
     return discount.toObject();
   }
+
+  /**
+   * Remove purchased products from user's cart after successful payment
+   * @param user_id User ID
+   * @param purchasedProducts Array of products with variants that were purchased
+   */
+  async removePurchasedProducts(
+    user_id: string,
+    purchasedProducts: Array<{
+      productId: string;
+      variants: Array<{
+        capacity: number;
+        price: number;
+        _id?: string;
+        count: number;
+      }>;
+    }>,
+  ): Promise<void> {
+    const cart = await this.cartModel.findOne({ user_id });
+    if (!cart) {
+      // No cart found, nothing to remove
+      return;
+    }
+
+    // Remove purchased products and variants from cart
+    cart.products = cart.products.reduce((acc, cartProduct) => {
+      // Find matching purchased product
+      const purchasedProduct = purchasedProducts.find(
+        (p) => p.productId === cartProduct.productId,
+      );
+
+      if (!purchasedProduct) {
+        // Product not purchased, keep it in cart
+        acc.push(cartProduct);
+        return acc;
+      }
+
+      // Remove purchased variants from cart product
+      cartProduct.variants = cartProduct.variants.filter((cartVariant) => {
+        // Check if this variant was purchased
+        const wasPurchased = purchasedProduct.variants.some(
+          (purchasedVariant) =>
+            purchasedVariant.capacity === cartVariant.capacity &&
+            purchasedVariant.price === cartVariant.price &&
+            (purchasedVariant._id
+              ? purchasedVariant._id === cartVariant._id
+              : true),
+        );
+        // Keep variant only if it was NOT purchased
+        return !wasPurchased;
+      });
+
+      // Only keep the product if it still has variants left
+      if (cartProduct.variants.length > 0) {
+        acc.push(cartProduct);
+      }
+
+      return acc;
+    }, []);
+
+    await cart.save();
+  }
 }

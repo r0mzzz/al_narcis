@@ -18,6 +18,7 @@ import { OrderService } from '../order/order.service';
 import { CreateOrderDto } from '../order/dto/create-order.dto';
 import { UsersService } from '../user/user.service';
 import { Discount, DiscountDocument } from '../cart/schema/discount.schema';
+import { CartService } from '../cart/cart.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -31,6 +32,7 @@ export class PaymentService {
     private historyService: HistoryService,
     private cashbackService: CashbackService,
     private usersService: UsersService,
+    private cartService: CartService,
     @Inject(forwardRef(() => OrderService))
     private orderService: OrderService,
   ) {}
@@ -434,7 +436,8 @@ export class PaymentService {
           );
         }
 
-        const newBalance = user.businessCashbackBalance - dto.usedCashbackAmount;
+        const newBalance =
+          user.businessCashbackBalance - dto.usedCashbackAmount;
 
         // Deduct cashback from user balance
         await this.userModel.updateOne(
@@ -489,6 +492,34 @@ export class PaymentService {
         'PaymentService',
       );
     }
+
+    // Remove purchased products from cart after successful payment
+    try {
+      await this.cartService.removePurchasedProducts(
+        dto.user_id,
+        dto.products.map((p) => ({
+          productId: p.productId,
+          variants: p.variants.map((v) => ({
+            capacity: v.capacity,
+            price: v.price,
+            _id: v._id,
+            count: v.count,
+          })),
+        })),
+      );
+      Logger.log(
+        `[PAYMENT] Successfully removed purchased products from cart for user ${dto.user_id}`,
+        'PaymentService',
+      );
+    } catch (error) {
+      Logger.error(
+        `[PAYMENT] Failed to remove purchased products from cart: ${error.message}`,
+        error.stack,
+        'PaymentService',
+      );
+      // Don't throw error - cart cleanup failure shouldn't fail the payment
+    }
+
     return {
       order:
         orderResult.status === 'fulfilled'

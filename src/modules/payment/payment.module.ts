@@ -8,6 +8,7 @@ import { HistoryModule } from '../history/history.module';
 import { OrderModule } from '../order/order.module';
 import { Discount, DiscountSchema } from '../cart/schema/discount.schema';
 import { UserModule } from '../user/user.module';
+import { CartModule } from '../cart/cart.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UserModule } from '../user/user.module';
       { name: Discount.name, schema: DiscountSchema },
     ]),
     UserModule,
+    CartModule,
     CashbackModule,
     forwardRef(() => HistoryModule),
     forwardRef(() => OrderModule),
